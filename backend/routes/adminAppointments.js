@@ -52,6 +52,31 @@ router.get('/', authenticate, (req, res) => {
   })
 })
 
+// Today's appointments (staff queue)
+router.get('/today', authenticate, (req, res) => {
+  if (!req.admin.office_id && req.admin.role !== 'super_admin') {
+    return res.status(400).json({ success: false, error: { code: 'NO_OFFICE', message: 'No office assigned' } })
+  }
+  const where = ['a.appointment_date = date(?)']
+  const params = [new Date().toISOString().slice(0, 10)]
+  if (req.admin.role === 'office_manager' || req.admin.role === 'staff') {
+    where.push('a.office_id = ?')
+    params.push(req.admin.office_id)
+  }
+  const appointments = prepare(`
+    SELECT a.id, a.reference_number, a.consumer_name, a.account_number, a.mobile_number, a.email,
+           c.name AS concern_type, o.name AS office, a.appointment_date, a.start_time, a.end_time,
+           a.status, a.admin_notes
+    FROM appointments a
+    JOIN concern_types c ON a.concern_type_id = c.id
+    JOIN offices o ON a.office_id = o.id
+    WHERE ${where.join(' AND ')}
+    ORDER BY a.start_time ASC
+  `).all(...params)
+
+  res.json({ success: true, data: appointments })
+})
+
 // Get appointment detail
 router.get('/:id', authenticate, (req, res) => {
   const appt = prepare(`
@@ -63,6 +88,11 @@ router.get('/:id', authenticate, (req, res) => {
   `).get(req.params.id)
 
   if (!appt) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Appointment not found' } })
+
+  // Role scoping: staff/office_manager can only view their own office
+  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.office_id !== req.admin.office_id) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } })
+  }
 
   const auditLogs = prepare("SELECT action, admin_id, created_at FROM audit_logs WHERE appointment_id = ? ORDER BY created_at").all(appt.id)
   const notifications = prepare("SELECT * FROM notifications WHERE appointment_id = ? ORDER BY created_at DESC").all(appt.id)
@@ -92,6 +122,21 @@ router.get('/:id', authenticate, (req, res) => {
   })
 })
 
+// Save notes only (no status change)
+router.put('/:id/notes', authenticate, (req, res) => {
+  const { notes } = req.body
+  if (notes === undefined || notes === null) {
+    return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Notes are required' } })
+  }
+  const appt = prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id)
+  if (!appt) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Appointment not found' } })
+  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.office_id !== req.admin.office_id) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } })
+  }
+  prepare("UPDATE appointments SET admin_notes = ?, updated_at = datetime('now') WHERE id = ?").run(notes, appt.id)
+  res.json({ success: true, data: { id: appt.id, admin_notes: notes } })
+})
+
 // Update status
 router.put('/:id/status', authenticate, (req, res) => {
   const { status, notes } = req.body
@@ -100,6 +145,9 @@ router.put('/:id/status', authenticate, (req, res) => {
 
   const appt = prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id)
   if (!appt) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Appointment not found' } })
+  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.office_id !== req.admin.office_id) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } })
+  }
 
   const oldStatus = appt.status
 
@@ -132,6 +180,9 @@ router.put('/:id/reschedule', authenticate, (req, res) => {
   const { new_appointment_date, new_start_time, notes } = req.body
   const appt = prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id)
   if (!appt) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Appointment not found' } })
+  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.office_id !== req.admin.office_id) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } })
+  }
 
   const office = prepare('SELECT * FROM offices WHERE id = ?').get(appt.office_id)
   const [h, m] = new_start_time.split(':').map(Number)

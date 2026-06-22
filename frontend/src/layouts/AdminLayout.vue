@@ -128,7 +128,9 @@ function handleLogout() {
   router.push('/admin/login')
 }
 
-const navItems = [
+const staffNavItem = { path: '/admin/staff', label: 'Staff Dashboard', icon: 'fact_check' }
+
+const allNavItems = [
   { path: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { path: '/admin/appointments', label: 'Appointments', icon: 'event_available' },
   { path: '/admin/offices', label: 'Offices', icon: 'domain' },
@@ -141,18 +143,30 @@ const navItems = [
   { path: '/admin/guide', label: 'User Guide', icon: 'book' },
 ]
 
-const mobileNav = [
-  { path: '/admin/dashboard', label: 'Home', icon: 'home' },
-  { path: '/admin/appointments', label: 'Appointments', icon: 'event_available' },
-  { path: '/admin/offices', label: 'Offices', icon: 'domain' },
-  { path: '/admin/calendar', label: 'Schedules', icon: 'calendar_month' },
-  { path: '/admin/concern-types', label: 'Concerns', icon: 'report_problem' },
-  { path: '/admin/notifications', label: 'Notifs', icon: 'notifications' },
-  { path: '/admin/users', label: 'Users', icon: 'admin_panel_settings' },
-  { path: '/admin/reports', label: 'Reports', icon: 'assessment' },
-  { path: '/admin/audit-logs', label: 'Audits', icon: 'shield' },
-  { path: '/admin/guide', label: 'Guide', icon: 'book' },
-]
+const isStaff = computed(() => auth.user?.role === 'staff' || auth.user?.role === 'office_manager')
+
+const navItems = computed(() => {
+  const items = [...allNavItems]
+  if (isStaff.value) items.unshift(staffNavItem)
+  return items
+})
+
+const mobileNav = computed(() => {
+  const items = [
+    { path: '/admin/dashboard', label: 'Home', icon: 'home' },
+    { path: '/admin/appointments', label: 'Appointments', icon: 'event_available' },
+    { path: '/admin/offices', label: 'Offices', icon: 'domain' },
+    { path: '/admin/calendar', label: 'Schedules', icon: 'calendar_month' },
+    { path: '/admin/concern-types', label: 'Concerns', icon: 'report_problem' },
+    { path: '/admin/notifications', label: 'Notifs', icon: 'notifications' },
+    { path: '/admin/users', label: 'Users', icon: 'admin_panel_settings' },
+    { path: '/admin/reports', label: 'Reports', icon: 'assessment' },
+    { path: '/admin/audit-logs', label: 'Audits', icon: 'shield' },
+    { path: '/admin/guide', label: 'Guide', icon: 'book' },
+  ]
+  if (isStaff.value) items.unshift({ path: '/admin/staff', label: 'Staff', icon: 'fact_check' })
+  return items
+})
 
 function isActive(path) {
   return route.path === path || route.path.startsWith(path + '/')

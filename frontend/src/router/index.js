@@ -30,6 +30,7 @@ const routes = [
       { path: 'notifications', name: 'admin-notifications', meta: { auth: true, title: 'Notifications' }, component: () => import('../pages/admin/NotificationsPage.vue') },
       { path: 'audit-logs', name: 'admin-audit-logs', meta: { auth: true, title: 'Audit Logs' }, component: () => import('../pages/admin/AuditLogsPage.vue') },
       { path: 'guide', name: 'admin-guide', meta: { auth: true, title: 'User Guide' }, component: () => import('../pages/admin/GuidePage.vue') },
+      { path: 'staff', name: 'admin-staff', meta: { auth: true, title: 'Staff Dashboard' }, component: () => import('../pages/admin/StaffDashboard.vue') },
     ],
   },
   { path: '/:pathMatch(.*)*', name: 'not-found', meta: { title: 'Page Not Found' }, component: () => import('../pages/NotFound.vue') },
