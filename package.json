@@ -1,0 +1,11 @@
+{
+  "name": "zaneco-appointments",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "dev:frontend": "pnpm --filter zaneco-frontend run dev",
+    "dev:backend": "pnpm --filter zaneco-appointments-api run start",
+    "build": "pnpm --filter zaneco-frontend run build",
+    "seed": "pnpm --filter zaneco-appointments-api run seed"
+  }
+}
