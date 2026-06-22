@@ -123,11 +123,12 @@ router.put('/:reference_number/reschedule', asyncHandler(async (req, res) => {
   const [h, m] = new_start_time.split(':').map(Number)
   const end = new Date(2024, 0, 1, h, m + o.appointment_duration_minutes)
   const et = String(end.getHours()).padStart(2,'0')+':'+String(end.getMinutes()).padStart(2,'0')+':00'
-  const s = db.prepare('SELECT * FROM time_slots WHERE office_id=? AND slot_date=? AND start_time=?').get(a.office_id, new_date, new_start_time)
+  const cleanDate = new_date.slice(0, 10)
+  const s = db.prepare('SELECT * FROM time_slots WHERE office_id=? AND slot_date=? AND start_time=?').get(a.office_id, cleanDate, new_start_time)
   if (!s || s.booked_count >= s.max_capacity) throw new AppError(409, 'SLOT_FULL', 'Slot unavailable')
   db.prepare('UPDATE time_slots SET booked_count = MAX(booked_count-1,0) WHERE office_id=? AND slot_date=? AND start_time=?').run(a.office_id, oldD, oldT)
   db.prepare('UPDATE time_slots SET booked_count = booked_count+1 WHERE id=?').run(s.id)
-  db.prepare("UPDATE appointments SET appointment_date=?, start_time=?, end_time=?, status='rescheduled', reschedule_count=reschedule_count+1, rescheduled_at=datetime(?) WHERE id=?").run(new_date, new_start_time, et, new Date().toISOString(), a.id)
+  db.prepare("UPDATE appointments SET appointment_date=?, start_time=?, end_time=?, status='rescheduled', reschedule_count=reschedule_count+1, rescheduled_at=datetime(?) WHERE id=?").run(cleanDate, new_start_time, et, new Date().toISOString(), a.id)
   res.json({ success: true, data: { reference_number: a.reference_number, status: 'rescheduled', message: 'Appointment rescheduled successfully' } })
 }))
 

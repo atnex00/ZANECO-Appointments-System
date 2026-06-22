@@ -79,7 +79,6 @@ router.get('/today', authenticate, (req, res) => {
     ORDER BY a.appointment_date ASC, a.start_time ASC
   `
   const appointments = prepare(sql).all(...params)
-  console.log(`[StaffDashboard] Query results: ${appointments.length} appointments`, { where, params: params.map(p => String(p)) })
 
   res.json({ success: true, data: appointments })
 })
@@ -195,14 +194,15 @@ router.put('/:id/reschedule', authenticate, (req, res) => {
   const [h, m] = new_start_time.split(':').map(Number)
   const endDate = new Date(2024, 0, 1, h, m + office.appointment_duration_minutes)
   const end_time = String(endDate.getHours()).padStart(2, '0') + ':' + String(endDate.getMinutes()).padStart(2, '0') + ':00'
+  const cleanDate = new_appointment_date.slice(0, 10)
 
   prepare('UPDATE time_slots SET booked_count = MAX(booked_count - 1, 0) WHERE office_id = ? AND slot_date = ? AND start_time = ?').run(appt.office_id, appt.appointment_date, appt.start_time)
 
-  const slot = prepare('SELECT * FROM time_slots WHERE office_id = ? AND slot_date = ? AND start_time = ?').get(appt.office_id, new_appointment_date, new_start_time)
+  const slot = prepare('SELECT * FROM time_slots WHERE office_id = ? AND slot_date = ? AND start_time = ?').get(appt.office_id, cleanDate, new_start_time)
   if (slot) prepare('UPDATE time_slots SET booked_count = booked_count + 1 WHERE id = ?').run(slot.id)
 
   prepare('UPDATE appointments SET appointment_date = ?, start_time = ?, end_time = ?, status = ?, reschedule_count = reschedule_count + 1, rescheduled_at = datetime(?), admin_notes = COALESCE(?, admin_notes), updated_at = datetime(?) WHERE id = ?')
-    .run(new_appointment_date, new_start_time, end_time, 'rescheduled', new Date().toISOString(), notes || null, new Date().toISOString(), appt.id)
+    .run(cleanDate, new_start_time, end_time, 'rescheduled', new Date().toISOString(), notes || null, new Date().toISOString(), appt.id)
 
   prepare("INSERT INTO audit_logs (appointment_id, admin_id, action, entity_type, entity_id, new_values) VALUES (?, ?, 'APPOINTMENT_RESCHEDULED', 'appointment', ?, ?)")
     .run(appt.id, req.admin.id, appt.id, JSON.stringify({ date: new_appointment_date, time: new_start_time, reason: notes }))

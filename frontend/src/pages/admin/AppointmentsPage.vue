@@ -108,6 +108,7 @@
                   <button v-if="['pending', 'rescheduled'].includes(row.status)" class="row-action" @click="quickAction(row.id, 'confirmed')" title="Confirm" style="color:#059669"><span class="material-symbols-outlined">check_circle</span></button>
                   <button v-if="row.status === 'confirmed'" class="row-action" @click="quickAction(row.id, 'completed')" title="Complete" style="color:#059669"><span class="material-symbols-outlined">task_alt</span></button>
                   <button v-if="['pending','confirmed','rescheduled'].includes(row.status)" class="row-action" @click="quickAction(row.id, 'cancelled')" title="Cancel" style="color:#dc2626"><span class="material-symbols-outlined">cancel</span></button>
+                  <button v-if="['pending','confirmed','rescheduled'].includes(row.status)" class="row-action" @click="openReschedule(row)" title="Reschedule" style="color:#0284c7"><span class="material-symbols-outlined">edit_calendar</span></button>
                   <button v-if="!['archived','cancelled','completed'].includes(row.status)" class="row-action" @click="quickAction(row.id, 'archived')" title="Archive" style="color:#6b7280"><span class="material-symbols-outlined">archive</span></button>
                   <button v-if="isSuperAdmin" class="row-action" @click="deleteRow(row)" title="Delete" style="color:#dc2626"><span class="material-symbols-outlined">delete</span></button>
                 </td>
@@ -141,16 +142,62 @@
         </div>
       </div>
     </div>
+
+    <!-- Reschedule Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showRescheduleModal" class="resched-overlay" @click.self="showRescheduleModal = false">
+          <div class="resched-modal">
+            <div class="resched-header">
+              <h3>Reschedule Appointment</h3>
+              <button class="resched-close" @click="showRescheduleModal = false">&times;</button>
+            </div>
+            <div class="resched-body">
+              <p class="resched-consumer"><strong>{{ reschedApt?.consumer_name }}</strong></p>
+              <p class="resched-ref">{{ reschedApt?.reference_number }}</p>
+              <div class="form-group">
+                <label class="form-label">New Date</label>
+                <input v-model="reschedDate" type="date" class="form-input" :min="minDate" />
+              </div>
+              <div class="form-group" style="margin-top:0.75rem">
+                <label class="form-label">New Time</label>
+                <div v-if="reschedSlotsLoading" class="text-sm text-muted">Loading available times...</div>
+                <div v-else-if="reschedSlots.length === 0" class="text-sm text-muted">No available slots for this date</div>
+                <div v-else class="resched-slot-grid">
+                  <button v-for="slot in reschedSlots" :key="slot.start_time" type="button"
+                    class="resched-slot-btn"
+                    :class="{ 'rslot-active': reschedTime === slot.start_time, 'rslot-disabled': !slot.available }"
+                    :disabled="!slot.available"
+                    @click="reschedTime = slot.start_time"
+                  >{{ slot.start_time?.slice(0, 5) }}</button>
+                </div>
+              </div>
+              <div class="form-group" style="margin-top:0.75rem">
+                <label class="form-label">Reason</label>
+                <textarea v-model="reschedReason" class="form-input" rows="2" placeholder="Reason for rescheduling"></textarea>
+              </div>
+            </div>
+            <div class="resched-footer">
+              <button class="btn btn-secondary" @click="showRescheduleModal = false">Cancel</button>
+              <button class="btn btn-primary" @click="confirmReschedule" :disabled="reschedSaving || !reschedDate || !reschedTime">
+                {{ reschedSaving ? 'Rescheduling...' : 'Confirm Reschedule' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppointmentsStore } from '../../stores/appointments'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../../stores/auth'
 import { adminApi } from '../../api/admin'
+import { consumerApi } from '../../api/consumer'
 import { statusLabel } from '../../utils/formatters'
 
 
@@ -211,6 +258,62 @@ const pageRange = computed(() => {
   for (let i = start; i <= end; i++) pages.push(i)
   return pages
 })
+
+const showRescheduleModal = ref(false)
+const reschedApt = ref(null)
+const reschedDate = ref('')
+const reschedTime = ref('')
+const reschedReason = ref('')
+const reschedSlots = ref([])
+const reschedSlotsLoading = ref(false)
+const reschedSaving = ref(false)
+const minDate = new Date().toISOString().split('T')[0]
+
+async function fetchReschedSlots(date) {
+  if (!reschedApt.value) return
+  reschedSlotsLoading.value = true
+  try {
+    const officeId = reschedApt.value.office_id || 1
+    const { data } = await consumerApi.getTimeSlots(officeId, date)
+    reschedSlots.value = data.data?.slots || []
+  } catch {
+    reschedSlots.value = []
+  } finally {
+    reschedSlotsLoading.value = false
+  }
+}
+
+watch(reschedDate, (val) => {
+  reschedTime.value = ''
+  if (val) fetchReschedSlots(val)
+})
+
+function openReschedule(apt) {
+  reschedApt.value = apt
+  reschedDate.value = ''
+  reschedTime.value = ''
+  reschedReason.value = ''
+  reschedSlots.value = []
+  showRescheduleModal.value = true
+}
+
+async function confirmReschedule() {
+  if (!reschedApt.value || !reschedDate.value || !reschedTime.value) return
+  reschedSaving.value = true
+  try {
+    await adminApi.rescheduleAppointment(reschedApt.value.id, {
+      new_appointment_date: reschedDate.value,
+      new_start_time: reschedTime.value,
+      notes: reschedReason.value,
+    })
+    showRescheduleModal.value = false
+    await store.fetchAppointments(currentPage.value)
+  } catch (err) {
+    alert('Reschedule failed: ' + (err.response?.data?.error?.message || err.message))
+  } finally {
+    reschedSaving.value = false
+  }
+}
 
 async function deleteRow(row) {
   if (!confirm(`⚠️ Permanently delete appointment ${row.reference_number}? This is for testing only.`)) return
@@ -405,4 +508,42 @@ onMounted(() => store.fetchAppointments(1))
 .status-tab-active { background-color: var(--color-primary) !important; color: var(--color-white) !important; border-color: var(--color-primary) !important; }
 .status-tab-count { font-size: 0.6875rem; background: rgba(0,0,0,0.08); padding: 0.0625rem 0.375rem; border-radius: 9999px; font-weight: 700; }
 .status-tab-active .status-tab-count { background: rgba(255,255,255,0.2); }
+
+/* Reschedule Modal */
+.resched-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; padding: 1rem;
+}
+.resched-modal {
+  background: var(--color-white); border-radius: var(--radius-xl);
+  width: 100%; max-width: 480px; box-shadow: var(--shadow-xl);
+}
+.resched-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--color-border);
+}
+.resched-header h3 { font-size: 1.125rem; font-weight: 700; }
+.resched-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--color-gray-500); padding: 0; line-height: 1; }
+.resched-body { padding: 1.25rem 1.5rem; }
+.resched-consumer { font-size: var(--font-size-lg); margin-bottom: 0.25rem; }
+.resched-ref { font-size: var(--font-size-sm); color: var(--color-gray-500); font-family: monospace; margin-bottom: 1rem; }
+.resched-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); }
+.resched-slot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.375rem; margin-top: 0.25rem; }
+.resched-slot-btn {
+  padding: 0.5rem 0.25rem; border: 1px solid var(--color-border);
+  background: var(--color-white); border-radius: var(--radius-md);
+  font-size: var(--font-size-sm); font-weight: 600; color: var(--color-gray-700);
+  cursor: pointer; transition: all 0.15s;
+}
+.resched-slot-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.resched-slot-btn.rslot-active { border-color: var(--color-primary); background-color: var(--color-primary); color: var(--color-white); }
+.resched-slot-btn.rslot-disabled { opacity: 0.35; cursor: not-allowed; }
+.resched-slot-btn.rslot-disabled:hover { border-color: var(--color-border); color: var(--color-gray-700); }
+.modal-enter-active { transition: opacity 0.2s ease; }
+.modal-leave-active { transition: opacity 0.15s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+.modal-enter-active .resched-modal { animation: modalSlideIn 0.25s cubic-bezier(0.4,0,0.2,1) both; }
+.modal-leave-active .resched-modal { animation: modalSlideIn 0.2s cubic-bezier(0.4,0,0.2,1) reverse both; }
+@keyframes modalSlideIn { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 </style>

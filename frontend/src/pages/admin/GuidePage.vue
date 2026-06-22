@@ -42,9 +42,9 @@
           <table class="guide-table">
             <thead><tr><th>Status</th><th>Description</th><th>Actions Available</th></tr></thead>
             <tbody>
-              <tr><td><span class="status-badge status-pending">Pending</span></td><td>Newly created, awaiting confirmation</td><td>Confirm, Cancel</td></tr>
+              <tr><td><span class="status-badge status-pending">Pending</span></td><td>Newly created, awaiting confirmation</td><td>Confirm, Cancel, Reschedule</td></tr>
               <tr><td><span class="status-badge status-confirmed">Confirmed</span></td><td>Approved by admin</td><td>Complete, Cancel, No Show, Reschedule</td></tr>
-              <tr><td><span class="status-badge status-rescheduled">Rescheduled</span></td><td>Appointment date/time changed</td><td>Confirm, Cancel</td></tr>
+              <tr><td><span class="status-badge status-rescheduled">Rescheduled</span></td><td>Appointment date/time changed</td><td>Confirm, Cancel, Reschedule, No Show</td></tr>
               <tr><td><span class="status-badge status-completed">Completed</span></td><td>Consumer visited and was served</td><td>Archive, Reopen</td></tr>
               <tr><td><span class="status-badge status-cancelled">Cancelled</span></td><td>Appointment was cancelled</td><td>Archive, Reopen</td></tr>
               <tr><td><span class="status-badge status-noshow">No Show</span></td><td>Consumer did not arrive</td><td>Archive, Reopen</td></tr>
@@ -54,7 +54,7 @@
         </div>
 
         <h3 class="guide-h3">Quick Actions</h3>
-        <p class="guide-p">In the list view, each row has action icons for quick status updates: <strong>Confirm</strong> (green check), <strong>Complete</strong> (green checkmark), <strong>Cancel</strong> (red X), <strong>Archive</strong> (box), and <strong>Delete</strong> (trash — super admin only). Hover over each icon to see its tooltip.</p>
+        <p class="guide-p">In the list view, each row has action icons for quick status updates: <strong>Confirm</strong> (green check), <strong>Complete</strong> (green checkmark), <strong>Cancel</strong> (red X), <strong>Reschedule</strong> (calendar, blue), <strong>Archive</strong> (box), and <strong>Delete</strong> (trash — super admin only). Hover over each icon to see its tooltip. The Reschedule button opens a modal where you can pick a new date and available time slot.</p>
 
         <h3 class="guide-h3">Appointment Detail View</h3>
         <p class="guide-p">Click on any appointment row or the visibility icon to open the detail view. Here you can see the complete consumer information, appointment details, a full set of action buttons, notification history, and the audit trail for that specific appointment.</p>
@@ -161,7 +161,7 @@
         <p class="guide-p">The <strong>Staff Dashboard</strong> is a mobile-friendly daily queue page for front-desk staff. It shows all of today's appointments for your office and lets you manage them through their lifecycle. Access it from the sidebar under <strong>Staff Dashboard</strong>.</p>
 
         <h3 class="guide-h3">Today's Queue</h3>
-        <p class="guide-p">When you open the Staff Dashboard, you'll see all appointments scheduled for today at your office, sorted by time. Each card shows the consumer name, concern type, time slot, and current status.</p>
+        <p class="guide-p">When you open the Staff Dashboard, you'll see all appointments scheduled for today at your office, sorted by time. Each card shows the consumer name, concern type, time slot, and current status. Use the <strong>date picker</strong> and <strong>arrow buttons</strong> to browse other dates, or click <strong>Upcoming</strong> to see all future appointments grouped by date. Click <strong>Back to Today</strong> to return to the current day.</p>
 
         <h3 class="guide-h3">Tabs</h3>
         <p class="guide-p">Use the tabs at the top to filter the queue: <strong>All</strong> (everyone), <strong>Waiting</strong> (pending and confirmed arrivals), <strong>Completed</strong> (finished appointments), and <strong>No Show</strong> (consumers who didn't arrive).</p>
@@ -180,7 +180,7 @@
 
         <div class="guide-tip">
           <span class="material-symbols-outlined" style="font-size:1.25rem">lightbulb</span>
-          <span>The Staff Dashboard only shows today's appointments. Use the main Appointments page for historical data and advanced filtering.</span>
+          <span>Use the <strong>Upcoming</strong> button to see all future appointments in one view. You can also navigate to any specific date using the date picker or the left/right arrows.</span>
         </div>
       </section>
     </div>

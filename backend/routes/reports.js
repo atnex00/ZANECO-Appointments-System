@@ -95,7 +95,7 @@ router.get('/summary', authenticate, (req, res) => {
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay())
   const monthStart = new Date(); monthStart.setDate(1)
 
-  const totalToday = prepare("SELECT COUNT(*) AS c FROM appointments WHERE appointment_date = ?").get(today).c
+  const totalToday = prepare("SELECT COUNT(*) AS c FROM appointments WHERE DATE(appointment_date) = ?").get(today).c
   const pending = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'pending'").get().c
   const completed = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'completed'").get().c
   const cancelled = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'cancelled'").get().c

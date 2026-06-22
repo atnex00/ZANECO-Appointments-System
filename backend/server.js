@@ -70,16 +70,16 @@ app.get('/api/v1/admin/dashboard/summary', require('./middleware/auth').authenti
   const monthStart = new Date(); monthStart.setDate(1); const ms = monthStart.toISOString().split('T')[0]
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); const ws = weekStart.toISOString().split('T')[0]
 
-  const totalToday = prepare("SELECT COUNT(*) AS c FROM appointments WHERE appointment_date = ?").get(today).c
+  const totalToday = prepare("SELECT COUNT(*) AS c FROM appointments WHERE DATE(appointment_date) = ?").get(today).c
   const pending = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'pending'").get().c
   const completed = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'completed'").get().c
   const cancelled = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'cancelled'").get().c
   const no_show = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'no_show'").get().c
-  const totalMonth = prepare("SELECT COUNT(*) AS c FROM appointments WHERE appointment_date >= ?").get(ms).c
-  const totalWeek = prepare("SELECT COUNT(*) AS c FROM appointments WHERE appointment_date >= ?").get(ws).c
-  const weeklyTrend = prepare("SELECT appointment_date AS date, COUNT(*) AS count FROM appointments WHERE appointment_date >= date('now', '-7 days') GROUP BY appointment_date ORDER BY appointment_date").all()
-  const busyOffice = prepare("SELECT o.name FROM offices o JOIN appointments a ON a.office_id = o.id WHERE a.appointment_date = ? GROUP BY o.id ORDER BY COUNT(a.id) DESC LIMIT 1").get(today)
-  const peakHour = prepare("SELECT CAST(STRFTIME('%H', start_time) AS INTEGER) AS hour, COUNT(*) AS c FROM appointments WHERE appointment_date = ? GROUP BY hour ORDER BY c DESC LIMIT 1").get(today)
+  const totalMonth = prepare("SELECT COUNT(*) AS c FROM appointments WHERE DATE(appointment_date) >= ?").get(ms).c
+  const totalWeek = prepare("SELECT COUNT(*) AS c FROM appointments WHERE DATE(appointment_date) >= ?").get(ws).c
+  const weeklyTrend = prepare("SELECT DATE(appointment_date) AS date, COUNT(*) AS count FROM appointments WHERE DATE(appointment_date) >= DATE('now', '-7 days') GROUP BY DATE(appointment_date) ORDER BY DATE(appointment_date)").all()
+  const busyOffice = prepare("SELECT o.name FROM offices o JOIN appointments a ON a.office_id = o.id WHERE DATE(a.appointment_date) = ? GROUP BY o.id ORDER BY COUNT(a.id) DESC LIMIT 1").get(today)
+  const peakHour = prepare("SELECT CAST(STRFTIME('%H', start_time) AS INTEGER) AS hour, COUNT(*) AS c FROM appointments WHERE DATE(appointment_date) = ? GROUP BY hour ORDER BY c DESC LIMIT 1").get(today)
 
   res.json({ success: true, data: { total_today: totalToday, total_week: totalWeek, total_month: totalMonth, pending, completed, cancelled, no_show, busiest_office: busyOffice?.name || 'N/A', busiest_hour: peakHour ? `${String(peakHour.hour).padStart(2,'0')}:00-${String(peakHour.hour+1).padStart(2,'0')}:00` : 'N/A', weekly_trend: weeklyTrend } })
 })
