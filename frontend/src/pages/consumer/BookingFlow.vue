@@ -3,7 +3,8 @@
     <header class="book-header">
       <div class="book-header-inner">
         <router-link to="/" class="book-logo">
-          <img src="https://i.imgur.com/SacrqEj.png" alt="ZANECO" class="logo-img" />
+          <img src="/ZANECO_Logo.png" alt="ZANECO" class="logo-img" />
+          <img src="https://i.imgur.com/SacrqEj.png" alt="DPC" class="logo-img" />
         </router-link>
         <div class="book-header-right">
           <router-link to="/view" class="book-my-btn">
@@ -47,8 +48,9 @@
           </div>
 
           <div class="wizard-body">
-            <!-- Step 1: Consumer Info -->
-            <div v-show="currentStep === 1" class="step-panel">
+            <Transition name="step-fade" mode="out-in">
+              <!-- Step 1: Consumer Info -->
+              <div v-if="currentStep === 1" key="step1" class="step-panel">
               <div class="form-grid-2">
                 <div class="form-group" style="grid-column:1/-1">
                   <label class="form-label">Full Name</label>
@@ -78,7 +80,7 @@
             </div>
 
             <!-- Step 2: Concern -->
-            <div v-show="currentStep === 2" class="step-panel">
+            <div v-else-if="currentStep === 2" key="step2" class="step-panel">
               <div class="form-group">
                 <label class="form-label">What is the primary reason for your visit?</label>
                 <select v-model="form.concernId" class="form-select">
@@ -97,7 +99,7 @@
             </div>
 
             <!-- Step 3: Office Selection -->
-            <div v-show="currentStep === 3" class="step-panel">
+            <div v-else-if="currentStep === 3" key="step3" class="step-panel">
               <div class="office-radio-group">
                 <label v-for="office in offices" :key="office.id" class="office-radio" :class="{ 'office-radio-checked': form.officeId === office.id }">
                   <input type="radio" name="office" :value="office.id" v-model="form.officeId" class="sr-only" />
@@ -119,7 +121,7 @@
             </div>
 
             <!-- Step 4: Schedule -->
-            <div v-show="currentStep === 4" class="step-panel">
+            <div v-else-if="currentStep === 4" key="step4" class="step-panel">
               <div class="calendar-card">
                 <div class="calendar-header">
                   <button class="cal-nav-btn" type="button" @click="changeMonth(-1)"><span class="material-symbols-outlined">chevron_left</span></button>
@@ -159,7 +161,7 @@
             </div>
 
             <!-- Step 5: Review -->
-            <div v-show="currentStep === 5" class="step-panel">
+            <div v-else key="step5" class="step-panel">
               <div class="review-card">
                 <div class="review-card-header">
                   <span class="material-symbols-outlined" style="color:var(--color-primary)">assignment_turned_in</span>
@@ -185,6 +187,7 @@
               </div>
               <span v-if="errors.consent" class="form-error" role="alert">{{ errors.consent }}</span>
             </div>
+            </Transition>
           </div>
 
           <!-- Footer -->
@@ -211,10 +214,6 @@
 
     <footer class="book-footer">
       <div class="book-footer-inner">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined" style="color:var(--color-primary)">bolt</span>
-          <span class="font-bold" style="font-size:var(--font-size-sm)">ZANECO</span>
-        </div>
         <div class="footer-links">
           <a href="#">Support</a>
           <a href="#">Privacy Policy</a>
@@ -462,7 +461,7 @@ async function submitBooking() {
 .progress-pct { font-size: 1.5rem; font-weight: 700; color: var(--color-primary); }
 
 .wizard-body { padding: 1.5rem; min-height: 280px; }
-.step-panel { animation: fadeIn 0.25s ease; }
+
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -538,10 +537,26 @@ async function submitBooking() {
 .wizard-next-btn, .wizard-submit-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 2rem; border-radius: var(--radius-xl); font-weight: 700; font-size: var(--font-size-sm); cursor: pointer; border: none; transition: all 0.15s; }
 .wizard-next-btn { background-color: var(--color-primary); color: var(--color-white); box-shadow: var(--shadow-md); }
 .wizard-next-btn:hover { background-color: var(--color-primary-hover); transform: translateY(-1px); }
+.wizard-next-btn:active { transform: translateY(0) scale(0.98); }
 .wizard-submit-btn { background-color: var(--color-success); color: var(--color-white); box-shadow: var(--shadow-md); }
 .wizard-submit-btn:hover { background-color: #047857; }
+.wizard-submit-btn:active { transform: scale(0.98); }
 
 .help-text { text-align: center; margin-top: 1.5rem; font-size: var(--font-size-sm); color: var(--color-gray-500); }
+
+/* Step transitions */
+.step-fade-enter-active,
+.step-fade-leave-active {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.step-fade-enter-from {
+  opacity: 0;
+  transform: translateX(16px);
+}
+.step-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-16px);
+}
 
 .book-footer { background-color: var(--color-gray-50); border-top: 1px solid var(--color-border); padding: 1.5rem; }
 .book-footer-inner { max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }

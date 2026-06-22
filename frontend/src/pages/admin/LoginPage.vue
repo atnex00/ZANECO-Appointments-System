@@ -8,8 +8,8 @@
         <div class="hero-grid"></div>
         <div class="hero-content">
           <div class="hero-brand">
-            <span class="material-symbols-outlined hero-bolt">bolt</span>
-            <span class="hero-title">ZANECO</span>
+            <img class="hero-logo" src="/ZANECO_Logo.png" alt="ZANECO" />
+            <img class="hero-logo" src="https://i.imgur.com/SacrqEj.png" alt="DPC" />
           </div>
           <h1 class="hero-headline">
             Consumer Appointment System: <span class="hero-highlight">Powering Service.</span>
@@ -22,8 +22,8 @@
       <section class="login-form-section">
         <div class="form-container">
           <div class="mobile-brand">
-            <span class="material-symbols-outlined hero-bolt">bolt</span>
-            <span class="mobile-brand-text">ZANECO</span>
+            <img class="mobile-logo" src="/ZANECO_Logo.png" alt="ZANECO" />
+            <img class="mobile-logo" src="https://i.imgur.com/SacrqEj.png" alt="DPC" />
           </div>
 
           <header class="form-header">
@@ -132,6 +132,7 @@ async function handleLogin() {
 .hero-content { position: relative; z-index: 3; display: flex; flex-direction: column; justify-content: flex-end; padding: 2.5rem; height: 100%; width: 100%; padding-bottom: 6rem; }
 .hero-brand { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
 .hero-bolt { font-size: 2.25rem; color: var(--color-primary); font-variation-settings: 'FILL' 1; }
+.hero-logo { height: 48px; width: auto; object-fit: contain; }
 .hero-title { font-family: 'Hanken Grotesk', sans-serif; font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; text-transform: uppercase; color: #121c28; }
 .hero-headline { font-family: 'Hanken Grotesk', sans-serif; font-size: 2.5rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; color: #121c28; margin-bottom: 0.5rem; max-width: 540px; }
 @media (min-width: 1024px) { .hero-headline { font-size: 3rem; } }
@@ -145,6 +146,7 @@ async function handleLogin() {
 .form-container { width: 100%; max-width: 384px; display: flex; flex-direction: column; gap: 1.5rem; }
 .mobile-brand { display: flex; align-items: center; gap: 0.5rem; }
 @media (min-width: 768px) { .mobile-brand { display: none; } }
+.mobile-logo { height: 40px; width: auto; object-fit: contain; }
 .mobile-brand-text { font-family: 'Hanken Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700; color: #121c28; }
 .form-heading { font-family: 'Hanken Grotesk', sans-serif; font-size: 2rem; font-weight: 600; color: #121c28; letter-spacing: -0.02em; line-height: 1.1; }
 .form-subtext { font-size: 1rem; color: #444653; margin-top: 0.25rem; }

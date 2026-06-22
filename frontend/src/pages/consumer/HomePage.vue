@@ -44,12 +44,12 @@
     </section>
 
     <!-- Steps -->
-    <section class="steps-section">
+    <section ref="stepsEl" class="steps-section animate-section" :class="{ 'animate-visible': stepsInView }">
       <div class="steps-inner">
-        <h2 class="section-title">Streamlined Three-Step Process</h2>
-        <p class="section-desc">Experience a frictionless journey from inquiry to resolution with our optimized digital scheduling infrastructure.</p>
+        <h2 class="section-title animate-child" style="transition-delay:0ms">Streamlined Three-Step Process</h2>
+        <p class="section-desc animate-child" style="transition-delay:80ms">Experience a frictionless journey from inquiry to resolution with our optimized digital scheduling infrastructure.</p>
         <div class="steps-grid">
-          <div v-for="(s, i) in steps" :key="i" class="step-outer">
+          <div v-for="(s, i) in steps" :key="i" class="step-outer animate-child" :style="{ transitionDelay: (160 + i * 80) + 'ms' }">
             <div class="step-number-bg">{{ i + 1 }}</div>
             <div class="step-content">
               <div class="step-icon-box" :style="{ backgroundColor: s.color + '15' }">
@@ -64,16 +64,16 @@
     </section>
 
     <!-- Offices -->
-    <section class="offices-section">
+    <section ref="officesEl" class="offices-section animate-section" :class="{ 'animate-visible': officesInView }">
       <div class="offices-inner">
         <div class="offices-header-row">
           <div>
-            <h2 class="section-title">Our Office Network</h2>
-            <p class="section-desc">Find the nearest service center. Our modern facilities are designed to provide you with efficient and comfortable support.</p>
+            <h2 class="section-title animate-child" style="transition-delay:0ms">Our Office Network</h2>
+            <p class="section-desc animate-child" style="transition-delay:80ms">Find the nearest service center. Our modern facilities are designed to provide you with efficient and comfortable support.</p>
           </div>
         </div>
         <div class="offices-grid">
-          <div v-for="office in offices" :key="office.code" class="office-card-ref">
+          <div v-for="(office, i) in offices" :key="office.code" class="office-card-ref animate-child" :style="{ transitionDelay: (160 + i * 80) + 'ms' }">
             <div class="office-img-wrap">
               <div class="office-img-placeholder" :style="{ background: office.gradient }">
                 <span class="material-symbols-outlined" style="font-size:2.5rem;color:rgba(255,255,255,0.4)">bolt</span>
@@ -96,6 +96,11 @@
 </template>
 
 <script setup>
+import { useInView } from '../../composables/useInView.js'
+
+const { el: stepsEl, inView: stepsInView } = useInView({ delay: 100 })
+const { el: officesEl, inView: officesInView } = useInView({ delay: 100 })
+
 const steps = [
   { icon: 'search', title: 'Select Service', desc: 'Choose the specific account or billing inquiry type you need assistance with from our catalog.', color: '#d97706' },
   { icon: 'calendar_month', title: 'Pick Your Time', desc: 'Browse real-time availability across our entire regional office network and secure your preferred time.', color: '#059669' },
@@ -173,11 +178,15 @@ const offices = [
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
+.btn-primary-x:active {
+  transform: translateY(0) scale(0.98);
+}
 .btn-outline-x {
   background-color: var(--color-white); color: var(--color-gray-700);
   border: 2px solid var(--color-gray-300);
 }
 .btn-outline-x:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.btn-outline-x:active { transform: scale(0.98); }
 .hero-trust { display: flex; align-items: center; gap: 0.75rem; border-top: 1px solid var(--color-border); padding-top: 1.5rem; }
 .trust-avatars { display: flex; }
 .trust-avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--color-white); overflow: hidden; margin-right: -8px; }
@@ -221,7 +230,8 @@ const offices = [
 .section-title { font-size: var(--font-size-2xl); font-weight: 800; color: var(--color-gray-900); letter-spacing: -0.02em; margin-bottom: 0.5rem; }
 .section-desc { font-size: var(--font-size-base); color: var(--color-gray-500); max-width: 560px; margin-bottom: 2.5rem; }
 .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
-.step-outer { position: relative; }
+.step-outer { position: relative; transition: transform 0.25s ease; }
+.step-outer:hover { transform: translateY(-4px); }
 .step-number-bg { position: absolute; top: -1rem; left: -0.25rem; font-size: 7.5rem; font-weight: 800; color: var(--color-gray-100); line-height: 1; pointer-events: none; z-index: 0; opacity: 0.6; }
 .step-content { position: relative; z-index: 1; padding-top: 0.75rem; }
 .step-icon-box { width: 56px; height: 56px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
@@ -244,6 +254,17 @@ const offices = [
 .office-addr-ref { font-size: var(--font-size-sm); color: var(--color-gray-500); display: flex; align-items: flex-start; gap: 0.25rem; margin-bottom: 1rem; }
 .office-btn-ref { display: block; text-align: center; padding: 0.5rem; border: 1px solid var(--color-primary); color: var(--color-primary); font-weight: 700; font-size: var(--font-size-sm); border-radius: var(--radius-lg); text-decoration: none; transition: all 0.15s; }
 .office-btn-ref:hover { background-color: var(--color-primary); color: var(--color-white); }
+
+/* === Entrance Animations === */
+.animate-section .animate-child {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.animate-section.animate-visible .animate-child {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 @media (max-width: 768px) {
   .hero-inner { grid-template-columns: 1fr; }

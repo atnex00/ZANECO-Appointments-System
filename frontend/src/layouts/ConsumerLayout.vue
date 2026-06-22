@@ -3,7 +3,8 @@
     <header class="consumer-header" :class="{ scrolled }">
       <div class="header-inner">
         <router-link to="/" class="logo">
-          <img src="https://i.imgur.com/SacrqEj.png" alt="ZANECO" class="logo-img" />
+          <img src="/ZANECO_Logo.png" alt="ZANECO" class="logo-img" />
+          <img src="https://i.imgur.com/SacrqEj.png" alt="DPC" class="logo-img" />
         </router-link>
         <nav class="header-nav">
           <router-link to="/book" class="nav-link">Book</router-link>
@@ -14,12 +15,17 @@
       </div>
     </header>
     <main class="consumer-main">
-      <router-view />
+      <router-view v-slot="{ Component, route }">
+        <Transition name="page" mode="out-in">
+          <component :is="Component" :key="route.fullPath" />
+        </Transition>
+      </router-view>
     </main>
     <footer class="consumer-footer">
       <div class="footer-inner">
         <div class="footer-brand">
-          <img src="https://i.imgur.com/SacrqEj.png" alt="ZANECO" class="footer-logo" />
+          <img src="/ZANECO_Logo.png" alt="ZANECO" class="footer-logo" />
+          <img src="https://i.imgur.com/SacrqEj.png" alt="DPC" class="footer-logo" />
           <span class="text-sm text-muted">Zamboanga del Norte Electric Cooperative</span>
         </div>
         <div class="footer-links">
@@ -87,13 +93,30 @@ onUnmounted(() => window.removeEventListener('scroll', handler))
   gap: 0.25rem;
 }
 .nav-link {
+  position: relative;
   padding: 0.5rem 0.875rem;
   border-radius: var(--radius-lg);
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-gray-600);
   text-decoration: none;
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, color 0.15s;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 1px;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nav-link:hover::after,
+.nav-link.router-link-active::after {
+  width: 60%;
+  left: 20%;
 }
 .nav-link:hover {
   background-color: var(--color-primary-light);
@@ -128,6 +151,8 @@ onUnmounted(() => window.removeEventListener('scroll', handler))
 .footer-brand {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.75rem;
 }
 .footer-logo {
   height: 2rem;
@@ -144,6 +169,22 @@ onUnmounted(() => window.removeEventListener('scroll', handler))
 .footer-links a:hover {
   color: var(--color-primary);
 }
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.page-leave-active {
+  transition-duration: 0.2s;
+}
+.page-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
+}
+
 @media (max-width: 768px) {
   .header-nav { gap: 0; }
   .nav-link { padding: 0.375rem 0.5rem; font-size: var(--font-size-xs); }

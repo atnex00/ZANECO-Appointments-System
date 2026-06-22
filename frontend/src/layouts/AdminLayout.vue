@@ -7,8 +7,11 @@
       <div v-if="drawerOpen" class="mobile-overlay" @click="drawerOpen = false"></div>
       <aside class="admin-sidebar" :class="{ 'sidebar-open': drawerOpen }">
         <div class="sidebar-header">
-          <img src="https://i.imgur.com/SacrqEj.png" alt="ZANECO" class="sidebar-logo-img" />
-          <h1 class="sidebar-title">Admin Portal</h1>
+          <div class="sidebar-logos">
+            <img src="/ZANECO_Logo.png" alt="ZANECO" class="sidebar-logo-img" />
+            <img src="https://i.imgur.com/SacrqEj.png" alt="DPC" class="sidebar-logo-img" />
+          </div>
+          <h1 class="sidebar-title">Appointments System Admin Portal</h1>
         </div>
         <nav class="sidebar-nav">
           <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="sidebar-link" :class="{ 'sidebar-link-active': isActive(item.path) }" @click="drawerOpen = false">
@@ -141,14 +144,22 @@ const userInitials = computed(() => {
 .sidebar-header {
   padding: 1.5rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
-.sidebar-logo-img { height: 2rem; width: auto; }
+.sidebar-logos {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sidebar-logo-img { height: 2.25rem; width: auto; }
 .sidebar-title {
-  font-size: 1.25rem;
+  font-size: 0.813rem;
   font-weight: 700;
   color: var(--color-primary);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .sidebar-nav {
