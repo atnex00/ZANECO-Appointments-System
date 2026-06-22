@@ -109,14 +109,14 @@ const updateCount = () => {
   const w = window.innerWidth
   if (w < 380) visibleCount.value = 4
   else visibleCount.value = 5
-  if (navStart.value + visibleCount.value > mobileNav.length) {
-    navStart.value = Math.max(0, mobileNav.length - visibleCount.value)
+  if (navStart.value + visibleCount.value > mobileNav.value.length) {
+    navStart.value = Math.max(0, mobileNav.value.length - visibleCount.value)
   }
 }
 onMounted(() => { updateCount(); window.addEventListener('resize', updateCount) })
 onUnmounted(() => { window.removeEventListener('resize', updateCount) })
 
-const visibleNav = computed(() => mobileNav.slice(navStart.value, navStart.value + visibleCount.value))
+const visibleNav = computed(() => mobileNav.value.slice(navStart.value, navStart.value + visibleCount.value))
 
 const isLoginPage = computed(() => route.path === '/admin/login')
 
@@ -137,17 +137,18 @@ const allNavItems = [
   { path: '/admin/calendar', label: 'Schedules', icon: 'calendar_month' },
   { path: '/admin/concern-types', label: 'Concerns', icon: 'report_problem' },
   { path: '/admin/notifications', label: 'Notifications', icon: 'notifications' },
-  { path: '/admin/users', label: 'Admin Users', icon: 'admin_panel_settings' },
+  { path: '/admin/users', label: 'User Management', icon: 'admin_panel_settings' },
   { path: '/admin/reports', label: 'Reports', icon: 'assessment' },
   { path: '/admin/audit-logs', label: 'Audit Logs', icon: 'shield' },
   { path: '/admin/guide', label: 'User Guide', icon: 'book' },
 ]
 
-const isStaff = computed(() => auth.user?.role === 'staff' || auth.user?.role === 'office_manager')
+const staffAllowed = ['/admin/staff', '/admin/reports', '/admin/audit-logs', '/admin/guide']
 
 const navItems = computed(() => {
   const items = [...allNavItems]
-  if (isStaff.value) items.unshift(staffNavItem)
+  items.unshift(staffNavItem)
+  if (auth.user?.role === 'staff') return items.filter(i => staffAllowed.includes(i.path))
   return items
 })
 
@@ -164,7 +165,8 @@ const mobileNav = computed(() => {
     { path: '/admin/audit-logs', label: 'Audits', icon: 'shield' },
     { path: '/admin/guide', label: 'Guide', icon: 'book' },
   ]
-  if (isStaff.value) items.unshift({ path: '/admin/staff', label: 'Staff', icon: 'fact_check' })
+  items.unshift({ path: '/admin/staff', label: 'Staff', icon: 'fact_check' })
+  if (auth.user?.role === 'staff') return items.filter(i => staffAllowed.includes(i.path))
   return items
 })
 

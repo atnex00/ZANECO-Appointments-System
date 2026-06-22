@@ -24,17 +24,35 @@ const createSchema = Joi.object({
   concern_type_id: Joi.number().integer().required(),
   office_id: Joi.number().integer().required(),
   appointment_date: Joi.string().isoDate().required(),
-  start_time: Joi.string().pattern(/^\d{2}:\d{2}:\d{2}$/).required(),
+  start_time: Joi.string().pattern(/^\d{2}:\d{2}(:\d{2})?$/).required(),
 })
 
 router.post('/', asyncHandler(async (req, res) => {
+  // Normalize incoming fields
+  if (req.body.mobile_number) req.body.mobile_number = req.body.mobile_number.replace(/[^0-9]/g, '')
+  if (req.body.start_time) {
+    // Accept HH:MM, HH:MM:SS, HHMM, H:MM, etc. - normalize to HH:MM:SS
+    const parts = req.body.start_time.replace(/[^0-9]/g, '')
+    if (parts.length >= 4) {
+      const h = parts.slice(0, 2).padStart(2, '0')
+      const m = parts.slice(2, 4).padStart(2, '0')
+      req.body.start_time = h + ':' + m + ':00'
+    } else if (parts.length === 3) {
+      req.body.start_time = '0' + parts[0] + ':' + parts.slice(1, 3) + ':00'
+    }
+  }
+  if (!req.body.email) delete req.body.email
   const { error, value } = createSchema.validate(req.body, { abortEarly: false })
   if (error) {
     const details = {}
     error.details.forEach(d => { const k = d.path[0]; if (!details[k]) details[k] = []; details[k].push(d.message) })
+    console.error('VALIDATION ERROR - Body:', JSON.stringify(req.body, null, 2))
+    console.error('VALIDATION ERROR - Details:', JSON.stringify(details, null, 2))
     throw new AppError(422, 'VALIDATION_ERROR', 'Validation failed', details)
   }
-  const { consumer_name, account_name, account_number, mobile_number, email, concern_type_id, office_id, appointment_date, start_time } = value
+  let { consumer_name, account_name, account_number, mobile_number, email, concern_type_id, office_id, appointment_date, start_time } = value
+  // Strip any time component from the date
+  appointment_date = appointment_date.slice(0, 10)
 
   const office = db.prepare('SELECT * FROM offices WHERE id = ? AND is_active = 1').get(office_id)
   if (!office) throw new AppError(404, 'NOT_FOUND', 'Office not found')

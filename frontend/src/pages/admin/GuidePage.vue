@@ -154,7 +154,36 @@
           <span>Audit logs are read-only and cannot be deleted. They serve as an immutable record for compliance and troubleshooting.</span>
         </div>
       </section>
-      </div>
+
+      <!-- 8. Staff Dashboard -->
+      <section ref="staffDashboardRef" id="staff-dashboard" class="guide-section">
+        <h2 class="guide-h2">Staff Dashboard</h2>
+        <p class="guide-p">The <strong>Staff Dashboard</strong> is a mobile-friendly daily queue page for front-desk staff. It shows all of today's appointments for your office and lets you manage them through their lifecycle. Access it from the sidebar under <strong>Staff Dashboard</strong>.</p>
+
+        <h3 class="guide-h3">Today's Queue</h3>
+        <p class="guide-p">When you open the Staff Dashboard, you'll see all appointments scheduled for today at your office, sorted by time. Each card shows the consumer name, concern type, time slot, and current status.</p>
+
+        <h3 class="guide-h3">Tabs</h3>
+        <p class="guide-p">Use the tabs at the top to filter the queue: <strong>All</strong> (everyone), <strong>Waiting</strong> (pending and confirmed arrivals), <strong>Completed</strong> (finished appointments), and <strong>No Show</strong> (consumers who didn't arrive).</p>
+
+        <h3 class="guide-h3">Check-in Flow</h3>
+        <p class="guide-p">Tap an appointment card to expand it and see full details (reference number, account number, mobile number, email). From the expanded view, you can take the following actions:</p>
+        <ul class="guide-ul">
+          <li><strong>Mark Arrived</strong> &mdash; Confirms the consumer's arrival. Changes status from pending to confirmed.</li>
+          <li><strong>Complete Service</strong> &mdash; Opens a modal to add service notes about what was done, then marks the appointment as completed.</li>
+          <li><strong>Reschedule</strong> &mdash; Change the appointment to a different date and time with a reason note.</li>
+          <li><strong>Cancel</strong> &mdash; Cancel the appointment with a cancellation reason.</li>
+          <li><strong>No Show</strong> &mdash; Mark the appointment as no-show if the consumer did not arrive.</li>
+          <li><strong>Reopen</strong> &mdash; Reopen a completed, cancelled, or no-show appointment back to pending.</li>
+          <li><strong>Archive</strong> &mdash; Move a terminal appointment (completed, cancelled, no-show) to the archive.</li>
+        </ul>
+
+        <div class="guide-tip">
+          <span class="material-symbols-outlined" style="font-size:1.25rem">lightbulb</span>
+          <span>The Staff Dashboard only shows today's appointments. Use the main Appointments page for historical data and advanced filtering.</span>
+        </div>
+      </section>
+    </div>
     </div>
   </div>
 </template>
@@ -170,7 +199,17 @@ const tocItems = [
   { id: 'reports', label: 'Reports & Analytics' },
   { id: 'users', label: 'Admin Users & Permissions' },
   { id: 'notifications', label: 'Notifications & Audit Logs' },
+  { id: 'staff-dashboard', label: 'Staff Dashboard' },
 ]
+
+const overviewRef = ref(null)
+const appointmentsRef = ref(null)
+const officesRef = ref(null)
+const schedulesRef = ref(null)
+const reportsRef = ref(null)
+const usersRef = ref(null)
+const notificationsRef = ref(null)
+const staffDashboardRef = ref(null)
 
 const activeSection = ref('overview')
 let observer = null
@@ -321,6 +360,16 @@ function scrollTo(id) {
   font-size: 0.875em;
   color: var(--color-primary);
   font-family: monospace;
+}
+.guide-ul {
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.guide-ul li {
+  font-size: var(--font-size-base);
+  color: var(--color-gray-600);
+  line-height: 1.7;
+  margin-bottom: 0.25rem;
 }
 
 .guide-table-wrap {
