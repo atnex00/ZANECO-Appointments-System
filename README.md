@@ -36,8 +36,8 @@ Consumers can schedule appointments online at any of five ZANECO service offices
 
 ```bash
 # Clone the repository
-git clone https://github.com/atnex00/zaneco-appointments-sys.git
-cd appointments-system
+git clone https://github.com/atnex00/ZANECO-Appointments-System.git
+cd ZANECO-Appointments-System
 
 # Install dependencies
 composer install
@@ -50,9 +50,18 @@ php artisan key:generate
 # Database setup
 php artisan migrate --seed
 
-# Run development servers
-php artisan serve
-npm run dev
+# Run both frontend + backend (bash)
+pnpm run dev
+
+# Or individually (works on any platform):
+pnpm run dev:frontend    # starts Vite on :5173
+pnpm run dev:backend     # starts API on :8000
+
+# Build frontend
+pnpm run build
+
+# Seed database
+pnpm run seed
 ```
 
 ## Documentation
