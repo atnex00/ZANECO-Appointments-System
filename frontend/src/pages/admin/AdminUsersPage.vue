@@ -2,8 +2,8 @@
   <div>
     <header class="ap-header">
       <div class="ap-header-left">
-        <h2 class="header-title">Admin Users</h2>
-        <button v-if="isSuperAdmin" class="ap-new-btn" @click="openAdd"><span class="material-symbols-outlined">add</span> Add Admin</button>
+        <h2 class="header-title">User Management</h2>
+        <button v-if="isSuperAdmin" class="ap-new-btn" @click="openAdd"><span class="material-symbols-outlined">add</span> Add User</button>
       </div>
     </header>
 
@@ -55,7 +55,7 @@
           <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
             <div class="schedule-modal">
             <div class="schedule-modal-header">
-              <h3>{{ editingUser ? 'Edit Admin User' : 'Add Admin User' }}</h3>
+              <h3>{{ editingUser ? 'Edit User' : 'Add User' }}</h3>
               <button class="modal-close" @click="showForm = false">&times;</button>
             </div>
             <div class="schedule-modal-body">

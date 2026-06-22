@@ -54,25 +54,32 @@ router.get('/', authenticate, (req, res) => {
 
 // Today's appointments (staff queue)
 router.get('/today', authenticate, (req, res) => {
-  if (!req.admin.office_id && req.admin.role !== 'super_admin') {
-    return res.status(400).json({ success: false, error: { code: 'NO_OFFICE', message: 'No office assigned' } })
+  const where = []
+  const params = []
+  if (req.query.date_from && req.query.date_to) {
+    where.push('DATE(a.appointment_date) >= ?', 'DATE(a.appointment_date) <= ?')
+    params.push(req.query.date_from, req.query.date_to)
+  } else {
+    const targetDate = req.query.date || new Date().toISOString().slice(0, 10)
+    where.push('DATE(a.appointment_date) = ?')
+    params.push(targetDate)
   }
-  const where = ['a.appointment_date = date(?)']
-  const params = [new Date().toISOString().slice(0, 10)]
-  if (req.admin.role === 'office_manager' || req.admin.role === 'staff') {
+  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && req.admin.office_id) {
     where.push('a.office_id = ?')
     params.push(req.admin.office_id)
   }
-  const appointments = prepare(`
-    SELECT a.id, a.reference_number, a.consumer_name, a.account_number, a.mobile_number, a.email,
+  const sql = `
+    SELECT a.id, a.office_id, a.reference_number, a.consumer_name, a.account_number, a.mobile_number, a.email,
            c.name AS concern_type, o.name AS office, a.appointment_date, a.start_time, a.end_time,
            a.status, a.admin_notes
     FROM appointments a
     JOIN concern_types c ON a.concern_type_id = c.id
     JOIN offices o ON a.office_id = o.id
     WHERE ${where.join(' AND ')}
-    ORDER BY a.start_time ASC
-  `).all(...params)
+    ORDER BY a.appointment_date ASC, a.start_time ASC
+  `
+  const appointments = prepare(sql).all(...params)
+  console.log(`[StaffDashboard] Query results: ${appointments.length} appointments`, { where, params: params.map(p => String(p)) })
 
   res.json({ success: true, data: appointments })
 })

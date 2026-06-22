@@ -3,26 +3,49 @@
     <header class="staff-header">
       <div>
         <p class="staff-office">{{ officeName }}</p>
-        <h1 class="staff-date">{{ todayLabel }}</h1>
+        <h1 class="staff-date">{{ headerDate }}</h1>
       </div>
       <div class="staff-stats">
-        <div class="staff-stat"><span class="stat-num">{{ appointments.length }}</span>Total</div>
-        <div class="staff-stat"><span class="stat-num stat-waiting">{{ waiting.length }}</span>Waiting</div>
-        <div class="staff-stat"><span class="stat-num stat-done">{{ completed.length }}</span>Done</div>
+        <div class="staff-stat"><span class="stat-num">{{ dataSource.length }}</span>Total</div>
+        <div class="staff-stat"><span class="stat-num stat-waiting">{{ dataSource.filter(a => a.status === 'pending' || a.status === 'confirmed').length }}</span>Waiting</div>
+        <div class="staff-stat"><span class="stat-num stat-done">{{ dataSource.filter(a => a.status === 'completed').length }}</span>Done</div>
       </div>
     </header>
+
+    <div class="staff-date-row">
+      <template v-if="viewMode === 'date'">
+        <div class="staff-date-nav">
+          <button class="date-nav-btn" @click="changeDate(-1)">&lsaquo;</button>
+          <input type="date" v-model="selectedDate" class="staff-date-input" />
+          <button class="date-nav-btn" @click="changeDate(1)">&rsaquo;</button>
+        </div>
+        <button v-if="selectedDate !== todayStr" class="date-today-btn" @click="selectedDate = todayStr">Today</button>
+        <button class="date-today-btn" style="margin-left:0.5rem" @click="switchToUpcoming">Upcoming</button>
+      </template>
+      <template v-else>
+        <span class="upcoming-label">Upcoming Appointments</span>
+        <button class="date-today-btn" @click="viewMode = 'date'; selectedDate = todayStr; fetchAppointments()">Back to Today</button>
+      </template>
+    </div>
 
     <div class="staff-tabs">
       <button v-for="t in tabs" :key="t.key" class="staff-tab" :class="{ active: activeTab === t.key }" @click="activeTab = t.key">{{ t.label }} <span class="tab-count">{{ t.count }}</span></button>
     </div>
 
     <div class="staff-queue">
-      <div v-if="filtered.length === 0" class="staff-empty">
+      <div v-if="loading" class="staff-empty">
+        <span class="material-symbols-outlined" style="font-size:3rem;color:var(--color-gray-300)">hourglass_top</span>
+        <p>Loading appointments...</p>
+      </div>
+      <div v-else-if="filtered.length === 0" class="staff-empty">
         <span class="material-symbols-outlined" style="font-size:3rem;color:var(--color-gray-300)">event_busy</span>
-        <p>No appointments in this category</p>
+        <p>{{ viewMode === 'upcoming' ? 'No upcoming appointments' : 'No appointments for this date' }}</p>
+        <button class="refresh-btn" @click="viewMode === 'upcoming' ? fetchUpcoming() : fetchAppointments()">Refresh</button>
       </div>
 
-      <div v-for="apt in filtered" :key="apt.id" class="staff-card" :class="{ expanded: expandedId === apt.id, 'card-completed': apt.status === 'completed', 'card-noshow': apt.status === 'no_show' }" @click="toggleExpand(apt.id)">
+      <template v-for="(apt, idx) in filtered" :key="apt.id">
+        <div v-if="showDateHeader(apt, idx)" class="upcoming-date-header">{{ formatDate(apt.appointment_date) }}</div>
+        <div class="staff-card" :class="{ expanded: expandedId === apt.id, 'card-completed': apt.status === 'completed', 'card-noshow': apt.status === 'no_show' }" @click="toggleExpand(apt.id)">
         <div class="card-main">
           <div class="card-time">{{ formatTime(apt.start_time) }}</div>
           <div class="card-info">
@@ -47,14 +70,20 @@
             <button v-if="apt.status === 'confirmed'" class="action-btn action-confirm" @click.stop="openComplete(apt)">
               <span class="material-symbols-outlined">task_alt</span> Complete Service
             </button>
-            <button v-if="['pending', 'confirmed'].includes(apt.status)" class="action-btn action-cancel" @click.stop="markNoShow(apt)">
+            <button v-if="['pending', 'confirmed'].includes(apt.status)" class="action-btn action-outline" @click.stop="openReschedule(apt)">
+              <span class="material-symbols-outlined">edit_calendar</span> Reschedule
+            </button>
+            <button v-if="['pending', 'confirmed', 'rescheduled'].includes(apt.status)" class="action-btn action-cancel" @click.stop="openCancel(apt)">
+              <span class="material-symbols-outlined">cancel</span> Cancel
+            </button>
+            <button v-if="['pending', 'confirmed'].includes(apt.status)" class="action-btn action-noshow" @click.stop="markNoShow(apt)">
               <span class="material-symbols-outlined">visibility_off</span> No Show
             </button>
-            <button v-if="apt.status === 'no_show'" class="action-btn action-reopen" @click.stop="reopen(apt)">
+            <button v-if="['no_show', 'completed', 'cancelled'].includes(apt.status)" class="action-btn action-reopen" @click.stop="reopen(apt)">
               <span class="material-symbols-outlined">undo</span> Reopen
             </button>
-            <button v-if="apt.status === 'completed'" class="action-btn action-reopen" @click.stop="reopen(apt)">
-              <span class="material-symbols-outlined">undo</span> Reopen
+            <button v-if="['cancelled', 'no_show', 'completed'].includes(apt.status)" class="action-btn action-archive" @click.stop="archiveApt(apt)">
+              <span class="material-symbols-outlined">archive</span> Archive
             </button>
           </div>
 
@@ -63,7 +92,7 @@
             <p>{{ apt.admin_notes }}</p>
           </div>
         </div>
-      </div>
+      </div></template>
     </div>
 
     <!-- Complete Modal -->
@@ -76,8 +105,8 @@
               <button class="modal-close" @click="showCompleteModal = false">&times;</button>
             </div>
             <div class="complete-body">
-              <p class="complete-consumer"><strong>{{ completingApt?.consumer_name }}</strong></p>
-              <p class="complete-ref">{{ completingApt?.reference_number }}</p>
+              <p class="complete-consumer"><strong>{{ actionApt?.consumer_name }}</strong></p>
+              <p class="complete-ref">{{ actionApt?.reference_number }}</p>
               <div class="form-group">
                 <label class="form-label">Service Notes</label>
                 <textarea v-model="serviceNotes" class="form-input" rows="4" placeholder="What was done? Any follow-up needed?"></textarea>
@@ -93,23 +122,113 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Cancel Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showCancelModal" class="modal-overlay" @click.self="showCancelModal = false">
+          <div class="complete-modal">
+            <div class="complete-header">
+              <h3>Cancel Appointment</h3>
+              <button class="modal-close" @click="showCancelModal = false">&times;</button>
+            </div>
+            <div class="complete-body">
+              <p class="complete-consumer"><strong>{{ actionApt?.consumer_name }}</strong></p>
+              <p class="complete-ref">{{ actionApt?.reference_number }}</p>
+              <div class="form-group">
+                <label class="form-label">Reason for Cancellation</label>
+                <textarea v-model="cancelReason" class="form-input" rows="3" placeholder="Why is this appointment being cancelled?"></textarea>
+              </div>
+            </div>
+            <div class="complete-footer">
+              <button class="btn btn-secondary" @click="showCancelModal = false">Keep</button>
+              <button class="btn btn-danger" @click="cancelAppointment" :disabled="saving">
+                {{ saving ? 'Cancelling...' : 'Cancel Appointment' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Reschedule Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showRescheduleModal" class="modal-overlay" @click.self="showRescheduleModal = false">
+          <div class="complete-modal">
+            <div class="complete-header">
+              <h3>Reschedule Appointment</h3>
+              <button class="modal-close" @click="showRescheduleModal = false">&times;</button>
+            </div>
+            <div class="complete-body">
+              <p class="complete-consumer"><strong>{{ actionApt?.consumer_name }}</strong></p>
+              <p class="complete-ref">{{ actionApt?.reference_number }}</p>
+              <div class="form-group">
+                <label class="form-label">New Date</label>
+                <input v-model="rescheduleDate" type="date" class="form-input" :min="minDate" />
+              </div>
+              <div class="form-group" style="margin-top:0.75rem">
+                <label class="form-label">New Time</label>
+                <div v-if="reslotsLoading" class="text-sm text-muted" style="padding:0.5rem 0">Loading available slots...</div>
+                <div v-else class="rslots-grid">
+                  <button v-for="s in reslots" :key="s.start_time" class="rslots-btn" :class="{ 'rslots-active': rescheduleTime === s.start_time, 'rslots-disabled': !s.available }" :disabled="!s.available" @click="rescheduleTime = s.start_time">
+                    {{ formatTime(s.start_time) }}
+                  </button>
+                  <div v-if="reslots.length === 0" class="text-sm text-muted" style="padding:0.5rem 0">No slots available for this date</div>
+                </div>
+              </div>
+              <div class="form-group" style="margin-top:0.75rem">
+                <label class="form-label">Reason</label>
+                <textarea v-model="rescheduleReason" class="form-input" rows="2" placeholder="Reason for rescheduling"></textarea>
+              </div>
+            </div>
+            <div class="complete-footer">
+              <button class="btn btn-secondary" @click="showRescheduleModal = false">Cancel</button>
+              <button class="btn btn-primary" @click="rescheduleAppointment" :disabled="saving || !rescheduleDate || !rescheduleTime">
+                {{ saving ? 'Rescheduling...' : 'Confirm Reschedule' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { adminApi } from '../../api/admin'
+import { consumerApi } from '../../api/consumer'
 
 const appointments = ref([])
 const offices = ref([])
+const loading = ref(true)
 const activeTab = ref('all')
 const expandedId = ref(null)
+const selectedDate = ref(new Date().toISOString().split('T')[0])
+const todayStr = new Date().toISOString().split('T')[0]
+const viewMode = ref('date')
 const showCompleteModal = ref(false)
-const completingApt = ref(null)
+const showCancelModal = ref(false)
+const showRescheduleModal = ref(false)
+const actionApt = ref(null)
 const serviceNotes = ref('')
+const cancelReason = ref('')
+const rescheduleDate = ref('')
+const rescheduleTime = ref('')
+const rescheduleReason = ref('')
 const saving = ref(false)
+const reslots = ref([])
+const reslotsLoading = ref(false)
 
-const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+const minDate = new Date().toISOString().split('T')[0]
+
+const headerDate = computed(() => {
+  const d = new Date(selectedDate.value + 'T12:00:00')
+  const isToday = selectedDate.value === todayStr
+  const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  return isToday ? `Today \u2014 ${label}` : label
+})
 
 const officeName = computed(() => {
   const user = JSON.parse(localStorage.getItem('admin_user') || '{}')
@@ -118,23 +237,27 @@ const officeName = computed(() => {
   return office?.name || 'Office'
 })
 
-const waiting = computed(() => appointments.value.filter(a => a.status === 'pending' || a.status === 'confirmed'))
-const completed = computed(() => appointments.value.filter(a => a.status === 'completed'))
-const noShow = computed(() => appointments.value.filter(a => a.status === 'no_show'))
+const dataSource = computed(() => appointments.value)
 
-const tabs = computed(() => [
-  { key: 'all', label: 'All', count: appointments.value.length },
-  { key: 'waiting', label: 'Waiting', count: waiting.value.length },
-  { key: 'completed', label: 'Completed', count: completed.value.length },
-  { key: 'noshow', label: 'No Show', count: noShow.value.length },
-])
+const tabs = computed(() => {
+  const s = dataSource.value
+  const waiting = s.filter(a => a.status === 'pending' || a.status === 'confirmed')
+  const completed = s.filter(a => a.status === 'completed')
+  const noshow = s.filter(a => a.status === 'no_show')
+  return [
+    { key: 'all', label: 'All', count: s.length },
+    { key: 'waiting', label: 'Waiting', count: waiting.length },
+    { key: 'completed', label: 'Completed', count: completed.length },
+    { key: 'noshow', label: 'No Show', count: noshow.length },
+  ]
+})
 
 const filtered = computed(() => {
-  if (activeTab.value === 'all') return appointments.value
-  if (activeTab.value === 'waiting') return waiting.value
-  if (activeTab.value === 'completed') return completed.value
-  if (activeTab.value === 'noshow') return noShow.value
-  return appointments.value
+  const source = dataSource.value
+  if (activeTab.value === 'waiting') return source.filter(a => a.status === 'pending' || a.status === 'confirmed')
+  if (activeTab.value === 'completed') return source.filter(a => a.status === 'completed')
+  if (activeTab.value === 'noshow') return source.filter(a => a.status === 'no_show')
+  return source
 })
 
 function toggleExpand(id) {
@@ -151,10 +274,24 @@ function formatTime(t) {
 }
 
 async function fetchAppointments() {
+  loading.value = true
   try {
-    const { data } = await adminApi.getTodayAppointments()
-    appointments.value = data.data || []
-  } catch {}
+    const res = await adminApi.getTodayAppointments({ date: selectedDate.value })
+    appointments.value = res.data?.data || []
+    if (res.data?.success === false) {
+      console.error('Failed to fetch appointments:', res.data?.error)
+    }
+  } catch (err) {
+    console.error('Error fetching appointments:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+function changeDate(delta) {
+  const d = new Date(selectedDate.value + 'T12:00:00')
+  d.setDate(d.getDate() + delta)
+  selectedDate.value = d.toISOString().split('T')[0]
 }
 
 async function fetchOffices() {
@@ -162,6 +299,39 @@ async function fetchOffices() {
     const { data } = await adminApi.getOffices()
     offices.value = data.data || []
   } catch {}
+}
+
+function switchToUpcoming() {
+  viewMode.value = 'upcoming'
+  fetchUpcoming()
+}
+
+async function fetchUpcoming() {
+  loading.value = true
+  try {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const from = tomorrow.toISOString().split('T')[0]
+    const to = new Date(tomorrow)
+    to.setFullYear(to.getFullYear() + 1)
+    const res = await adminApi.getTodayAppointments({ date_from: from, date_to: to.toISOString().split('T')[0] })
+    appointments.value = res.data?.data || []
+  } catch (err) {
+    console.error('Error fetching upcoming:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+function showDateHeader(apt, idx) {
+  if (viewMode.value !== 'upcoming') return false
+  if (idx === 0) return true
+  return apt.appointment_date !== filtered.value[idx - 1].appointment_date
+}
+
+function formatDate(d) {
+  const date = new Date(d + 'T12:00:00')
+  return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 async function confirmArrival(apt) {
@@ -172,20 +342,86 @@ async function confirmArrival(apt) {
 }
 
 function openComplete(apt) {
-  completingApt.value = apt
+  actionApt.value = apt
   serviceNotes.value = apt.admin_notes || ''
   showCompleteModal.value = true
 }
 
 async function completeService() {
-  if (!completingApt.value) return
+  if (!actionApt.value) return
   saving.value = true
   try {
-    await adminApi.updateAppointmentStatus(completingApt.value.id, { status: 'completed', notes: serviceNotes.value })
-    completingApt.value.status = 'completed'
-    completingApt.value.admin_notes = serviceNotes.value
+    await adminApi.updateAppointmentStatus(actionApt.value.id, { status: 'completed', notes: serviceNotes.value })
+    actionApt.value.status = 'completed'
+    actionApt.value.admin_notes = serviceNotes.value
     showCompleteModal.value = false
-    completingApt.value = null
+    actionApt.value = null
+  } catch {} finally {
+    saving.value = false
+  }
+}
+
+function openCancel(apt) {
+  actionApt.value = apt
+  cancelReason.value = ''
+  showCancelModal.value = true
+}
+
+async function cancelAppointment() {
+  if (!actionApt.value) return
+  saving.value = true
+  try {
+    await adminApi.updateAppointmentStatus(actionApt.value.id, { status: 'cancelled', notes: cancelReason.value })
+    actionApt.value.status = 'cancelled'
+    actionApt.value.admin_notes = cancelReason.value
+    showCancelModal.value = false
+    actionApt.value = null
+  } catch {} finally {
+    saving.value = false
+  }
+}
+
+function openReschedule(apt) {
+  actionApt.value = apt
+  rescheduleDate.value = ''
+  rescheduleTime.value = ''
+  rescheduleReason.value = ''
+  reslots.value = []
+  showRescheduleModal.value = true
+}
+
+async function fetchReslots(date) {
+  if (!actionApt.value?.office_id) return
+  reslotsLoading.value = true
+  try {
+    const { data } = await consumerApi.getTimeSlots(actionApt.value.office_id, date)
+    reslots.value = data.data?.slots || []
+  } catch {
+    reslots.value = []
+  } finally {
+    reslotsLoading.value = false
+  }
+}
+
+watch(rescheduleDate, (val) => {
+  if (val) fetchReslots(val)
+})
+
+async function rescheduleAppointment() {
+  if (!actionApt.value || !rescheduleDate.value || !rescheduleTime.value) return
+  saving.value = true
+  try {
+    await adminApi.rescheduleAppointment(actionApt.value.id, {
+      new_appointment_date: rescheduleDate.value,
+      new_start_time: rescheduleTime.value + ':00',
+      notes: rescheduleReason.value,
+    })
+    actionApt.value.status = 'rescheduled'
+    actionApt.value.appointment_date = rescheduleDate.value
+    actionApt.value.start_time = rescheduleTime.value
+    actionApt.value.admin_notes = rescheduleReason.value
+    showRescheduleModal.value = false
+    actionApt.value = null
   } catch {} finally {
     saving.value = false
   }
@@ -204,6 +440,15 @@ async function reopen(apt) {
     apt.status = 'pending'
   } catch {}
 }
+
+async function archiveApt(apt) {
+  try {
+    await adminApi.updateAppointmentStatus(apt.id, { status: 'archived' })
+    apt.status = 'archived'
+  } catch {}
+}
+
+watch(selectedDate, () => { fetchAppointments() })
 
 onMounted(() => { fetchAppointments(); fetchOffices() })
 </script>
@@ -259,6 +504,73 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
 
 .stat-waiting { color: #d97706; }
 .stat-done { color: #059669; }
+
+/* Date Navigation */
+.staff-date-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.staff-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.date-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-gray-600);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.date-nav-btn:hover { background-color: var(--color-gray-50); border-color: var(--color-primary); color: var(--color-primary); }
+.staff-date-input {
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-900);
+  outline: none;
+  font-family: inherit;
+}
+.staff-date-input:focus { border-color: var(--color-primary); }
+.date-today-btn {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--color-primary);
+  background: none;
+  color: var(--color-primary);
+  border-radius: var(--radius-xl);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.date-today-btn:hover { background-color: var(--color-primary-light); }
+.upcoming-label {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--color-gray-900);
+}
+.upcoming-date-header {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-primary);
+  padding: 1rem 0 0.25rem 0;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
 
 /* Tabs */
 .staff-tabs {
@@ -421,8 +733,14 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
 .action-confirm:hover { background-color: #a7f3d0; }
 .action-cancel { background-color: #fee2e2; color: #991b1b; }
 .action-cancel:hover { background-color: #fecaca; }
-.action-reopen { background-color: #eef4ff; color: #1e40af; }
-.action-reopen:hover { background-color: #dbeafe; }
+.action-noshow { background-color: #f3f4f6; color: #4b5563; }
+.action-noshow:hover { background-color: #e5e7eb; }
+.action-outline { background-color: #eef4ff; color: #1e40af; }
+.action-outline:hover { background-color: #dbeafe; }
+.action-reopen { background-color: #fef3c7; color: #92400e; }
+.action-reopen:hover { background-color: #fde68a; }
+.action-archive { background-color: #f3f4f6; color: #6b7280; }
+.action-archive:hover { background-color: #e5e7eb; }
 
 .detail-notes {
   margin-top: 0.75rem;
@@ -531,6 +849,27 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
 
 .btn-secondary:hover { background-color: var(--color-gray-50); }
 
+.btn-danger {
+  background-color: #dc2626;
+  color: var(--color-white);
+  border: none;
+}
+.btn-danger:hover { background-color: #b91c1c; }
+
+.refresh-btn {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--color-primary);
+  background: none;
+  color: var(--color-primary);
+  border-radius: var(--radius-xl);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.refresh-btn:hover { background-color: var(--color-primary-light); }
+
 /* Status badges */
 .status-badge {
   display: inline-block;
@@ -552,6 +891,29 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
 .status-archived { background-color: #f3f4f6; color: #6b7280; }
 
 /* Modal transitions */
+/* Reschedule slots */
+.rslots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+.rslots-btn {
+  padding: 0.5rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.rslots-btn:hover:not(:disabled) { border-color: var(--color-primary); background-color: var(--color-primary-light); }
+.rslots-active { border-color: var(--color-primary); background-color: var(--color-primary); color: var(--color-white); }
+.rslots-active:hover:not(:disabled) { background-color: var(--color-primary); }
+.rslots-disabled { opacity: 0.4; cursor: not-allowed; }
+
 .modal-enter-active { transition: opacity 0.2s ease; }
 .modal-leave-active { transition: opacity 0.15s ease; }
 .modal-enter-from,

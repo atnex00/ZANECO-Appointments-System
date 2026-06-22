@@ -69,7 +69,7 @@
                 </div>
                 <div class="form-group">
                   <label class="form-label">Mobile Number</label>
-                  <input v-model="form.mobileNumber" class="form-input" placeholder="09123456789" type="tel" autocomplete="tel" aria-required="true" />
+                  <input v-model="form.mobileNumber" class="form-input" placeholder="09123456789" type="tel" autocomplete="tel" aria-required="true" maxlength="11" />
                   <span v-if="errors.mobileNumber" class="form-error" role="alert">{{ errors.mobileNumber }}</span>
                 </div>
                 <div class="form-group">
@@ -316,6 +316,7 @@ function validateStep(step) {
     if (!form.accountName.trim()) e.accountName = 'Required'
     if (!form.accountNumber.trim()) e.accountNumber = 'Required'
     if (!form.mobileNumber.trim()) e.mobileNumber = 'Required'
+    else if (form.mobileNumber.replace(/\D/g, '').length !== 11) e.mobileNumber = 'Must be 11 digits (09XXXXXXXXX)'
   }
   if (step === 2) { if (!form.concernId) e.concernId = 'Please select a concern' }
   if (step === 3) { if (!form.officeId) e.officeId = 'Please select an office' }

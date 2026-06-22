@@ -73,8 +73,8 @@ export const adminApi = {
   updateUser(id, data) {
     return api.put(`/admin/users/${id}`, data)
   },
-  getTodayAppointments() {
-    return api.get('/admin/appointments/today')
+  getTodayAppointments(params) {
+    return api.get('/admin/appointments/today', { params })
   },
   saveAppointmentNotes(id, data) {
     return api.put(`/admin/appointments/${id}/notes`, data)

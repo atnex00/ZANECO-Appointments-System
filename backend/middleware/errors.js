@@ -13,13 +13,15 @@ class AppError extends Error {
 }
 
 function errorHandler(err, req, res, next) {
-  logger.error(err.message, {
+  const logData = {
     code: err.code || 'UNEXPECTED_ERROR',
     statusCode: err.statusCode || 500,
     stack: err.stack,
     url: req?.originalUrl,
     method: req?.method,
-  })
+  }
+  if (err.details) logData.details = err.details
+  logger.error(err.message, logData)
 
   if (err.isOperational) {
     const body = { success: false, error: { code: err.code, message: err.message } }
