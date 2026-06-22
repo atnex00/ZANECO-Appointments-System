@@ -1,5 +1,8 @@
-const { prepare, exec } = require('./database')
+const { prepare, init, save } = require('./database')
 const bcrypt = require('bcryptjs')
+
+async function runSeed() {
+  await init()
 
 // Seed concern types
 const concernTypes = [
@@ -65,5 +68,9 @@ for (const office of allOffices) {
   }
 }
 
-console.log('Seed data inserted successfully')
+  save()
+  console.log('Seed data inserted successfully')
+}
+
+runSeed().catch(console.error)
 

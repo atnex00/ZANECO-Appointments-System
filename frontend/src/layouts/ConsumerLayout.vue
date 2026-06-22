@@ -10,7 +10,6 @@
           <router-link to="/view" class="nav-link">View</router-link>
           <router-link to="/reschedule" class="nav-link">Reschedule</router-link>
           <router-link to="/cancel" class="nav-link">Cancel</router-link>
-          <router-link to="/admin/login" class="nav-link admin-link">Admin</router-link>
         </nav>
       </div>
     </header>

@@ -42,6 +42,10 @@ Desktop.ini
 coverage/
 .nyc_output/
 
+# Dev scripts
+dev.ps1
+dev.sh
+
 # Temp
 tmp/
 temp/
