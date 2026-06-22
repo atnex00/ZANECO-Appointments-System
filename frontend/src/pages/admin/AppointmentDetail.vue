@@ -2,7 +2,6 @@
   <div>
     <header class="ap-header">
       <div class="ap-header-left">
-        <button class="menu-btn" @click="toggleDrawer(true)"><span class="material-symbols-outlined">menu</span></button>
         <router-link to="/admin/appointments" class="back-link"><span class="material-symbols-outlined">arrow_back</span> Appointments</router-link>
         <h2 class="header-title" v-if="detail">#{{ detail.reference_number }}</h2>
       </div>
@@ -86,7 +85,7 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppointmentsStore } from '../../stores/appointments'
 import { useAuthStore } from '../../stores/auth'
@@ -95,7 +94,6 @@ import { statusLabel } from '../../utils/formatters'
 import StatusBadge from '../../components/common/StatusBadge.vue'
 import LoadingSpinner from '../../components/common/LoadingSpinner.vue'
 
-const toggleDrawer = inject('toggleDrawer', () => {})
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()

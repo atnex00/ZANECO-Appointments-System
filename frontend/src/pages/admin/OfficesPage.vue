@@ -3,9 +3,6 @@
     <!-- Header -->
     <header class="admin-header">
       <div class="header-left">
-        <button class="menu-btn" @click="toggleDrawer(true)">
-          <span class="material-symbols-outlined">menu</span>
-        </button>
         <h2 class="header-title">Offices</h2>
       </div>
       <div class="header-center">
@@ -93,6 +90,7 @@
 
     <!-- Schedule Modal -->
     <Teleport to="body">
+      <Transition name="modal">
       <div v-if="scheduleOffice" class="modal-overlay" @click.self="closeSchedule">
         <div class="schedule-modal">
           <div class="schedule-modal-header">
@@ -117,16 +115,16 @@
           </div>
         </div>
       </div>
+      </Transition>
     </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, inject } from 'vue'
+import { ref, computed } from 'vue'
 import { onMounted } from 'vue'
 import { adminApi } from '../../api/admin'
 
-const toggleDrawer = inject('toggleDrawer', () => {})
 
 const searchTerm = ref('')
 const offices = ref([])
@@ -365,6 +363,15 @@ async function generateSlots(office) {
 .action-icon:hover { background-color: #dfe9fa; border-radius: var(--radius-lg); }
 
 /* Schedule Modal */
+.modal-enter-active { transition: opacity 0.2s ease; }
+.modal-leave-active { transition: opacity 0.15s ease; }
+.modal-enter-from,
+.modal-leave-to { opacity: 0; }
+.modal-enter-active .schedule-modal { animation: modalSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.modal-leave-active .schedule-modal { animation: modalSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) reverse both; }
+@keyframes modalSlideIn { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.btn:active { transform: scale(0.97); }
+
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; }
 .schedule-modal { background: var(--color-white); border-radius: var(--radius-xl); width: 90vw; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-xl); }
 .schedule-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--color-border); }

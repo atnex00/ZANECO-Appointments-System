@@ -2,7 +2,6 @@
   <div>
     <header class="ap-header">
       <div class="ap-header-left">
-        <button class="menu-btn" @click="toggleDrawer(true)"><span class="material-symbols-outlined">menu</span></button>
         <h2 class="header-title">Calendar</h2>
       </div>
     </header>
@@ -57,7 +56,7 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { adminApi } from '../../api/admin'
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday } from 'date-fns'
@@ -65,7 +64,6 @@ import { statusLabel } from '../../utils/formatters'
 import LoadingSpinner from '../../components/common/LoadingSpinner.vue'
 
 const router = useRouter()
-const toggleDrawer = inject('toggleDrawer', () => {})
 
 const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const currentView = ref(new Date())

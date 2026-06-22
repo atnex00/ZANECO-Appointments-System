@@ -2,7 +2,6 @@
   <div>
     <header class="ap-header">
       <div class="ap-header-left">
-        <button class="menu-btn" @click="toggleDrawer(true)"><span class="material-symbols-outlined">menu</span></button>
         <h2 class="header-title">Admin Users</h2>
         <button v-if="isSuperAdmin" class="ap-new-btn" @click="openAdd"><span class="material-symbols-outlined">add</span> Add Admin</button>
       </div>
@@ -52,8 +51,9 @@
 
       <!-- Add/Edit Modal -->
       <Teleport to="body">
-        <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
-          <div class="schedule-modal">
+        <Transition name="modal">
+          <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
+            <div class="schedule-modal">
             <div class="schedule-modal-header">
               <h3>{{ editingUser ? 'Edit Admin User' : 'Add Admin User' }}</h3>
               <button class="modal-close" @click="showForm = false">&times;</button>
@@ -106,17 +106,17 @@
             </div>
           </div>
         </div>
+      </Transition>
       </Teleport>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { adminApi } from '../../api/admin'
 
-const toggleDrawer = inject('toggleDrawer', () => {})
 const auth = useAuthStore()
 const isSuperAdmin = computed(() => auth.user?.role === 'super_admin')
 
@@ -238,4 +238,16 @@ onMounted(() => { fetchUsers(); fetchOffices() })
 .form-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(217,119,6,0.15); }
 .form-select { width: 100%; padding: 0.625rem 0.875rem; border: 1px solid #d1d5db; border-radius: var(--radius-md); font-size: 1rem; outline: none; background: var(--color-white); }
 .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+
+/* Modal transitions */
+.modal-enter-active { transition: opacity 0.2s ease; }
+.modal-leave-active { transition: opacity 0.15s ease; }
+.modal-enter-from,
+.modal-leave-to { opacity: 0; }
+.modal-enter-active .schedule-modal { animation: modalSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.modal-leave-active .schedule-modal { animation: modalSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) reverse both; }
+@keyframes modalSlideIn { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* Button active state */
+.btn:active { transform: scale(0.97); }
 </style>

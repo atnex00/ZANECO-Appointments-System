@@ -2,7 +2,6 @@
   <div>
     <header class="ap-header">
       <div class="ap-header-left">
-        <button class="menu-btn" @click="toggleDrawer(true)"><span class="material-symbols-outlined">menu</span></button>
         <h2 class="header-title">Concern Types</h2>
         <button class="ap-new-btn" @click="openAdd"><span class="material-symbols-outlined">add</span> Add Concern</button>
       </div>
@@ -42,6 +41,7 @@
 
       <!-- Edit Modal -->
       <Teleport to="body">
+        <Transition name="modal">
         <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
           <div class="schedule-modal">
             <div class="schedule-modal-header">
@@ -64,16 +64,16 @@
             </div>
           </div>
         </div>
+        </Transition>
       </Teleport>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, inject, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { adminApi } from '../../api/admin'
 
-const toggleDrawer = inject('toggleDrawer', () => {})
 
 const concernTypes = ref([])
 const loading = ref(true)
@@ -128,6 +128,16 @@ onMounted(fetchData)
 .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
 .status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .status-cancelled { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
+
+/* Modal transitions */
+.modal-enter-active { transition: opacity 0.2s ease; }
+.modal-leave-active { transition: opacity 0.15s ease; }
+.modal-enter-from,
+.modal-leave-to { opacity: 0; }
+.modal-enter-active .schedule-modal { animation: modalSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.modal-leave-active .schedule-modal { animation: modalSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) reverse both; }
+@keyframes modalSlideIn { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.btn:active { transform: scale(0.97); }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; }
 .schedule-modal { background: var(--color-white); border-radius: var(--radius-xl); width: 90vw; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-xl); }

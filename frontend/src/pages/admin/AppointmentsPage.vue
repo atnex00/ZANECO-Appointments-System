@@ -3,9 +3,6 @@
     <!-- Header -->
     <header class="ap-header">
       <div class="ap-header-left">
-        <button class="menu-btn" @click="toggleDrawer(true)">
-          <span class="material-symbols-outlined">menu</span>
-        </button>
         <div class="ap-search-box">
           <span class="material-symbols-outlined ap-search-icon">search</span>
           <input v-model="searchTerm" class="ap-search-input" placeholder="Search by Reference, Name, or Account #..." />
@@ -148,7 +145,7 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppointmentsStore } from '../../stores/appointments'
 import { storeToRefs } from 'pinia'
@@ -156,7 +153,6 @@ import { useAuthStore } from '../../stores/auth'
 import { adminApi } from '../../api/admin'
 import { statusLabel } from '../../utils/formatters'
 
-const toggleDrawer = inject('toggleDrawer', () => {})
 
 const router = useRouter()
 const auth = useAuthStore()

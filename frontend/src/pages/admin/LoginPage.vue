@@ -143,7 +143,8 @@ async function handleLogin() {
 .login-form-section { display: flex; flex-direction: column; width: 100%; background-color: #f8f9ff; border-left: 1px solid #e5e7eb; align-items: center; justify-content: center; padding: 2rem 1rem 1rem; }
 @media (min-width: 768px) { .login-form-section { width: 40%; padding: 2.5rem; } }
 @media (min-width: 1024px) { .login-form-section { width: 33.333%; } }
-.form-container { width: 100%; max-width: 384px; display: flex; flex-direction: column; gap: 1.5rem; }
+.form-container { width: 100%; max-width: 384px; display: flex; flex-direction: column; gap: 1.5rem; animation: formIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes formIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 .mobile-brand { display: flex; align-items: center; gap: 0.5rem; }
 @media (min-width: 768px) { .mobile-brand { display: none; } }
 .mobile-logo { height: 40px; width: auto; object-fit: contain; }

@@ -2,7 +2,8 @@
   <div class="flex flex-col min-h-screen" style="padding-top:0">
     <!-- Hero -->
     <section class="hero-section">
-      <div class="hero-pattern"></div>
+      <div class="hero-bg-img"></div>
+      <div class="hero-overlay"></div>
       <div class="hero-inner">
         <div class="hero-text">
           <div class="hero-badge">
@@ -23,21 +24,6 @@
               <span class="material-symbols-outlined">event_available</span>
               View Existing
             </router-link>
-          </div>
-        </div>
-        <div class="hero-visual">
-          <div class="hero-glow"></div>
-          <div class="hero-card">
-            <div class="hero-img-wrap">
-              <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800" alt="Office" />
-            </div>
-            <div class="hero-overlay-card">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="live-dot"></span>
-                <span class="font-bold">Live Availability</span>
-              </div>
-              <p class="hero-overlay-text">98% of slots available within 24 hours</p>
-            </div>
           </div>
         </div>
       </div>
@@ -75,7 +61,8 @@
         <div class="offices-grid">
           <div v-for="(office, i) in offices" :key="office.code" class="office-card-ref animate-child" :style="{ transitionDelay: (160 + i * 80) + 'ms' }">
             <div class="office-img-wrap">
-              <div class="office-img-placeholder" :style="{ background: office.gradient }">
+              <img v-if="office.image" :src="office.image" :alt="office.name" class="office-card-img" />
+              <div v-else class="office-img-placeholder" :style="{ background: office.gradient }">
                 <span class="material-symbols-outlined" style="font-size:2.5rem;color:rgba(255,255,255,0.4)">bolt</span>
               </div>
               <div v-if="office.badge" class="office-badge-ref">{{ office.badge }}</div>
@@ -108,7 +95,7 @@ const steps = [
 ]
 
 const offices = [
-  { name: 'Main Office', code: 'MAIN', address: 'Poblacion, Dipolog City', badge: 'Main Hub', gradient: 'linear-gradient(135deg, #d97706, #f59e0b)' },
+  { name: 'Main Office', code: 'MAIN', address: 'Poblacion, Dipolog City', badge: 'Main Hub', gradient: 'linear-gradient(135deg, #d97706, #f59e0b)', image: '/offices/ZANECO-main-office.jpg' },
   { name: 'Sindangan Area Services', code: 'SAS', address: 'Sindangan, Zamboanga del Norte', badge: 'Open', gradient: 'linear-gradient(135deg, #b45309, #d97706)' },
   { name: 'Liloy Area Services', code: 'LAS', address: 'Liloy, Zamboanga del Norte', gradient: 'linear-gradient(135deg, #92400e, #b45309)' },
   { name: 'Piñan Area Services', code: 'PAS', address: 'Piñan, Zamboanga del Norte', gradient: 'linear-gradient(135deg, #78350f, #92400e)' },
@@ -120,17 +107,30 @@ const offices = [
 .hero-section {
   position: relative;
   overflow: hidden;
-  padding: 4rem 1rem 2rem;
+  padding: 6rem 1rem;
+  min-height: 600px;
+  display: flex;
+  align-items: center;
+}
+.hero-bg-img {
+  position: absolute;
+  inset: 0;
+  background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1600');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(0,0,0,0.4));
 }
 .hero-inner {
-  max-width: 1280px;
+  max-width: 720px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  align-items: center;
   position: relative;
   z-index: 1;
+  text-align: center;
 }
 .hero-badge {
   display: inline-flex;
@@ -138,30 +138,33 @@ const offices = [
   gap: 0.375rem;
   padding: 0.375rem 1rem;
   border-radius: 9999px;
-  background-color: var(--color-primary-light);
-  border: 1px solid var(--color-primary-muted);
-  color: var(--color-primary);
+  background-color: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: var(--color-white);
   font-size: var(--font-size-xs);
   font-weight: 600;
   margin-bottom: 1.5rem;
+  backdrop-filter: blur(4px);
 }
 .hero-title {
   font-size: 2.75rem;
   font-weight: 800;
-  color: var(--color-gray-900);
+  color: var(--color-white);
   line-height: 1.1;
   letter-spacing: -0.02em;
   margin-bottom: 1rem;
 }
-.hero-highlight { color: var(--color-primary); }
+.hero-highlight { color: #fbbf24; }
 .hero-desc {
   font-size: var(--font-size-lg);
-  color: var(--color-gray-500);
+  color: rgba(255,255,255,0.8);
   line-height: 1.6;
   margin-bottom: 1.5rem;
   max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
 }
-.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
+.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-bottom: 2rem; }
 .btn-primary-x, .btn-outline-x {
   display: inline-flex; align-items: center; gap: 0.5rem;
   padding: 0.875rem 2rem; border-radius: var(--radius-xl);
@@ -182,10 +185,12 @@ const offices = [
   transform: translateY(0) scale(0.98);
 }
 .btn-outline-x {
-  background-color: var(--color-white); color: var(--color-gray-700);
-  border: 2px solid var(--color-gray-300);
+  background-color: rgba(255,255,255,0.15);
+  color: var(--color-white);
+  border: 2px solid rgba(255,255,255,0.4);
+  backdrop-filter: blur(4px);
 }
-.btn-outline-x:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.btn-outline-x:hover { background-color: rgba(255,255,255,0.25); border-color: var(--color-white); color: var(--color-white); }
 .btn-outline-x:active { transform: scale(0.98); }
 .hero-trust { display: flex; align-items: center; gap: 0.75rem; border-top: 1px solid var(--color-border); padding-top: 1.5rem; }
 .trust-avatars { display: flex; }
@@ -193,29 +198,10 @@ const offices = [
 .trust-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .trust-text { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-gray-500); }
 
-.hero-visual { position: relative; display: none; }
-@media (min-width: 768px) { .hero-visual { display: block; } }
-.hero-glow {
-  position: absolute; inset: -1rem;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-success));
-  border-radius: 2rem;
-  opacity: 0.1;
-  filter: blur(30px);
-}
-.hero-card {
-  position: relative;
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.4);
-  border-radius: 1.5rem;
-  padding: 0.5rem;
-  box-shadow: var(--shadow-xl);
-  overflow: hidden;
-}
-.hero-img-wrap { border-radius: 1.25rem; overflow: hidden; height: 420px; }
-.hero-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-.hero-overlay-card {
-  position: absolute; bottom: 1.5rem; right: 1.5rem;
+.hero-floating-badge {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
   background: rgba(255,255,255,0.9);
   backdrop-filter: blur(8px);
   padding: 1rem 1.25rem;
@@ -223,7 +209,6 @@ const offices = [
   max-width: 220px;
 }
 .live-dot { width: 10px; height: 10px; border-radius: 50%; background-color: var(--color-success); display: inline-block; }
-.hero-overlay-text { font-size: var(--font-size-sm); color: var(--color-gray-500); }
 
 .steps-section { padding: 4rem 1rem; background-color: var(--color-white); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
 .steps-inner { max-width: 1280px; margin: 0 auto; }
@@ -246,6 +231,8 @@ const offices = [
 .office-card-ref { background-color: var(--color-white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--color-border); transition: all 0.3s ease; }
 .office-card-ref:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .office-img-wrap { height: 160px; position: relative; overflow: hidden; }
+.office-card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+.office-card-ref:hover .office-card-img { transform: scale(1.05); }
 .office-img-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 .office-card-ref:hover .office-img-placeholder { transform: scale(1.05); transition: transform 0.5s; }
 .office-badge-ref { position: absolute; top: 0.75rem; left: 0.75rem; background-color: var(--color-primary); color: var(--color-white); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: var(--font-size-xs); font-weight: 700; }
@@ -267,8 +254,9 @@ const offices = [
 }
 
 @media (max-width: 768px) {
-  .hero-inner { grid-template-columns: 1fr; }
+  .hero-section { padding: 4rem 1rem; min-height: 480px; }
   .hero-title { font-size: 1.75rem; }
+  .hero-floating-badge { display: none; }
   .steps-grid { grid-template-columns: 1fr; }
   .step-number-bg { font-size: 5rem; }
 }

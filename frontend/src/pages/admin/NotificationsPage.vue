@@ -2,7 +2,6 @@
   <div>
     <header class="ap-header">
       <div class="ap-header-left">
-        <button class="menu-btn" @click="toggleDrawer(true)"><span class="material-symbols-outlined">menu</span></button>
         <h2 class="header-title">Notifications</h2>
       </div>
     </header>
@@ -64,10 +63,9 @@
 </template>
 
 <script setup>
-import { ref, inject, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { adminApi } from '../../api/admin'
 
-const toggleDrawer = inject('toggleDrawer', () => {})
 
 const notifications = ref([])
 const page = ref(1)
