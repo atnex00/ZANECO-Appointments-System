@@ -105,7 +105,7 @@
                 <td><span class="status-badge" :class="'status-' + row.status">{{ statusLabel(row.status) }}</span></td>
                 <td class="td-actions">
                   <router-link :to="`/admin/appointments/${row.id}`" class="row-action" title="View"><span class="material-symbols-outlined">visibility</span></router-link>
-                  <button v-if="row.status === 'pending'" class="row-action" @click="quickAction(row.id, 'confirmed')" title="Confirm" style="color:#059669"><span class="material-symbols-outlined">check_circle</span></button>
+                  <button v-if="['pending', 'rescheduled'].includes(row.status)" class="row-action" @click="quickAction(row.id, 'confirmed')" title="Confirm" style="color:#059669"><span class="material-symbols-outlined">check_circle</span></button>
                   <button v-if="row.status === 'confirmed'" class="row-action" @click="quickAction(row.id, 'completed')" title="Complete" style="color:#059669"><span class="material-symbols-outlined">task_alt</span></button>
                   <button v-if="['pending','confirmed','rescheduled'].includes(row.status)" class="row-action" @click="quickAction(row.id, 'cancelled')" title="Cancel" style="color:#dc2626"><span class="material-symbols-outlined">cancel</span></button>
                   <button v-if="!['archived','cancelled','completed'].includes(row.status)" class="row-action" @click="quickAction(row.id, 'archived')" title="Archive" style="color:#6b7280"><span class="material-symbols-outlined">archive</span></button>

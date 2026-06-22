@@ -36,10 +36,10 @@
             <div class="detail-card-header"><span class="material-symbols-outlined">tune</span> Actions</div>
             <div class="detail-card-body">
               <div class="actions-grid">
-                <button v-if="detail.status === 'pending'" class="action-chip action-confirm" @click="updateStatus('confirmed')"><span class="material-symbols-outlined">check_circle</span> Confirm</button>
+                <button v-if="['pending','rescheduled'].includes(detail.status)" class="action-chip action-confirm" @click="updateStatus('confirmed')"><span class="material-symbols-outlined">check_circle</span> Confirm</button>
                 <button v-if="detail.status === 'confirmed'" class="action-chip action-complete" @click="updateStatus('completed')"><span class="material-symbols-outlined">task_alt</span> Complete</button>
-                <button v-if="['pending','confirmed'].includes(detail.status)" class="action-chip action-cancel" @click="updateStatus('cancelled')"><span class="material-symbols-outlined">cancel</span> Cancel</button>
-                <button v-if="detail.status === 'confirmed'" class="action-chip action-noshow" @click="updateStatus('no_show')"><span class="material-symbols-outlined">visibility_off</span> No Show</button>
+                <button v-if="['pending','confirmed','rescheduled'].includes(detail.status)" class="action-chip action-cancel" @click="updateStatus('cancelled')"><span class="material-symbols-outlined">cancel</span> Cancel</button>
+                <button v-if="['confirmed','rescheduled'].includes(detail.status)" class="action-chip action-noshow" @click="updateStatus('no_show')"><span class="material-symbols-outlined">visibility_off</span> No Show</button>
                 <button v-if="['cancelled','completed','no_show','archived'].includes(detail.status)" class="action-chip action-reopen" @click="updateStatus('pending')"><span class="material-symbols-outlined">undo</span> Reopen</button>
                 <button v-if="['cancelled','completed','no_show'].includes(detail.status)" class="action-chip action-archive" @click="updateStatus('archived')"><span class="material-symbols-outlined">archive</span> Archive</button>
                 <button v-if="isSuperAdmin" class="action-chip action-delete" @click="handleDelete"><span class="material-symbols-outlined">delete</span> Delete</button>

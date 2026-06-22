@@ -64,19 +64,19 @@
           </div>
 
           <div class="detail-actions">
-            <button v-if="apt.status === 'pending'" class="action-btn action-confirm" @click.stop="confirmArrival(apt)">
+            <button v-if="['pending', 'rescheduled'].includes(apt.status)" class="action-btn action-confirm" @click.stop="confirmArrival(apt)">
               <span class="material-symbols-outlined">check_circle</span> Mark Arrived
             </button>
             <button v-if="apt.status === 'confirmed'" class="action-btn action-confirm" @click.stop="openComplete(apt)">
               <span class="material-symbols-outlined">task_alt</span> Complete Service
             </button>
-            <button v-if="['pending', 'confirmed'].includes(apt.status)" class="action-btn action-outline" @click.stop="openReschedule(apt)">
+            <button v-if="['pending', 'confirmed', 'rescheduled'].includes(apt.status)" class="action-btn action-outline" @click.stop="openReschedule(apt)">
               <span class="material-symbols-outlined">edit_calendar</span> Reschedule
             </button>
             <button v-if="['pending', 'confirmed', 'rescheduled'].includes(apt.status)" class="action-btn action-cancel" @click.stop="openCancel(apt)">
               <span class="material-symbols-outlined">cancel</span> Cancel
             </button>
-            <button v-if="['pending', 'confirmed'].includes(apt.status)" class="action-btn action-noshow" @click.stop="markNoShow(apt)">
+            <button v-if="['pending', 'confirmed', 'rescheduled'].includes(apt.status)" class="action-btn action-noshow" @click.stop="markNoShow(apt)">
               <span class="material-symbols-outlined">visibility_off</span> No Show
             </button>
             <button v-if="['no_show', 'completed', 'cancelled'].includes(apt.status)" class="action-btn action-reopen" @click.stop="reopen(apt)">
