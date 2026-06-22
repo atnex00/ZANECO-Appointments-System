@@ -69,7 +69,7 @@ router.get('/today', authenticate, (req, res) => {
     params.push(req.admin.office_id)
   }
   const sql = `
-    SELECT a.id, a.office_id, a.reference_number, a.consumer_name, a.account_number, a.mobile_number, a.email,
+    SELECT a.id, a.reference_number, a.consumer_name, a.account_number, a.mobile_number, a.email,
            c.name AS concern_type, o.name AS office, a.appointment_date, a.start_time, a.end_time,
            a.status, a.admin_notes
     FROM appointments a

@@ -169,12 +169,15 @@
               </div>
               <div class="form-group" style="margin-top:0.75rem">
                 <label class="form-label">New Time</label>
-                <div v-if="reslotsLoading" class="text-sm text-muted" style="padding:0.5rem 0">Loading available slots...</div>
-                <div v-else class="rslots-grid">
-                  <button v-for="s in reslots" :key="s.start_time" class="rslots-btn" :class="{ 'rslots-active': rescheduleTime === s.start_time, 'rslots-disabled': !s.available }" :disabled="!s.available" @click="rescheduleTime = s.start_time">
-                    {{ formatTime(s.start_time) }}
-                  </button>
-                  <div v-if="reslots.length === 0" class="text-sm text-muted" style="padding:0.5rem 0">No slots available for this date</div>
+                <div v-if="rescheduleSlotsLoading" class="text-sm text-muted">Loading available times...</div>
+                <div v-else-if="rescheduleSlots.length === 0" class="text-sm text-muted">No available slots for this date</div>
+                <div v-else class="reschedule-slot-grid">
+                  <button v-for="slot in rescheduleSlots" :key="slot.start_time" type="button"
+                    class="reschedule-slot-btn"
+                    :class="{ 'slot-active': rescheduleTime === slot.start_time, 'slot-disabled': !slot.available }"
+                    :disabled="!slot.available"
+                    @click="rescheduleTime = slot.start_time"
+                  >{{ formatTime(slot.start_time) }}</button>
                 </div>
               </div>
               <div class="form-group" style="margin-top:0.75rem">
@@ -217,9 +220,9 @@ const cancelReason = ref('')
 const rescheduleDate = ref('')
 const rescheduleTime = ref('')
 const rescheduleReason = ref('')
+const rescheduleSlots = ref([])
+const rescheduleSlotsLoading = ref(false)
 const saving = ref(false)
-const reslots = ref([])
-const reslotsLoading = ref(false)
 
 const minDate = new Date().toISOString().split('T')[0]
 
@@ -381,31 +384,33 @@ async function cancelAppointment() {
   }
 }
 
+async function fetchRescheduleSlots(date) {
+  if (!actionApt.value?.office_id && !actionApt.value?.office) return
+  rescheduleSlotsLoading.value = true
+  try {
+    const officeId = actionApt.value.office_id || 1
+    const { data } = await consumerApi.getTimeSlots(officeId, date)
+    rescheduleSlots.value = data.data?.slots || []
+  } catch {
+    rescheduleSlots.value = []
+  } finally {
+    rescheduleSlotsLoading.value = false
+  }
+}
+
+watch(rescheduleDate, (val) => {
+  rescheduleTime.value = ''
+  if (val) fetchRescheduleSlots(val)
+})
+
 function openReschedule(apt) {
   actionApt.value = apt
   rescheduleDate.value = ''
   rescheduleTime.value = ''
   rescheduleReason.value = ''
-  reslots.value = []
+  rescheduleSlots.value = []
   showRescheduleModal.value = true
 }
-
-async function fetchReslots(date) {
-  if (!actionApt.value?.office_id) return
-  reslotsLoading.value = true
-  try {
-    const { data } = await consumerApi.getTimeSlots(actionApt.value.office_id, date)
-    reslots.value = data.data?.slots || []
-  } catch {
-    reslots.value = []
-  } finally {
-    reslotsLoading.value = false
-  }
-}
-
-watch(rescheduleDate, (val) => {
-  if (val) fetchReslots(val)
-})
 
 async function rescheduleAppointment() {
   if (!actionApt.value || !rescheduleDate.value || !rescheduleTime.value) return
@@ -890,30 +895,30 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
 .status-noshow { background-color: #f3f4f6; color: #4b5563; }
 .status-archived { background-color: #f3f4f6; color: #6b7280; }
 
-/* Modal transitions */
-/* Reschedule slots */
-.rslots-grid {
+/* Reschedule slot grid */
+.reschedule-slot-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  padding: 0.25rem 0;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.375rem;
+  margin-top: 0.25rem;
 }
-.rslots-btn {
-  padding: 0.5rem;
-  border: 1px solid var(--color-gray-300);
-  border-radius: var(--radius-lg);
+.reschedule-slot-btn {
+  padding: 0.5rem 0.25rem;
+  border: 1px solid var(--color-border);
   background: var(--color-white);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   font-weight: 600;
+  color: var(--color-gray-700);
   cursor: pointer;
-  text-align: center;
   transition: all 0.15s;
 }
-.rslots-btn:hover:not(:disabled) { border-color: var(--color-primary); background-color: var(--color-primary-light); }
-.rslots-active { border-color: var(--color-primary); background-color: var(--color-primary); color: var(--color-white); }
-.rslots-active:hover:not(:disabled) { background-color: var(--color-primary); }
-.rslots-disabled { opacity: 0.4; cursor: not-allowed; }
+.reschedule-slot-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.reschedule-slot-btn.slot-active { border-color: var(--color-primary); background-color: var(--color-primary); color: var(--color-white); }
+.reschedule-slot-btn.slot-disabled { opacity: 0.35; cursor: not-allowed; }
+.reschedule-slot-btn.slot-disabled:hover { border-color: var(--color-border); color: var(--color-gray-700); }
 
+/* Modal transitions */
 .modal-enter-active { transition: opacity 0.2s ease; }
 .modal-leave-active { transition: opacity 0.15s ease; }
 .modal-enter-from,
