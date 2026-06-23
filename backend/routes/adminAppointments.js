@@ -1,6 +1,7 @@
 const express = require('express')
 const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
+const emailService = require('../services/emailService')
 
 const router = express.Router()
 
@@ -222,6 +223,28 @@ router.put('/:id/status', authenticate, async (req, res) => {
   )
 
   await prisma.$transaction(operations)
+
+  if (status === 'confirmed' && appt.email) {
+    prisma.appointment.findUnique({
+      where: { id: appt.id },
+      include: { concernType: { select: { name: true } }, office: { select: { name: true } } },
+    }).then(full => {
+      if (full) {
+        emailService.sendConfirmed({
+          email: full.email,
+          consumer_name: full.consumerName,
+          reference_number: full.referenceNumber,
+          appointment_date: full.appointmentDate,
+          start_time: full.startTime,
+          end_time: full.endTime,
+          office: full.office.name,
+          concern_type: full.concernType.name,
+          status: full.status,
+        }).catch(() => {})
+      }
+    }).catch(() => {})
+  }
+
   res.json({ success: true, data: { id: appt.id, status }, message: `Appointment status updated to ${status}` })
 })
 
