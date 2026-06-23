@@ -4,7 +4,7 @@ const path = require('path')
 const fs = require('fs')
 
 // Load .env file
-const envPath = path.join(__dirname, '..', '.env')
+const envPath = path.join(__dirname, '.env')
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath })
   console.log('Config loaded from .env')
