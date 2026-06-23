@@ -1,5 +1,6 @@
 @echo off
 title ZANECO Appointments System
+cd /d "%~dp0"
 
 :: Check Node.js
 node --version >nul 2>&1
@@ -10,18 +11,19 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Enable corepack (built-in pnpm; npm install -g corepack for Node 25+)
-corepack enable >nul 2>&1
+:: Check pnpm first; try corepack enable only if missing
+pnpm --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo corepack not bundled — installing via npm...
-    call npm install -g corepack
+    echo pnpm not found — enabling corepack...
+    corepack enable >nul 2>&1
     if %errorlevel% neq 0 (
-        echo Failed to install corepack. Try: npm install -g pnpm
+        echo corepack enable failed ^(try running as Administrator once^)
+        echo Or install pnpm manually: npm install -g pnpm
         pause
         exit /b 1
     )
-    corepack enable
 )
+echo pnpm is ready.
 
 :: Install dependencies if needed
 if not exist node_modules\.pnpm (
@@ -30,22 +32,28 @@ if not exist node_modules\.pnpm (
 )
 
 :: Generate Prisma client
-call pnpm --filter zaneco-appointments-api exec prisma generate >nul 2>&1
+echo Generating Prisma client...
+cd /d "%~dp0backend"
+call pnpm exec prisma generate
+cd /d "%~dp0"
 
 :: Apply schema & seed (warn if PostgreSQL unavailable)
 echo Applying database schema...
-call pnpm --filter zaneco-appointments-api exec prisma db push --accept-data-loss >nul 2>&1
-if %errorlevel% neq 0 echo Warning: DB schema sync skipped (is PostgreSQL running?)
-call pnpm run seed >nul 2>&1
-if %errorlevel% neq 0 echo Warning: Seed skipped (is PostgreSQL running?)
+cd /d "%~dp0backend"
+call pnpm exec prisma db push --accept-data-loss
+if %errorlevel% neq 0 echo Warning: DB schema sync failed (is PostgreSQL running?)
+cd /d "%~dp0"
+
+call pnpm run seed
+if %errorlevel% neq 0 echo Warning: Seed failed (is PostgreSQL running?)
 
 echo Starting servers...
 
 :: Start backend (new window)
-start "ZANECO Backend" cmd /c "pnpm run dev:backend && pause"
+start "ZANECO Backend" cmd /c "pnpm run dev:backend & pause"
 
 :: Start frontend (new window)
-start "ZANECO Frontend" cmd /c "pnpm run dev:frontend && pause"
+start "ZANECO Frontend" cmd /c "pnpm run dev:frontend & pause"
 
 :: Wait for servers to be ready
 timeout /t 4 /nobreak >nul

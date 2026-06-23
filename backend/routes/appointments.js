@@ -84,7 +84,7 @@ router.post('/', asyncHandler(async (req, res) => {
   }
 
   const slot = await prisma.timeSlot.findUnique({
-    where: { officeId_slotDate_startTime: { officeId: office_id, slotDate: appointment_date, startTime } },
+    where: { officeId_slotDate_startTime: { officeId: office_id, slotDate: appointment_date, startTime: start_time } },
   })
   if (!slot) throw new AppError(404, 'NOT_FOUND', 'Time slot not found for the selected time. Available times are 08:00-16:30 on weekdays.')
   if (slot.bookedCount >= slot.maxCapacity) throw new AppError(409, 'SLOT_FULL', 'This time slot is no longer available')
@@ -104,7 +104,7 @@ router.post('/', asyncHandler(async (req, res) => {
           concernTypeId: concern_type_id,
           officeId: office_id,
           appointmentDate: appointment_date,
-          startTime,
+          startTime: start_time,
           endTime: end_time,
           status: 'pending',
         },

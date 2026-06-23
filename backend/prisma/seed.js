@@ -6,8 +6,8 @@ const prisma = new PrismaClient()
 async function runSeed() {
   // Seed concern types
   const concernTypes = [
-    { name: 'Clarification of Electric Bill Charges', code: 'BILL_CLARIFICATION', description: 'Questions regarding bill charges and billing calculations.', sort_order: 1 },
-    { name: 'Report Account Concern', code: 'ACCOUNT_CONCERN', description: 'Reporting account-related issues and discrepancies.', sort_order: 2 },
+    { name: 'Clarification of Electric Bill Charges', code: 'BILL_CLARIFICATION', description: 'Questions regarding bill charges and billing calculations.', sortOrder: 1 },
+    { name: 'Report Account Concern', code: 'ACCOUNT_CONCERN', description: 'Reporting account-related issues and discrepancies.', sortOrder: 2 },
   ]
 
   for (const ct of concernTypes) {
@@ -20,11 +20,11 @@ async function runSeed() {
 
   // Seed offices
   const offices = [
-    { name: 'Main Office', code: 'MAIN', address: 'Poblacion, Dipolog City', phone: '065-212-3456', email: 'main@zaneco.ph', slot_capacity: 3 },
-    { name: 'Sindangan Area Services', code: 'SAS', address: 'Sindangan, Zamboanga del Norte', phone: '065-213-4567', email: 'sas@zaneco.ph', slot_capacity: 2 },
-    { name: 'Liloy Area Services', code: 'LAS', address: 'Liloy, Zamboanga del Norte', phone: '065-214-5678', email: 'las@zaneco.ph', slot_capacity: 2 },
-    { name: 'Piñan Area Services', code: 'PAS', address: 'Piñan, Zamboanga del Norte', phone: '065-215-6789', email: 'pas@zaneco.ph', slot_capacity: 2 },
-    { name: 'Dipolog Area Services', code: 'DAS', address: 'Minaog, Dipolog City, Zamboanga del Norte', phone: '065-216-7890', email: 'das@zaneco.ph', slot_capacity: 2 },
+    { name: 'Main Office', code: 'MAIN', address: 'Poblacion, Dipolog City', phone: '065-212-3456', email: 'main@zaneco.ph', slotCapacity: 3 },
+    { name: 'Sindangan Area Services', code: 'SAS', address: 'Sindangan, Zamboanga del Norte', phone: '065-213-4567', email: 'sas@zaneco.ph', slotCapacity: 2 },
+    { name: 'Liloy Area Services', code: 'LAS', address: 'Liloy, Zamboanga del Norte', phone: '065-214-5678', email: 'las@zaneco.ph', slotCapacity: 2 },
+    { name: 'Piñan Area Services', code: 'PAS', address: 'Piñan, Zamboanga del Norte', phone: '065-215-6789', email: 'pas@zaneco.ph', slotCapacity: 2 },
+    { name: 'Dipolog Area Services', code: 'DAS', address: 'Minaog, Dipolog City, Zamboanga del Norte', phone: '065-216-7890', email: 'das@zaneco.ph', slotCapacity: 2 },
   ]
 
   for (const o of offices) {
@@ -37,7 +37,7 @@ async function runSeed() {
         address: o.address,
         phone: o.phone,
         email: o.email,
-        slot_capacity: o.slot_capacity,
+        slotCapacity: o.slotCapacity,
       },
     })
   }
