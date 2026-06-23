@@ -190,6 +190,10 @@
             </Transition>
           </div>
 
+          <div v-if="errors._submit" class="submit-error" role="alert">
+            <span class="material-symbols-outlined" style="font-size:1.25rem">error</span>
+            {{ errors._submit }}
+          </div>
           <!-- Footer -->
           <div class="wizard-footer">
             <button v-if="currentStep > 1" type="button" class="wizard-back-btn" @click="prevStep">
@@ -400,7 +404,11 @@ async function submitBooking() {
   try {
     await store.submitBooking()
     router.push('/book/confirm')
-  } catch { /* handled by store */ }
+  } catch (e) {
+    const msg = store.error || 'Booking failed. Please try again or contact support.'
+    errors.value = { _submit: msg }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
   finally { submitting.value = false }
 }
 </script>
@@ -530,6 +538,9 @@ async function submitBooking() {
 .consent-box { display: flex; align-items: flex-start; gap: 0.75rem; margin-top: 1rem; padding: 1rem; background-color: var(--color-gray-50); border-radius: var(--radius-xl); }
 .consent-checkbox { margin-top: 0.125rem; width: 20px; height: 20px; accent-color: var(--color-primary); cursor: pointer; }
 .consent-label { font-size: var(--font-size-sm); color: var(--color-gray-600); cursor: pointer; }
+
+/* Submit error */
+.submit-error { display: flex; align-items: center; gap: 0.5rem; margin: 0 1.5rem 0.75rem; padding: 0.75rem 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md); color: #dc2626; font-size: var(--font-size-sm); font-weight: 600; }
 
 /* Footer */
 .wizard-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; }

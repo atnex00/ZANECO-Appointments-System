@@ -1,6 +1,7 @@
 const express = require('express')
 const { prepare } = require('../db/database')
 const { authenticate } = require('../middleware/auth')
+const { generateReportPDF } = require('../services/pdfGenerator')
 
 const router = express.Router()
 
@@ -34,6 +35,7 @@ router.get('/appointments-by-office', authenticate, dateFilter(), (req, res) => 
            SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) AS completed,
            SUM(CASE WHEN a.status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
            SUM(CASE WHEN a.status = 'no_show' THEN 1 ELSE 0 END) AS no_show,
+           SUM(CASE WHEN a.status = 'rescheduled' THEN 1 ELSE 0 END) AS rescheduled,
            SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) AS pending,
            SUM(CASE WHEN a.status = 'confirmed' THEN 1 ELSE 0 END) AS confirmed
     FROM offices o
@@ -115,20 +117,54 @@ router.get('/summary', authenticate, (req, res) => {
   })
 })
 
-// Export endpoint (returns JSON for now — frontend formats as needed)
-router.get('/export', authenticate, dateFilter(), (req, res) => {
+const queryMap = {
+  'appointments-by-office': (where, params) => prepare(`
+    SELECT o.name AS office,
+           COUNT(a.id) AS total,
+           SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) AS completed,
+           SUM(CASE WHEN a.status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
+            SUM(CASE WHEN a.status = 'no_show' THEN 1 ELSE 0 END) AS no_show,
+            SUM(CASE WHEN a.status = 'rescheduled' THEN 1 ELSE 0 END) AS rescheduled,
+            SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) AS pending,
+            SUM(CASE WHEN a.status = 'confirmed' THEN 1 ELSE 0 END) AS confirmed
+    FROM offices o LEFT JOIN appointments a ON a.office_id = o.id ${where}
+    GROUP BY o.id, o.name ORDER BY total DESC
+  `).all(...params),
+  'appointments-by-concern': (where, params) => prepare(`
+    SELECT c.name AS concern_type, COUNT(a.id) AS total
+    FROM concern_types c LEFT JOIN appointments a ON a.concern_type_id = c.id ${where}
+    GROUP BY c.id, c.name ORDER BY total DESC
+  `).all(...params),
+  daily: (where, params) => prepare(`
+    SELECT appointment_date, COUNT(*) AS total,
+           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
+    FROM appointments a ${where} GROUP BY appointment_date ORDER BY appointment_date
+  `).all(...params),
+  weekly: (where, params) => prepare(`
+    SELECT STRFTIME('%Y-%W', appointment_date) AS week,
+           COUNT(*) AS total,
+           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
+    FROM appointments a ${where} GROUP BY week ORDER BY week
+  `).all(...params),
+  monthly: (where, params) => prepare(`
+    SELECT STRFTIME('%Y-%m', appointment_date) AS month,
+           COUNT(*) AS total,
+           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
+    FROM appointments a ${where} GROUP BY month ORDER BY month
+  `).all(...params),
+}
+
+router.get('/export', authenticate, dateFilter(), async (req, res) => {
   const { type, format } = req.query
   if (!type) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Report type required' } })
 
-  const endpoint = type === 'by-office' ? '/appointments-by-office' : type === 'by-concern' ? '/appointments-by-concern' : type === 'daily' ? '/daily' : type === 'summary' ? '/summary' : null
-  if (!endpoint) return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Invalid report type' } })
+  if (!queryMap[type]) return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Invalid report type' } })
 
-  // Reuse the same logic by redirecting conceptually — for simplicity return summary for unsupported types
-  const data = prepare(`
-    SELECT o.name AS office, COUNT(a.id) AS total
-    FROM offices o LEFT JOIN appointments a ON a.office_id = o.id ${req.where}
-    GROUP BY o.id, o.name ORDER BY total DESC
-  `).all(...req.params)
+  const data = queryMap[type](req.where, req.params)
+
+  const title = req.filters?.date_from
+    ? `${type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} (${req.filters.date_from} to ${req.filters.date_to})`
+    : `${type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}`
 
   if (format === 'csv') {
     const headers = Object.keys(data[0] || {}).join(',')
@@ -136,6 +172,22 @@ router.get('/export', authenticate, dateFilter(), (req, res) => {
     res.setHeader('Content-Type', 'text/csv')
     res.setHeader('Content-Disposition', `attachment; filename=zaneco-report-${type}.csv`)
     return res.send(headers + '\n' + rows)
+  }
+
+  if (format === 'pdf') {
+    try {
+      const columns = data.length ? Object.keys(data[0]) : []
+      const dateRange = req.filters?.date_from
+        ? `${req.filters.date_from} to ${req.filters.date_to}`
+        : 'All time'
+      const pdfBuffer = await generateReportPDF(title, columns, data, dateRange)
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', `attachment; filename=zaneco-report-${type}.pdf`)
+      return res.send(pdfBuffer)
+    } catch (err) {
+      console.error('PDF generation error:', err)
+      return res.status(500).json({ success: false, error: { code: 'PDF_ERROR', message: err.message || 'Failed to generate PDF' } })
+    }
   }
 
   res.json({ success: true, data })
