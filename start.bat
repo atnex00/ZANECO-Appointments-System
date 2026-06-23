@@ -10,8 +10,18 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Enable corepack (built-in pnpm)
+:: Enable corepack (built-in pnpm; npm install -g corepack for Node 25+)
 corepack enable >nul 2>&1
+if %errorlevel% neq 0 (
+    echo corepack not bundled — installing via npm...
+    call npm install -g corepack
+    if %errorlevel% neq 0 (
+        echo Failed to install corepack. Try: npm install -g pnpm
+        pause
+        exit /b 1
+    )
+    corepack enable
+)
 
 :: Install dependencies if needed
 if not exist node_modules\.pnpm (

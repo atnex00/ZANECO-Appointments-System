@@ -8,8 +8,12 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Enable corepack (built-in pnpm)
-corepack enable 2>/dev/null || true
+# Enable corepack (built-in pnpm; npm install -g corepack for Node 25+)
+if ! corepack enable 2>/dev/null; then
+    echo "corepack not bundled — installing via npm..."
+    npm install -g corepack || { echo "Failed. Try: npm install -g pnpm"; exit 1; }
+    corepack enable
+fi
 
 # Install dependencies if needed
 if [ ! -d "node_modules/.pnpm" ]; then
