@@ -12,6 +12,7 @@
             <img src="https://i.imgur.com/SacrqEj.png" alt="DPC" class="sidebar-logo-img" />
           </div>
           <h1 class="sidebar-title">Appointments System Admin Portal</h1>
+          <DigitalClock />
         </div>
         <nav class="sidebar-nav">
           <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="sidebar-link" :class="{ 'sidebar-link-active': isActive(item.path) }" @click="drawerOpen = false">
@@ -94,6 +95,7 @@
 import { ref, computed, provide, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import DigitalClock from '../components/common/DigitalClock.vue'
 
 const route = useRoute()
 const router = useRouter()
