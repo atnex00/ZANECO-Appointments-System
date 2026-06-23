@@ -35,10 +35,13 @@ Consumers can schedule appointments online at any of five ZANECO service offices
 
 #### Prerequisites
 
-- Node.js 18+ ([download](https://nodejs.org))
-- pnpm ([install](https://pnpm.io/installation))
+- Node.js 18+ ([download](https://nodejs.org)) — ships with `corepack` (no global pnpm install needed)
+- **Node.js 25+**: corepack is no longer bundled; install it first: `npm install -g corepack`
 
 ```bash
+# Enable pnpm (one-time per machine)
+corepack enable
+
 # Install all dependencies (frontend + backend)
 pnpm install
 
