@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+      - /app/backend/node_modules
+      - zaneco-data:/app/backend/data
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=1
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "3500:3500"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    environment:
+      - VITE_API_PROXY=http://backend:8000
+      - CHOKIDAR_USEPOLLING=1
+    depends_on:
+      - backend
+
+volumes:
+  zaneco-data:
