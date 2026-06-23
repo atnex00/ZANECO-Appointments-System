@@ -12,7 +12,7 @@ RUN pnpm install --no-frozen-lockfile
 
 COPY backend/ ./backend/
 
-RUN mkdir -p /app/backend/data
+RUN pnpm --filter zaneco-appointments-api exec prisma generate
 
 EXPOSE 8000
 

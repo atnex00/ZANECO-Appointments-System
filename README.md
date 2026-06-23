@@ -12,7 +12,7 @@ Consumers can schedule appointments online at any of five ZANECO service offices
 |-------|-----------|
 | **Frontend** | Vue 3 + Vite (pnpm workspace) |
 | **Backend** | Node.js + Express |
-| **Database** | SQLite (sql.js) |
+| **Database** | PostgreSQL (Prisma ORM) |
 | **Auth** | JWT + bcrypt |
 | **Validation** | Joi |
 | **Charts** | Chart.js + vue-chartjs |
@@ -37,6 +37,7 @@ Consumers can schedule appointments online at any of five ZANECO service offices
 
 - Node.js 18+ ([download](https://nodejs.org)) — ships with `corepack` (no global pnpm install needed)
 - **Node.js 25+**: corepack is no longer bundled; install it first: `npm install -g corepack`
+- **PostgreSQL 14+** ([download](https://www.postgresql.org/download/)) — or use Docker option below
 
 ```bash
 # Enable pnpm (one-time per machine)
@@ -45,7 +46,7 @@ corepack enable
 # Install all dependencies (frontend + backend)
 pnpm install
 
-# Seed the database
+# Apply schema & seed the database (requires PostgreSQL running)
 pnpm run seed
 
 # Start both dev servers at once
@@ -63,7 +64,7 @@ pnpm run dev:frontend # SPA on port 3500
 - Docker Desktop ([download](https://www.docker.com/products/docker-desktop/))
 
 ```bash
-# Build and start both services
+# Build and start all services (postgres + backend + frontend)
 docker compose up
 
 # Seed the database (first time or reset)
@@ -112,16 +113,18 @@ ZANECO-Appointments-System/
 │       ├── composables/   # useToast, useClock
 │       ├── utils/         # Formatters, validators
 │       └── assets/        # CSS variables + global styles
-├── backend/               # Express + SQLite API
+├── backend/               # Express + PostgreSQL (Prisma) API
 │   ├── Dockerfile         # Dev container (port 8000, --watch)
 │   ├── config.js          # Environment config loader
 │   ├── server.js          # Express app entry point
 │   ├── worker.js          # Notification + reminder queue
 │   ├── services/          # Business logic services
-│   │   └── pdfGenerator.js # PDF report generation (pdfmake)
+│   │   ├── pdfGenerator.js # PDF report generation (pdfmake)
+│   │   └── emailService.js # Email via Nodemailer
 │   ├── routes/            # Auth, appointments, offices, reports, etc.
 │   ├── middleware/        # Auth, errors, logger, rate limiting
-│   └── db/                # Schema, seed, database adapter (sql.js)
+│   └── db/                # Database adapter (Prisma Client)
+│   ├── prisma/            # Schema, seed, migrations (Prisma)
 ├── docker-compose.yml     # Two services: frontend + backend
 ├── .dockerignore
 ├── AGENTS.md              # Agent/contributor guide
@@ -193,7 +196,7 @@ NODE_ENV=production
 PORT=8000
 JWT_SECRET=<generate a random 64-char string>
 CORS_ORIGIN=https://appointments.zaneco.ph
-DB_PATH=./data/zaneco.db
+DATABASE_URL=postgresql://zaneco:secret@localhost:5432/zaneco_appointments
 # Add your notification provider keys here
 ```
 

@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Office {
+  id                         Int              @id @default(autoincrement())
+  name                       String
+  code                       String           @unique
+  address                    String?
+  phone                      String?
+  email                      String?
+  openingTime                String           @default("08:00:00") @map("opening_time")
+  closingTime                String           @default("17:00:00") @map("closing_time")
+  isActive                   Boolean          @default(true) @map("is_active")
+  slotCapacity               Int              @default(2) @map("slot_capacity")
+  appointmentDurationMinutes Int              @default(30) @map("appointment_duration_minutes")
+  maxAdvanceDays             Int              @default(30) @map("max_advance_days")
+  createdAt                  String           @default("now()") @map("created_at")
+  updatedAt                  String           @default("now()") @map("updated_at")
+
+  officeSchedules   OfficeSchedule[]
+  timeSlots         TimeSlot[]
+  administrators    Administrator[]
+  appointments      Appointment[]
+
+  @@map("offices")
+}
+
+model OfficeSchedule {
+  id           Int     @id @default(autoincrement())
+  officeId     Int     @map("office_id")
+  dayOfWeek    String  @map("day_of_week")
+  openingTime  String  @map("opening_time")
+  closingTime  String  @map("closing_time")
+  isWorkingDay Boolean @default(true) @map("is_working_day")
+  createdAt    String  @default("now()") @map("created_at")
+  updatedAt    String  @default("now()") @map("updated_at")
+
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+
+  @@unique([officeId, dayOfWeek])
+  @@map("office_schedules")
+}
+
+model TimeSlot {
+  id           Int    @id @default(autoincrement())
+  officeId     Int    @map("office_id")
+  slotDate     String @map("slot_date")
+  startTime    String @map("start_time")
+  endTime      String @map("end_time")
+  maxCapacity  Int    @default(2) @map("max_capacity")
+  bookedCount  Int    @default(0) @map("booked_count")
+  createdAt    String @default("now()") @map("created_at")
+  updatedAt    String @default("now()") @map("updated_at")
+
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+
+  @@unique([officeId, slotDate, startTime])
+  @@index([officeId, slotDate])
+  @@map("time_slots")
+}
+
+model ConcernType {
+  id                        Int     @id @default(autoincrement())
+  name                      String
+  code                      String  @unique
+  description               String?
+  estimatedDurationMinutes  Int     @default(30) @map("estimated_duration_minutes")
+  isActive                  Boolean @default(true) @map("is_active")
+  sortOrder                 Int     @default(0) @map("sort_order")
+  createdAt                 String  @default("now()") @map("created_at")
+  updatedAt                 String  @default("now()") @map("updated_at")
+
+  appointments Appointment[]
+
+  @@map("concern_types")
+}
+
+model Administrator {
+  id                   Int      @id @default(autoincrement())
+  email                String   @unique
+  passwordHash         String   @map("password_hash")
+  fullName             String   @map("full_name")
+  role                 String   @default("staff")
+  officeId             Int?     @map("office_id")
+  isActive             Boolean  @default(true) @map("is_active")
+  lastLoginAt          String?  @map("last_login_at")
+  failedLoginAttempts  Int      @default(0) @map("failed_login_attempts")
+  lockedUntil          String?  @map("locked_until")
+  refreshToken         String?  @map("refresh_token")
+  createdAt            String   @default("now()") @map("created_at")
+  updatedAt            String   @default("now()") @map("updated_at")
+
+  office        Office?       @relation(fields: [officeId], references: [id])
+  appointments  Appointment[] @relation("processedBy")
+  auditLogs     AuditLog[]
+
+  @@map("administrators")
+}
+
+model Appointment {
+  id              Int      @id @default(autoincrement())
+  referenceNumber String   @unique @map("reference_number")
+  consumerName    String   @map("consumer_name")
+  accountName     String   @map("account_name")
+  accountNumber   String   @map("account_number")
+  mobileNumber    String   @map("mobile_number")
+  email           String?
+  concernTypeId   Int      @map("concern_type_id")
+  officeId        Int      @map("office_id")
+  appointmentDate String   @map("appointment_date")
+  startTime       String   @map("start_time")
+  endTime         String   @map("end_time")
+  status          String   @default("pending")
+  adminNotes      String?  @map("admin_notes")
+  rescheduleCount Int      @default(0) @map("reschedule_count")
+  rescheduledAt   String?  @map("rescheduled_at")
+  completedAt     String?  @map("completed_at")
+  processedBy     Int?     @map("processed_by")
+  createdAt       String   @default("now()") @map("created_at")
+  updatedAt       String   @default("now()") @map("updated_at")
+
+  concernType   ConcernType   @relation(fields: [concernTypeId], references: [id])
+  office        Office        @relation(fields: [officeId], references: [id])
+  processor     Administrator? @relation("processedBy", fields: [processedBy], references: [id])
+  notifications Notification[]
+  auditLogs     AuditLog[]
+
+  @@index([referenceNumber])
+  @@index([accountNumber])
+  @@index([status])
+  @@index([appointmentDate])
+  @@index([officeId, appointmentDate])
+  @@map("appointments")
+}
+
+model Notification {
+  id            Int     @id @default(autoincrement())
+  appointmentId Int     @map("appointment_id")
+  channel       String
+  type          String
+  recipient     String
+  message       String
+  status        String  @default("pending")
+  retryCount    Int     @default(0) @map("retry_count")
+  sentAt        String? @map("sent_at")
+  createdAt     String  @default("now()") @map("created_at")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@index([status])
+  @@map("notifications")
+}
+
+model RequestLog {
+  id           Int      @id @default(autoincrement())
+  method       String
+  url          String
+  status       Int?
+  durationMs   Int?     @map("duration_ms")
+  ip           String?
+  userAgent    String?  @map("user_agent")
+  adminId      Int?     @map("admin_id")
+  bodyPreview  String?  @map("body_preview")
+  errorMessage String?  @map("error_message")
+  createdAt    String   @default("now()") @map("created_at")
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("request_logs")
+}
+
+model AuditLog {
+  id            Int      @id @default(autoincrement())
+  appointmentId Int?     @map("appointment_id")
+  adminId       Int?     @map("admin_id")
+  action        String
+  entityType    String   @map("entity_type")
+  entityId      Int?     @map("entity_id")
+  oldValues     String?  @map("old_values")
+  newValues     String?  @map("new_values")
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  createdAt     String   @default("now()") @map("created_at")
+
+  appointment  Appointment?   @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  administrator Administrator? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([appointmentId])
+  @@index([adminId])
+  @@map("audit_logs")
+}

@@ -1,52 +1,68 @@
 const express = require('express')
-const { prepare } = require('../db/database')
+const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
 
 const router = express.Router()
 
 router.get('/', authenticate, (req, res) => {
-  let query = 'SELECT * FROM offices ORDER BY name'
-  const offices = prepare(query).all()
-  res.json({ success: true, data: offices })
+  prisma.office.findMany({ orderBy: { name: 'asc' } })
+    .then(offices => res.json({ success: true, data: offices }))
 })
 
-router.post('/', authenticate, (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   if (req.admin.role !== 'super_admin') return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
   const { name, code, address, phone, email, opening_time, closing_time, slot_capacity, appointment_duration_minutes, max_advance_days, is_active } = req.body
   if (!name || !code) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Name and code required' } })
 
-  const result = prepare('INSERT INTO offices (name, code, address, phone, email, opening_time, closing_time, slot_capacity, appointment_duration_minutes, max_advance_days, is_active) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-    .run(name, code, address, phone, email, opening_time || '08:00:00', closing_time || '17:00:00', slot_capacity || 2, appointment_duration_minutes || 30, max_advance_days || 30, is_active !== undefined ? (is_active ? 1 : 0) : 1)
-
-  res.status(201).json({ success: true, data: { id: result.lastInsertRowid } })
+  const result = await prisma.office.create({
+    data: {
+      name,
+      code,
+      address: address || null,
+      phone: phone || null,
+      email: email || null,
+      openingTime: opening_time || '08:00:00',
+      closingTime: closing_time || '17:00:00',
+      slotCapacity: slot_capacity || 2,
+      appointmentDurationMinutes: appointment_duration_minutes || 30,
+      maxAdvanceDays: max_advance_days || 30,
+      isActive: is_active !== undefined ? is_active : true,
+    },
+  })
+  res.status(201).json({ success: true, data: { id: result.id } })
 })
 
-router.put('/:id', authenticate, (req, res) => {
+router.put('/:id', authenticate, async (req, res) => {
   if (req.admin.role !== 'super_admin') return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
-  const fields = []
-  const params = []
+  const data = {}
   for (const key of ['name', 'code', 'address', 'phone', 'email', 'opening_time', 'closing_time', 'slot_capacity', 'appointment_duration_minutes', 'max_advance_days']) {
-    if (req.body[key] !== undefined) { fields.push(`${key} = ?`); params.push(req.body[key]) }
+    if (req.body[key] !== undefined) data[key] = req.body[key]
   }
-  if (req.body.is_active !== undefined) { fields.push('is_active = ?'); params.push(req.body.is_active ? 1 : 0) }
-  if (fields.length === 0) return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'No fields to update' } })
+  if (req.body.is_active !== undefined) data.is_active = req.body.is_active
+  if (!Object.keys(data).length) return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'No fields to update' } })
 
-  fields.push("updated_at = datetime('now')")
-  params.push(req.params.id)
-  prepare(`UPDATE offices SET ${fields.join(', ')} WHERE id = ?`).run(...params)
+  await prisma.office.update({ where: { id: Number(req.params.id) }, data })
   res.json({ success: true, message: 'Office updated' })
 })
 
-router.put('/:id/schedule', authenticate, (req, res) => {
+router.put('/:id/schedule', authenticate, async (req, res) => {
   const { schedules } = req.body
   if (!schedules || !Array.isArray(schedules)) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Schedules array required' } })
 
-  const upsert = prepare('INSERT OR REPLACE INTO office_schedules (office_id, day_of_week, opening_time, closing_time, is_working_day, updated_at) VALUES (?, ?, ?, ?, ?, datetime(\'now\'))')
   for (const s of schedules) {
-    upsert.run(req.params.id, s.day_of_week, s.opening_time, s.closing_time, s.is_working_day ? 1 : 0)
+    await prisma.officeSchedule.upsert({
+      where: { officeId_dayOfWeek: { officeId: Number(req.params.id), dayOfWeek: s.day_of_week } },
+      update: { openingTime: s.opening_time, closingTime: s.closing_time, isWorkingDay: s.is_working_day },
+      create: {
+        officeId: Number(req.params.id),
+        dayOfWeek: s.day_of_week,
+        openingTime: s.opening_time,
+        closingTime: s.closing_time,
+        isWorkingDay: s.is_working_day,
+      },
+    })
   }
   res.json({ success: true, message: 'Schedule updated' })
 })
 
 module.exports = router
-

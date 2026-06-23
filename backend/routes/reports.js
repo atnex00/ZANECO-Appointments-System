@@ -1,35 +1,33 @@
 const express = require('express')
-const { prepare } = require('../db/database')
+const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
 const { generateReportPDF } = require('../services/pdfGenerator')
 
 const router = express.Router()
 
-function dateFilter(table, alias) {
-  return (req, res, next) => {
-    const { date_from, date_to, office_id, concern_type_id } = req.query
-    req.filters = { date_from, date_to, office_id, concern_type_id }
+function dateFilter(req, res, next) {
+  const { date_from, date_to, office_id, concern_type_id } = req.query
+  req.filters = { date_from, date_to, office_id, concern_type_id }
 
-    let where = []
-    let params = []
+  const conditions = []
+  const params = []
 
-    if (req.admin.role === 'office_manager' || req.admin.role === 'staff') {
-      where.push(`${alias || 'a'}.office_id = ?`)
-      params.push(req.admin.office_id)
-    }
-    if (date_from) { where.push(`${alias || 'a'}.appointment_date >= ?`); params.push(date_from) }
-    if (date_to) { where.push(`${alias || 'a'}.appointment_date <= ?`); params.push(date_to) }
-    if (office_id) { where.push(`${alias || 'a'}.office_id = ?`); params.push(office_id) }
-    if (concern_type_id) { where.push(`${alias || 'a'}.concern_type_id = ?`); params.push(concern_type_id) }
-
-    req.where = where.length ? 'WHERE ' + where.join(' AND ') : ''
-    req.params = params
-    next()
+  if (req.admin.role === 'office_manager' || req.admin.role === 'staff') {
+    conditions.push('a.office_id = ?')
+    params.push(req.admin.officeId)
   }
+  if (date_from) { conditions.push('a.appointment_date >= ?'); params.push(date_from) }
+  if (date_to) { conditions.push('a.appointment_date <= ?'); params.push(date_to) }
+  if (office_id) { conditions.push('a.office_id = ?'); params.push(Number(office_id)) }
+  if (concern_type_id) { conditions.push('a.concern_type_id = ?'); params.push(Number(concern_type_id)) }
+
+  req.where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''
+  req.params = params
+  next()
 }
 
-router.get('/appointments-by-office', authenticate, dateFilter(), (req, res) => {
-  const data = prepare(`
+const QUERIES = {
+  'appointments-by-office': `
     SELECT o.name AS office,
            COUNT(a.id) AS total,
            SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) AS completed,
@@ -38,160 +36,144 @@ router.get('/appointments-by-office', authenticate, dateFilter(), (req, res) => 
            SUM(CASE WHEN a.status = 'rescheduled' THEN 1 ELSE 0 END) AS rescheduled,
            SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) AS pending,
            SUM(CASE WHEN a.status = 'confirmed' THEN 1 ELSE 0 END) AS confirmed
-    FROM offices o
-    LEFT JOIN appointments a ON a.office_id = o.id ${req.where}
-    GROUP BY o.id, o.name
-    ORDER BY total DESC
-  `).all(...req.params)
-  res.json({ success: true, data })
-})
+    FROM offices o LEFT JOIN appointments a ON a.office_id = o.id ${'__WHERE__'}
+    GROUP BY o.id, o.name ORDER BY total DESC`,
 
-router.get('/appointments-by-concern', authenticate, dateFilter(), (req, res) => {
-  const data = prepare(`
+  'appointments-by-concern': `
     SELECT c.name AS concern_type, COUNT(a.id) AS total
-    FROM concern_types c
-    LEFT JOIN appointments a ON a.concern_type_id = c.id ${req.where}
-    GROUP BY c.id, c.name
-    ORDER BY total DESC
-  `).all(...req.params)
-  res.json({ success: true, data })
-})
+    FROM concern_types c LEFT JOIN appointments a ON a.concern_type_id = c.id ${'__WHERE__'}
+    GROUP BY c.id, c.name ORDER BY total DESC`,
 
-router.get('/daily', authenticate, dateFilter(), (req, res) => {
-  const data = prepare(`
-    SELECT appointment_date, COUNT(*) AS total,
-           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
-    FROM appointments a ${req.where}
-    GROUP BY appointment_date
-    ORDER BY appointment_date
-  `).all(...req.params)
-  res.json({ success: true, data })
-})
+  daily: `
+    SELECT a.appointment_date, COUNT(*) AS total,
+           SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) AS completed
+    FROM appointments a ${'__WHERE__'}
+    GROUP BY a.appointment_date ORDER BY a.appointment_date`,
 
-router.get('/weekly', authenticate, dateFilter(), (req, res) => {
-  const data = prepare(`
-    SELECT STRFTIME('%Y-%W', appointment_date) AS week,
+  weekly: `
+    SELECT CONCAT(SUBSTRING(a.appointment_date, 1, 4), '-', LPAD(EXTRACT(WEEK FROM a.appointment_date::date)::text, 2, '0')) AS week,
            COUNT(*) AS total,
-           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
-    FROM appointments a ${req.where}
-    GROUP BY week
-    ORDER BY week
-  `).all(...req.params)
-  res.json({ success: true, data })
-})
+           SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) AS completed
+    FROM appointments a ${'__WHERE__'}
+    GROUP BY week ORDER BY week`,
 
-router.get('/monthly', authenticate, dateFilter(), (req, res) => {
-  const data = prepare(`
-    SELECT STRFTIME('%Y-%m', appointment_date) AS month,
+  monthly: `
+    SELECT SUBSTRING(a.appointment_date, 1, 7) AS month,
            COUNT(*) AS total,
-           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
-    FROM appointments a ${req.where}
-    GROUP BY month
-    ORDER BY month
-  `).all(...req.params)
+           SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) AS completed
+    FROM appointments a ${'__WHERE__'}
+    GROUP BY month ORDER BY month`,
+}
+
+router.get('/appointments-by-office', authenticate, dateFilter, async (req, res) => {
+  const sql = QUERIES['appointments-by-office'].replace('__WHERE__', req.where)
+  const data = await prisma.$queryRawUnsafe(sql, ...req.params)
   res.json({ success: true, data })
 })
 
-router.get('/summary', authenticate, (req, res) => {
+router.get('/appointments-by-concern', authenticate, dateFilter, async (req, res) => {
+  const sql = QUERIES['appointments-by-concern'].replace('__WHERE__', req.where)
+  const data = await prisma.$queryRawUnsafe(sql, ...req.params)
+  res.json({ success: true, data })
+})
+
+router.get('/daily', authenticate, dateFilter, async (req, res) => {
+  const sql = QUERIES.daily.replace('__WHERE__', req.where)
+  const data = await prisma.$queryRawUnsafe(sql, ...req.params)
+  res.json({ success: true, data })
+})
+
+router.get('/weekly', authenticate, dateFilter, async (req, res) => {
+  const sql = QUERIES.weekly.replace('__WHERE__', req.where)
+  const data = await prisma.$queryRawUnsafe(sql, ...req.params)
+  res.json({ success: true, data })
+})
+
+router.get('/monthly', authenticate, dateFilter, async (req, res) => {
+  const sql = QUERIES.monthly.replace('__WHERE__', req.where)
+  const data = await prisma.$queryRawUnsafe(sql, ...req.params)
+  res.json({ success: true, data })
+})
+
+router.get('/summary', authenticate, async (req, res) => {
   const today = new Date().toISOString().split('T')[0]
-  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-  const monthStart = new Date(); monthStart.setDate(1)
+  const monthStart = new Date(); monthStart.setDate(1); const ms = monthStart.toISOString().split('T')[0]
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); const ws = weekStart.toISOString().split('T')[0]
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); const wa = weekAgo.toISOString().split('T')[0]
 
-  const totalToday = prepare("SELECT COUNT(*) AS c FROM appointments WHERE DATE(appointment_date) = ?").get(today).c
-  const pending = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'pending'").get().c
-  const completed = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'completed'").get().c
-  const cancelled = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'cancelled'").get().c
-  const no_show = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'no_show'").get().c
-  const totalMonth = prepare("SELECT COUNT(*) AS c FROM appointments WHERE appointment_date >= ?").get(monthStart.toISOString().split('T')[0]).c
-  const totalWeek = prepare("SELECT COUNT(*) AS c FROM appointments WHERE appointment_date >= ?").get(weekStart.toISOString().split('T')[0]).c
-
-  const weeklyTrend = prepare(`
-    SELECT appointment_date AS date, COUNT(*) AS count
-    FROM appointments WHERE appointment_date >= date('now', '-7 days')
-    GROUP BY appointment_date ORDER BY appointment_date
-  `).all()
+  const [totalToday, pending, completed, cancelled, no_show, totalMonth, totalWeek, weeklyTrend] = await Promise.all([
+    prisma.appointment.count({ where: { appointmentDate: { startsWith: today } } }),
+    prisma.appointment.count({ where: { status: 'pending' } }),
+    prisma.appointment.count({ where: { status: 'completed' } }),
+    prisma.appointment.count({ where: { status: 'cancelled' } }),
+    prisma.appointment.count({ where: { status: 'no_show' } }),
+    prisma.appointment.count({ where: { appointmentDate: { gte: ms } } }),
+    prisma.appointment.count({ where: { appointmentDate: { gte: ws } } }),
+    prisma.appointment.groupBy({
+      by: ['appointmentDate'],
+      where: { appointmentDate: { gte: wa, lte: today } },
+      _count: { id: true },
+      orderBy: { appointmentDate: 'asc' },
+    }),
+  ])
 
   res.json({
     success: true,
-    data: { total_today: totalToday, total_week: totalWeek, total_month: totalMonth, pending, completed, cancelled, no_show, weekly_trend: weeklyTrend },
+    data: {
+      total_today: totalToday,
+      total_week: totalWeek,
+      total_month: totalMonth,
+      pending,
+      completed,
+      cancelled,
+      no_show,
+      weekly_trend: weeklyTrend.map(w => ({ date: w.appointmentDate, count: w._count.id })),
+    },
   })
 })
 
-const queryMap = {
-  'appointments-by-office': (where, params) => prepare(`
-    SELECT o.name AS office,
-           COUNT(a.id) AS total,
-           SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) AS completed,
-           SUM(CASE WHEN a.status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
-            SUM(CASE WHEN a.status = 'no_show' THEN 1 ELSE 0 END) AS no_show,
-            SUM(CASE WHEN a.status = 'rescheduled' THEN 1 ELSE 0 END) AS rescheduled,
-            SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) AS pending,
-            SUM(CASE WHEN a.status = 'confirmed' THEN 1 ELSE 0 END) AS confirmed
-    FROM offices o LEFT JOIN appointments a ON a.office_id = o.id ${where}
-    GROUP BY o.id, o.name ORDER BY total DESC
-  `).all(...params),
-  'appointments-by-concern': (where, params) => prepare(`
-    SELECT c.name AS concern_type, COUNT(a.id) AS total
-    FROM concern_types c LEFT JOIN appointments a ON a.concern_type_id = c.id ${where}
-    GROUP BY c.id, c.name ORDER BY total DESC
-  `).all(...params),
-  daily: (where, params) => prepare(`
-    SELECT appointment_date, COUNT(*) AS total,
-           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
-    FROM appointments a ${where} GROUP BY appointment_date ORDER BY appointment_date
-  `).all(...params),
-  weekly: (where, params) => prepare(`
-    SELECT STRFTIME('%Y-%W', appointment_date) AS week,
-           COUNT(*) AS total,
-           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
-    FROM appointments a ${where} GROUP BY week ORDER BY week
-  `).all(...params),
-  monthly: (where, params) => prepare(`
-    SELECT STRFTIME('%Y-%m', appointment_date) AS month,
-           COUNT(*) AS total,
-           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
-    FROM appointments a ${where} GROUP BY month ORDER BY month
-  `).all(...params),
+async function fetchReportData(type, where, params) {
+  if (!QUERIES[type]) throw new Error('Invalid report type')
+  const sql = QUERIES[type].replace('__WHERE__', where)
+  return await prisma.$queryRawUnsafe(sql, ...params)
 }
 
-router.get('/export', authenticate, dateFilter(), async (req, res) => {
+router.get('/export', authenticate, dateFilter, async (req, res) => {
   const { type, format } = req.query
   if (!type) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Report type required' } })
 
-  if (!queryMap[type]) return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Invalid report type' } })
+  try {
+    const data = await fetchReportData(type, req.where, req.params)
 
-  const data = queryMap[type](req.where, req.params)
+    const title = req.filters?.date_from
+      ? `${type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} (${req.filters.date_from} to ${req.filters.date_to})`
+      : `${type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}`
 
-  const title = req.filters?.date_from
-    ? `${type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} (${req.filters.date_from} to ${req.filters.date_to})`
-    : `${type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}`
+    if (format === 'csv') {
+      const headers = Object.keys(data[0] || {}).join(',')
+      const rows = data.map(r => Object.values(r).join(',')).join('\n')
+      res.setHeader('Content-Type', 'text/csv')
+      res.setHeader('Content-Disposition', `attachment; filename=zaneco-report-${type}.csv`)
+      return res.send(headers + '\n' + rows)
+    }
 
-  if (format === 'csv') {
-    const headers = Object.keys(data[0] || {}).join(',')
-    const rows = data.map(r => Object.values(r).join(',')).join('\n')
-    res.setHeader('Content-Type', 'text/csv')
-    res.setHeader('Content-Disposition', `attachment; filename=zaneco-report-${type}.csv`)
-    return res.send(headers + '\n' + rows)
-  }
-
-  if (format === 'pdf') {
-    try {
+    if (format === 'pdf') {
       const columns = data.length ? Object.keys(data[0]) : []
-      const dateRange = req.filters?.date_from
-        ? `${req.filters.date_from} to ${req.filters.date_to}`
-        : 'All time'
+      const dateRange = req.filters?.date_from ? `${req.filters.date_from} to ${req.filters.date_to}` : 'All time'
       const pdfBuffer = await generateReportPDF(title, columns, data, dateRange)
       res.setHeader('Content-Type', 'application/pdf')
       res.setHeader('Content-Disposition', `attachment; filename=zaneco-report-${type}.pdf`)
       return res.send(pdfBuffer)
-    } catch (err) {
-      console.error('PDF generation error:', err)
-      return res.status(500).json({ success: false, error: { code: 'PDF_ERROR', message: err.message || 'Failed to generate PDF' } })
     }
-  }
 
-  res.json({ success: true, data })
+    res.json({ success: true, data })
+  } catch (err) {
+    if (err.message.startsWith('Invalid report type')) {
+      return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Invalid report type' } })
+    }
+    console.error('Export error:', err)
+    res.status(500).json({ success: false, error: { code: 'EXPORT_ERROR', message: err.message } })
+  }
 })
 
 module.exports = router
-

@@ -3,6 +3,7 @@ const cors = require('cors')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
 const config = require('./config')
+const prisma = require('./db/database')
 const { init } = require('./db/database')
 const { logger, requestLogger } = require('./middleware/logger')
 const { errorHandler } = require('./middleware/errors')
@@ -64,32 +65,78 @@ app.use('/api/v1/admin/audit-logs', require('./routes/auditLogs'))
 app.use('/api/v1/admin/users', require('./routes/adminUsers'))
 
 // Dashboard summary
-app.get('/api/v1/admin/dashboard/summary', require('./middleware/auth').authenticate, (req, res) => {
-  const { prepare } = require('./db/database')
-  const today = new Date().toISOString().split('T')[0]
-  const monthStart = new Date(); monthStart.setDate(1); const ms = monthStart.toISOString().split('T')[0]
-  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); const ws = weekStart.toISOString().split('T')[0]
+app.get('/api/v1/admin/dashboard/summary', require('./middleware/auth').authenticate, async (req, res, next) => {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    const monthStart = new Date(); monthStart.setDate(1); const ms = monthStart.toISOString().split('T')[0]
+    const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); const ws = weekStart.toISOString().split('T')[0]
+    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); const wa = weekAgo.toISOString().split('T')[0]
 
-  const totalToday = prepare("SELECT COUNT(*) AS c FROM appointments WHERE DATE(appointment_date) = ?").get(today).c
-  const pending = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'pending'").get().c
-  const completed = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'completed'").get().c
-  const cancelled = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'cancelled'").get().c
-  const no_show = prepare("SELECT COUNT(*) AS c FROM appointments WHERE status = 'no_show'").get().c
-  const totalMonth = prepare("SELECT COUNT(*) AS c FROM appointments WHERE DATE(appointment_date) >= ?").get(ms).c
-  const totalWeek = prepare("SELECT COUNT(*) AS c FROM appointments WHERE DATE(appointment_date) >= ?").get(ws).c
-  const weeklyTrend = prepare("SELECT DATE(appointment_date) AS date, COUNT(*) AS count FROM appointments WHERE DATE(appointment_date) >= DATE('now', '-7 days') GROUP BY DATE(appointment_date) ORDER BY DATE(appointment_date)").all()
-  const busyOffice = prepare("SELECT o.name FROM offices o JOIN appointments a ON a.office_id = o.id WHERE DATE(a.appointment_date) = ? GROUP BY o.id ORDER BY COUNT(a.id) DESC LIMIT 1").get(today)
-  const peakHour = prepare("SELECT CAST(STRFTIME('%H', start_time) AS INTEGER) AS hour, COUNT(*) AS c FROM appointments WHERE DATE(appointment_date) = ? GROUP BY hour ORDER BY c DESC LIMIT 1").get(today)
+    const [totalToday, pending, completed, cancelled, no_show, totalMonth, totalWeek] = await Promise.all([
+      prisma.appointment.count({ where: { appointmentDate: { startsWith: today } } }),
+      prisma.appointment.count({ where: { status: 'pending' } }),
+      prisma.appointment.count({ where: { status: 'completed' } }),
+      prisma.appointment.count({ where: { status: 'cancelled' } }),
+      prisma.appointment.count({ where: { status: 'no_show' } }),
+      prisma.appointment.count({ where: { appointmentDate: { gte: ms } } }),
+      prisma.appointment.count({ where: { appointmentDate: { gte: ws } } }),
+    ])
 
-  res.json({ success: true, data: { total_today: totalToday, total_week: totalWeek, total_month: totalMonth, pending, completed, cancelled, no_show, busiest_office: busyOffice?.name || 'N/A', busiest_hour: peakHour ? `${String(peakHour.hour).padStart(2,'0')}:00-${String(peakHour.hour+1).padStart(2,'0')}:00` : 'N/A', weekly_trend: weeklyTrend } })
+    const weeklyTrend = await prisma.appointment.groupBy({
+      by: ['appointmentDate'],
+      where: { appointmentDate: { gte: wa, lte: today } },
+      _count: { id: true },
+      orderBy: { appointmentDate: 'asc' },
+    })
+
+    const busyOffice = await prisma.appointment.groupBy({
+      by: ['officeId'],
+      where: { appointmentDate: { startsWith: today } },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 1,
+    })
+
+    let busyOfficeName = 'N/A'
+    if (busyOffice.length) {
+      const off = await prisma.office.findUnique({ where: { id: busyOffice[0].officeId } })
+      busyOfficeName = off?.name || 'N/A'
+    }
+
+    const peakHourRaw = await prisma.$queryRaw`
+      SELECT CAST(SUBSTRING(start_time, 1, 2) AS INTEGER) AS hour, COUNT(*)::int AS c
+      FROM appointments
+      WHERE appointment_date = ${today}
+      GROUP BY hour
+      ORDER BY c DESC
+      LIMIT 1
+    `
+
+    const peakHour = peakHourRaw[0]
+
+    res.json({
+      success: true,
+      data: {
+        total_today: totalToday,
+        total_week: totalWeek,
+        total_month: totalMonth,
+        pending,
+        completed,
+        cancelled,
+        no_show,
+        busiest_office: busyOfficeName,
+        busiest_hour: peakHour ? `${String(peakHour.hour).padStart(2,'0')}:00-${String(peakHour.hour+1).padStart(2,'0')}:00` : 'N/A',
+        weekly_trend: weeklyTrend.map(w => ({ date: w.appointmentDate, count: w._count.id })),
+      },
+    })
+  } catch (err) { next(err) }
 })
 
 // Health check
-app.get('/api/v1/health', (req, res) => {
+app.get('/api/v1/health', async (req, res) => {
   let dbStatus = 'ok'
   try {
-    const { prepare } = require('./db/database')
-    prepare('SELECT 1').get()
+    await prisma.$queryRaw`SELECT 1`
   } catch {
     dbStatus = 'error'
   }
@@ -122,7 +169,8 @@ async function startApp() {
   function shutdown(signal) {
     logger.info(`${signal} received — shutting down gracefully`)
     worker.stop()
-    srv.close(() => {
+    srv.close(async () => {
+      await prisma.$disconnect()
       logger.info('Server closed')
       process.exit(0)
     })

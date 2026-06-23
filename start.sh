@@ -21,11 +21,13 @@ if [ ! -d "node_modules/.pnpm" ]; then
     pnpm install
 fi
 
-# Seed database if empty
-if [ ! -f "backend/data/zaneco.db" ]; then
-    echo "Seeding database..."
-    pnpm run seed
-fi
+# Generate Prisma client (re-run after dependency updates)
+pnpm --filter zaneco-appointments-api exec prisma generate 2>/dev/null || true
+
+# Apply schema migrations & seed
+echo "Applying database schema..."
+pnpm --filter zaneco-appointments-api exec prisma db push --accept-data-loss 2>/dev/null || echo "Warning: DB schema sync skipped (is PostgreSQL running?)"
+pnpm run seed 2>/dev/null || echo "Warning: Seed skipped (is PostgreSQL running?)"
 
 echo "Starting servers..."
 

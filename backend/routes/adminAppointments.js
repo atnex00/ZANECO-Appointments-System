@@ -1,232 +1,300 @@
 const express = require('express')
-const { prepare } = require('../db/database')
+const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
 
 const router = express.Router()
 
-// List appointments
-router.get('/', authenticate, (req, res) => {
-  const { status, office_id, date_from, date_to, search, page = 1, per_page = 20, sort_by = 'created_at', sort_order = 'desc' } = req.query
-  const offset = (page - 1) * per_page
-  const allowedSort = ['created_at', 'appointment_date', 'consumer_name', 'status']
-  const sortCol = allowedSort.includes(sort_by) ? sort_by : 'created_at'
-  const sortDir = sort_order === 'asc' ? 'ASC' : 'DESC'
+const appointmentSelect = { id: true, referenceNumber: true, consumerName: true, accountNumber: true, appointmentDate: true, startTime: true, endTime: true, status: true, createdAt: true }
 
-  let where = ['1=1']
-  let params = []
-
-  // Role-based filtering
+function buildFilters(req) {
+  const where = {}
   if (req.admin.role === 'office_manager' || req.admin.role === 'staff') {
-    where.push('a.office_id = ?')
-    params.push(req.admin.office_id)
+    where.officeId = req.admin.officeId
   }
+  return where
+}
 
-  if (status) { where.push('a.status = ?'); params.push(status) }
-  if (office_id) { where.push('a.office_id = ?'); params.push(office_id) }
-  if (date_from) { where.push('a.appointment_date >= ?'); params.push(date_from) }
-  if (date_to) { where.push('a.appointment_date <= ?'); params.push(date_to) }
+router.get('/', authenticate, async (req, res) => {
+  const { status, office_id, date_from, date_to, search, page = 1, per_page = 20, sort_by = 'created_at', sort_order = 'desc' } = req.query
+  const offset = (Number(page) - 1) * Number(per_page)
+  const where = buildFilters(req)
+
+  if (status) where.status = status
+  if (office_id) where.officeId = Number(office_id)
+  if (date_from) where.appointmentDate = { ...where.appointmentDate, gte: date_from }
+  if (date_to) where.appointmentDate = { ...where.appointmentDate, lte: date_to }
   if (search) {
-    where.push('(a.reference_number LIKE ? OR a.consumer_name LIKE ? OR a.account_number LIKE ? OR a.mobile_number LIKE ?)')
     const q = `%${search}%`
-    params.push(q, q, q, q)
+    where.OR = [
+      { referenceNumber: { contains: search } },
+      { consumerName: { contains: search } },
+      { accountNumber: { contains: search } },
+      { mobileNumber: { contains: search } },
+    ]
   }
 
-  const countRow = prepare(`SELECT COUNT(*) AS total FROM appointments a WHERE ${where.join(' AND ')}`).get(...params)
-  const total = countRow.total
-  const lastPage = Math.ceil(total / per_page)
+  const sortMap = { created_at: 'createdAt', appointment_date: 'appointmentDate', consumer_name: 'consumerName', status: 'status' }
+  const orderBy = { [sortMap[sort_by] || 'createdAt']: sort_order === 'asc' ? 'asc' : 'desc' }
 
-  const appointments = prepare(`
-    SELECT a.id, a.reference_number, a.consumer_name, a.account_number, c.name AS concern_type, o.name AS office,
-           a.appointment_date, a.start_time, a.end_time, a.status, a.created_at
-    FROM appointments a
-    JOIN concern_types c ON a.concern_type_id = c.id
-    JOIN offices o ON a.office_id = o.id
-    WHERE ${where.join(' AND ')}
-    ORDER BY a.${sortCol} ${sortDir}
-    LIMIT ? OFFSET ?
-  `).all(...params, Number(per_page), Number(offset))
+  const [total, appointments] = await Promise.all([
+    prisma.appointment.count({ where }),
+    prisma.appointment.findMany({
+      where,
+      select: { ...appointmentSelect, concernType: { select: { name: true } }, office: { select: { name: true } } },
+      orderBy,
+      skip: offset,
+      take: Number(per_page),
+    }),
+  ])
 
+  const lastPage = Math.ceil(total / Number(per_page))
   res.json({
     success: true,
-    data: { appointments, pagination: { current_page: Number(page), per_page: Number(per_page), total, last_page: lastPage || 1 } },
+    data: {
+      appointments: appointments.map(a => ({
+        id: a.id,
+        reference_number: a.referenceNumber,
+        consumer_name: a.consumerName,
+        account_number: a.accountNumber,
+        concern_type: a.concernType.name,
+        office: a.office.name,
+        appointment_date: a.appointmentDate,
+        start_time: a.startTime,
+        end_time: a.endTime,
+        status: a.status,
+        created_at: a.createdAt,
+      })),
+      pagination: { current_page: Number(page), per_page: Number(per_page), total, last_page: lastPage || 1 },
+    },
   })
 })
 
-// Today's appointments (staff queue)
-router.get('/today', authenticate, (req, res) => {
-  const where = []
-  const params = []
-  if (req.query.date_from && req.query.date_to) {
-    where.push('DATE(a.appointment_date) >= ?', 'DATE(a.appointment_date) <= ?')
-    params.push(req.query.date_from, req.query.date_to)
-  } else {
-    const targetDate = req.query.date || new Date().toISOString().slice(0, 10)
-    where.push('DATE(a.appointment_date) = ?')
-    params.push(targetDate)
-  }
-  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && req.admin.office_id) {
-    where.push('a.office_id = ?')
-    params.push(req.admin.office_id)
-  }
-  const sql = `
-    SELECT a.id, a.reference_number, a.consumer_name, a.account_number, a.mobile_number, a.email,
-           c.name AS concern_type, o.name AS office, a.appointment_date, a.start_time, a.end_time,
-           a.status, a.admin_notes
-    FROM appointments a
-    JOIN concern_types c ON a.concern_type_id = c.id
-    JOIN offices o ON a.office_id = o.id
-    WHERE ${where.join(' AND ')}
-    ORDER BY a.appointment_date ASC, a.start_time ASC
-  `
-  const appointments = prepare(sql).all(...params)
+router.get('/today', authenticate, async (req, res) => {
+  const where = buildFilters(req)
 
-  res.json({ success: true, data: appointments })
+  if (req.query.date_from && req.query.date_to) {
+    where.appointmentDate = { gte: req.query.date_from, lte: req.query.date_to }
+  } else {
+    where.appointmentDate = req.query.date || new Date().toISOString().slice(0, 10)
+  }
+
+  const appointments = await prisma.appointment.findMany({
+    where,
+    include: { concernType: { select: { name: true } }, office: { select: { name: true } } },
+    orderBy: [{ appointmentDate: 'asc' }, { startTime: 'asc' }],
+  })
+
+  res.json({
+    success: true,
+    data: appointments.map(a => ({
+      id: a.id,
+      reference_number: a.referenceNumber,
+      consumer_name: a.consumerName,
+      account_number: a.accountNumber,
+      mobile_number: a.mobileNumber,
+      email: a.email,
+      concern_type: a.concernType.name,
+      office: a.office.name,
+      appointment_date: a.appointmentDate,
+      start_time: a.startTime,
+      end_time: a.endTime,
+      status: a.status,
+      admin_notes: a.adminNotes,
+    })),
+  })
 })
 
-// Get appointment detail
-router.get('/:id', authenticate, (req, res) => {
-  const appt = prepare(`
-    SELECT a.*, c.name AS concern_type, o.name AS office, o.address AS office_address
-    FROM appointments a
-    JOIN concern_types c ON a.concern_type_id = c.id
-    JOIN offices o ON a.office_id = o.id
-    WHERE a.id = ?
-  `).get(req.params.id)
+router.get('/:id', authenticate, async (req, res) => {
+  const appt = await prisma.appointment.findUnique({
+    where: { id: Number(req.params.id) },
+    include: { concernType: { select: { name: true } }, office: true },
+  })
 
   if (!appt) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Appointment not found' } })
-
-  // Role scoping: staff/office_manager can only view their own office
-  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.office_id !== req.admin.office_id) {
+  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.officeId !== req.admin.officeId) {
     return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } })
   }
 
-  const auditLogs = prepare("SELECT action, admin_id, created_at FROM audit_logs WHERE appointment_id = ? ORDER BY created_at").all(appt.id)
-  const notifications = prepare("SELECT * FROM notifications WHERE appointment_id = ? ORDER BY created_at DESC").all(appt.id)
+  const [auditLogs, notifications] = await Promise.all([
+    prisma.auditLog.findMany({ where: { appointmentId: appt.id }, orderBy: { createdAt: 'asc' } }),
+    prisma.notification.findMany({ where: { appointmentId: appt.id }, orderBy: { createdAt: 'desc' } }),
+  ])
 
   res.json({
     success: true,
     data: {
       id: appt.id,
-      reference_number: appt.reference_number,
-      consumer_name: appt.consumer_name,
-      account_name: appt.account_name,
-      account_number: appt.account_number,
-      mobile_number: appt.mobile_number,
+      reference_number: appt.referenceNumber,
+      consumer_name: appt.consumerName,
+      account_name: appt.accountName,
+      account_number: appt.accountNumber,
+      mobile_number: appt.mobileNumber,
       email: appt.email,
-      concern_type: appt.concern_type,
-      office: appt.office,
-      appointment_date: appt.appointment_date,
-      start_time: appt.start_time,
-      end_time: appt.end_time,
+      concern_type: appt.concernType.name,
+      office: appt.office.name,
+      appointment_date: appt.appointmentDate,
+      start_time: appt.startTime,
+      end_time: appt.endTime,
       status: appt.status,
-      admin_notes: appt.admin_notes,
-      reschedule_count: appt.reschedule_count,
-      created_at: appt.created_at,
+      admin_notes: appt.adminNotes,
+      reschedule_count: appt.rescheduleCount,
+      created_at: appt.createdAt,
       notifications,
       audit_trail: auditLogs,
     },
   })
 })
 
-// Save notes only (no status change)
-router.put('/:id/notes', authenticate, (req, res) => {
+router.put('/:id/notes', authenticate, async (req, res) => {
   const { notes } = req.body
   if (notes === undefined || notes === null) {
     return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Notes are required' } })
   }
-  const appt = prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id)
+  const appt = await prisma.appointment.findUnique({ where: { id: Number(req.params.id) } })
   if (!appt) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Appointment not found' } })
-  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.office_id !== req.admin.office_id) {
+  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.officeId !== req.admin.officeId) {
     return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } })
   }
-  prepare("UPDATE appointments SET admin_notes = ?, updated_at = datetime('now') WHERE id = ?").run(notes, appt.id)
+
+  await prisma.appointment.update({ where: { id: appt.id }, data: { adminNotes: notes } })
   res.json({ success: true, data: { id: appt.id, admin_notes: notes } })
 })
 
-// Update status
-router.put('/:id/status', authenticate, (req, res) => {
+router.put('/:id/status', authenticate, async (req, res) => {
   const { status, notes } = req.body
   const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'no_show', 'archived']
   if (!validStatuses.includes(status)) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid status' } })
 
-  const appt = prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id)
+  const appt = await prisma.appointment.findUnique({ where: { id: Number(req.params.id) } })
   if (!appt) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Appointment not found' } })
-  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.office_id !== req.admin.office_id) {
+  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.officeId !== req.admin.officeId) {
     return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } })
   }
 
   const oldStatus = appt.status
+  const operations = []
 
-  // Release slot when moving to a terminal state
-  if (status === 'cancelled' || status === 'no_show' || status === 'archived') {
-    prepare('UPDATE time_slots SET booked_count = MAX(booked_count - 1, 0) WHERE office_id = ? AND slot_date = ? AND start_time = ?').run(appt.office_id, appt.appointment_date, appt.start_time)
+  if (['cancelled', 'no_show', 'archived'].includes(status)) {
+    operations.push(
+      prisma.timeSlot.updateMany({
+        where: { officeId: appt.officeId, slotDate: appt.appointmentDate, startTime: appt.startTime },
+        data: { bookedCount: { decrement: 1 } },
+      })
+    )
   }
 
-  // Re-book slot when reopening from a terminal state
   if (['cancelled', 'no_show', 'archived', 'completed'].includes(oldStatus) && status === 'pending') {
-    const slot = prepare('SELECT * FROM time_slots WHERE office_id = ? AND slot_date = ? AND start_time = ?').get(appt.office_id, appt.appointment_date, appt.start_time)
-    if (slot && slot.booked_count < slot.max_capacity) {
-      prepare('UPDATE time_slots SET booked_count = booked_count + 1 WHERE id = ?').run(slot.id)
-    }
+    operations.push(
+      prisma.timeSlot.findUnique({
+        where: { officeId_slotDate_startTime: { officeId: appt.officeId, slotDate: appt.appointmentDate, startTime: appt.startTime } },
+      }).then(slot => {
+        if (slot && slot.bookedCount < slot.maxCapacity) {
+          return prisma.timeSlot.update({ where: { id: slot.id }, data: { bookedCount: { increment: 1 } } })
+        }
+      })
+    )
   }
 
   const completedAt = status === 'completed' ? new Date().toISOString() : null
 
-  prepare('UPDATE appointments SET status = ?, admin_notes = COALESCE(?, admin_notes), completed_at = ?, processed_by = ?, updated_at = datetime(?) WHERE id = ?')
-    .run(status, notes || null, completedAt, req.admin.id, new Date().toISOString(), appt.id)
+  operations.push(
+    prisma.appointment.update({
+      where: { id: appt.id },
+      data: {
+        status,
+        adminNotes: notes || undefined,
+        completedAt,
+        processedBy: req.admin.id,
+        updatedAt: new Date().toISOString(),
+      },
+    }),
+    prisma.auditLog.create({
+      data: {
+        appointmentId: appt.id,
+        adminId: req.admin.id,
+        action: 'STATUS_CHANGED',
+        entityType: 'appointment',
+        entityId: appt.id,
+        oldValues: JSON.stringify({ status: oldStatus }),
+        newValues: JSON.stringify({ status, notes }),
+      },
+    })
+  )
 
-  prepare("INSERT INTO audit_logs (appointment_id, admin_id, action, entity_type, entity_id, old_values, new_values) VALUES (?, ?, ?, 'appointment', ?, ?, ?)")
-    .run(appt.id, req.admin.id, 'STATUS_CHANGED', appt.id, JSON.stringify({ status: oldStatus }), JSON.stringify({ status, notes }))
-
+  await prisma.$transaction(operations)
   res.json({ success: true, data: { id: appt.id, status }, message: `Appointment status updated to ${status}` })
 })
 
-// Admin reschedule
-router.put('/:id/reschedule', authenticate, (req, res) => {
+router.put('/:id/reschedule', authenticate, async (req, res) => {
   const { new_appointment_date, new_start_time, notes } = req.body
-  const appt = prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id)
+  const appt = await prisma.appointment.findUnique({ where: { id: Number(req.params.id) } })
   if (!appt) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Appointment not found' } })
-  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.office_id !== req.admin.office_id) {
+  if ((req.admin.role === 'office_manager' || req.admin.role === 'staff') && appt.officeId !== req.admin.officeId) {
     return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } })
   }
 
-  const office = prepare('SELECT * FROM offices WHERE id = ?').get(appt.office_id)
+  const office = await prisma.office.findUnique({ where: { id: appt.officeId } })
   const [h, m] = new_start_time.split(':').map(Number)
-  const endDate = new Date(2024, 0, 1, h, m + office.appointment_duration_minutes)
+  const endDate = new Date(2024, 0, 1, h, m + office.appointmentDurationMinutes)
   const end_time = String(endDate.getHours()).padStart(2, '0') + ':' + String(endDate.getMinutes()).padStart(2, '0') + ':00'
   const cleanDate = new_appointment_date.slice(0, 10)
 
-  prepare('UPDATE time_slots SET booked_count = MAX(booked_count - 1, 0) WHERE office_id = ? AND slot_date = ? AND start_time = ?').run(appt.office_id, appt.appointment_date, appt.start_time)
+  const slot = await prisma.timeSlot.findUnique({
+    where: { officeId_slotDate_startTime: { officeId: appt.officeId, slotDate: cleanDate, startTime: new_start_time } },
+  })
 
-  const slot = prepare('SELECT * FROM time_slots WHERE office_id = ? AND slot_date = ? AND start_time = ?').get(appt.office_id, cleanDate, new_start_time)
-  if (slot) prepare('UPDATE time_slots SET booked_count = booked_count + 1 WHERE id = ?').run(slot.id)
+  await prisma.$transaction([
+    prisma.timeSlot.updateMany({
+      where: { officeId: appt.officeId, slotDate: appt.appointmentDate, startTime: appt.startTime },
+      data: { bookedCount: { decrement: 1 } },
+    }),
+    ...(slot ? [prisma.timeSlot.update({ where: { id: slot.id }, data: { bookedCount: { increment: 1 } } })] : []),
+    prisma.appointment.update({
+      where: { id: appt.id },
+      data: {
+        appointmentDate: cleanDate,
+        startTime: new_start_time,
+        endTime: end_time,
+        status: 'rescheduled',
+        rescheduleCount: { increment: 1 },
+        rescheduledAt: new Date().toISOString(),
+        adminNotes: notes || undefined,
+        updatedAt: new Date().toISOString(),
+      },
+    }),
+    prisma.auditLog.create({
+      data: {
+        appointmentId: appt.id,
+        adminId: req.admin.id,
+        action: 'APPOINTMENT_RESCHEDULED',
+        entityType: 'appointment',
+        entityId: appt.id,
+        newValues: JSON.stringify({ date: new_appointment_date, time: new_start_time, reason: notes }),
+      },
+    }),
+  ])
 
-  prepare('UPDATE appointments SET appointment_date = ?, start_time = ?, end_time = ?, status = ?, reschedule_count = reschedule_count + 1, rescheduled_at = datetime(?), admin_notes = COALESCE(?, admin_notes), updated_at = datetime(?) WHERE id = ?')
-    .run(cleanDate, new_start_time, end_time, 'rescheduled', new Date().toISOString(), notes || null, new Date().toISOString(), appt.id)
-
-  prepare("INSERT INTO audit_logs (appointment_id, admin_id, action, entity_type, entity_id, new_values) VALUES (?, ?, 'APPOINTMENT_RESCHEDULED', 'appointment', ?, ?)")
-    .run(appt.id, req.admin.id, appt.id, JSON.stringify({ date: new_appointment_date, time: new_start_time, reason: notes }))
-
-  res.json({ success: true, data: { reference_number: appt.reference_number, status: 'rescheduled' } })
+  res.json({ success: true, data: { reference_number: appt.referenceNumber, status: 'rescheduled' } })
 })
 
-// Hard delete — for testing/bug-hunting only
-router.delete('/:id', authenticate, (req, res) => {
+router.delete('/:id', authenticate, async (req, res) => {
   if (req.admin.role !== 'super_admin') {
     return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only super admins can delete appointments' } })
   }
-  const appt = prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id)
+  const appt = await prisma.appointment.findUnique({ where: { id: Number(req.params.id) } })
   if (!appt) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Appointment not found' } })
 
-  // Release the time slot
-  prepare('UPDATE time_slots SET booked_count = MAX(booked_count - 1, 0) WHERE office_id = ? AND slot_date = ? AND start_time = ?').run(appt.office_id, appt.appointment_date, appt.start_time)
-  // Delete related records
-  prepare('DELETE FROM notifications WHERE appointment_id = ?').run(appt.id)
-  prepare('DELETE FROM audit_logs WHERE appointment_id = ?').run(appt.id)
-  prepare('DELETE FROM appointments WHERE id = ?').run(appt.id)
+  await prisma.$transaction([
+    prisma.timeSlot.updateMany({
+      where: { officeId: appt.officeId, slotDate: appt.appointmentDate, startTime: appt.startTime },
+      data: { bookedCount: { decrement: 1 } },
+    }),
+    prisma.notification.deleteMany({ where: { appointmentId: appt.id } }),
+    prisma.auditLog.deleteMany({ where: { appointmentId: appt.id } }),
+    prisma.appointment.delete({ where: { id: appt.id } }),
+  ])
 
   res.json({ success: true, message: 'Appointment deleted permanently' })
 })
 
 module.exports = router
-

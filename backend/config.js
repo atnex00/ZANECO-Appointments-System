@@ -27,13 +27,7 @@ const config = {
   },
 
   db: {
-    path: process.env.DB_PATH || './data/zaneco.db',
-    // PostgreSQL settings for future migration
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT, 10) || 5432,
-    name: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    url: process.env.DATABASE_URL || 'postgresql://zaneco:secret@localhost:5432/zaneco_appointments',
   },
 
   sms: {

@@ -1,12 +1,13 @@
 const express = require('express')
-const { prepare } = require('../db/database')
+const prisma = require('../db/database')
 
-// Public endpoints
 const concernTypesRouter = express.Router()
 concernTypesRouter.get('/', (req, res) => {
-  const types = prepare('SELECT id, name, code, description, estimated_duration_minutes FROM concern_types WHERE is_active = 1 ORDER BY sort_order').all()
-  res.json({ success: true, data: types })
+  prisma.concernType.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, code: true, description: true, estimatedDurationMinutes: true },
+    orderBy: { sortOrder: 'asc' },
+  }).then(types => res.json({ success: true, data: types }))
 })
 
 module.exports = concernTypesRouter
-

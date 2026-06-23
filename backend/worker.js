@@ -1,5 +1,4 @@
-// Notification worker — polls for pending notifications and 24h reminders
-const { prepare, save } = require('./db/database')
+const prisma = require('./db/database')
 const emailService = require('./services/emailService')
 
 let interval = null
@@ -7,7 +6,6 @@ let interval = null
 function start(intervalMs = 30000) {
   console.log('Notification worker started (interval: ' + intervalMs + 'ms)')
   interval = setInterval(processQueue, intervalMs)
-  // Also run immediately
   processQueue()
   processReminders()
 }
@@ -25,23 +23,32 @@ async function sendNotification(notif) {
       html: notif.message.replace(/\n/g, '<br>'),
     })
   }
-  // SMS simulation (wire Twilio via .env when ready)
   return simulateSend(notif)
 }
 
-function processQueue() {
+async function processQueue() {
   try {
-    const pending = prepare("SELECT * FROM notifications WHERE status = 'pending' AND retry_count < 3 ORDER BY created_at LIMIT 10").all()
+    const pending = await prisma.notification.findMany({
+      where: { status: 'pending', retryCount: { lt: 3 } },
+      orderBy: { createdAt: 'asc' },
+      take: 10,
+    })
+
     for (const notif of pending) {
-      sendNotification(notif).then(success => {
+      sendNotification(notif).then(async success => {
         if (success) {
-          prepare("UPDATE notifications SET status = 'sent', sent_at = datetime('now') WHERE id = ?").run(notif.id)
+          await prisma.notification.update({
+            where: { id: notif.id },
+            data: { status: 'sent', sentAt: new Date().toISOString() },
+          })
           console.log(`  [SENT] ${notif.channel} ${notif.type} → ${notif.recipient}`)
         } else {
-          prepare("UPDATE notifications SET status = 'retrying', retry_count = retry_count + 1 WHERE id = ?").run(notif.id)
-          console.log(`  [FAIL] ${notif.channel} ${notif.type} → ${notif.recipient} (retry ${notif.retry_count + 1})`)
+          await prisma.notification.update({
+            where: { id: notif.id },
+            data: { status: 'retrying', retryCount: { increment: 1 } },
+          })
+          console.log(`  [FAIL] ${notif.channel} ${notif.type} → ${notif.recipient} (retry ${notif.retryCount + 1})`)
         }
-        save()
       }).catch(err => {
         console.error(`Notification send error: ${err.message}`)
       })
@@ -51,37 +58,53 @@ function processQueue() {
   }
 }
 
-function processReminders() {
+async function processReminders() {
   try {
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
     const dateStr = tomorrow.toISOString().split('T')[0]
 
-    const due = prepare(
-      "SELECT a.id, a.reference_number, a.mobile_number, a.email, a.consumer_name, a.appointment_date, a.start_time, o.name AS office_name FROM appointments a JOIN offices o ON a.office_id = o.id WHERE a.appointment_date = ? AND a.status IN ('confirmed', 'rescheduled') AND NOT EXISTS (SELECT 1 FROM notifications n WHERE n.appointment_id = a.id AND n.type = 'reminder' AND n.status = 'sent')"
-    ).all(dateStr)
+    const due = await prisma.appointment.findMany({
+      where: {
+        appointmentDate: dateStr,
+        status: { in: ['confirmed', 'rescheduled'] },
+        notifications: { none: { type: 'reminder', status: 'sent' } },
+      },
+      include: { office: { select: { name: true } } },
+    })
 
     for (const apt of due) {
-      // Create SMS reminder
-      const smsMsg = `REMINDER: Your ZANECO appointment is tomorrow.\nRef: ${apt.reference_number}\nDate: ${apt.appointment_date}\nTime: ${apt.start_time?.slice(0,5)}\nOffice: ${apt.office_name}\nPlease arrive 10 minutes early.`
-      prepare("INSERT INTO notifications (appointment_id, channel, type, recipient, message, status) VALUES (?, 'sms', 'reminder', ?, ?, 'pending')").run(apt.id, apt.mobile_number, smsMsg)
+      const smsMsg = `REMINDER: Your ZANECO appointment is tomorrow.\nRef: ${apt.referenceNumber}\nDate: ${apt.appointmentDate}\nTime: ${apt.startTime?.slice(0,5)}\nOffice: ${apt.office.name}\nPlease arrive 10 minutes early.`
+      await prisma.notification.create({
+        data: {
+          appointmentId: apt.id,
+          channel: 'sms',
+          type: 'reminder',
+          recipient: apt.mobileNumber,
+          message: smsMsg,
+        },
+      })
 
-      // Create email reminder if email exists
       if (apt.email) {
-        const emailMsg = `Dear ${apt.consumer_name},\n\nThis is a reminder of your ZANECO appointment tomorrow.\n\nReference: ${apt.reference_number}\nDate: ${apt.appointment_date}\nTime: ${apt.start_time?.slice(0,5)}\nOffice: ${apt.office_name}\n\nPlease arrive 10 minutes early and bring your valid ID.\n\n— ZANECO Appointments`
-        prepare("INSERT INTO notifications (appointment_id, channel, type, recipient, message, status) VALUES (?, 'email', 'reminder', ?, ?, 'pending')").run(apt.id, apt.email, emailMsg)
+        const emailMsg = `Dear ${apt.consumerName},\n\nThis is a reminder of your ZANECO appointment tomorrow.\n\nReference: ${apt.referenceNumber}\nDate: ${apt.appointmentDate}\nTime: ${apt.startTime?.slice(0,5)}\nOffice: ${apt.office.name}\n\nPlease arrive 10 minutes early and bring your valid ID.\n\n— ZANECO Appointments`
+        await prisma.notification.create({
+          data: {
+            appointmentId: apt.id,
+            channel: 'email',
+            type: 'reminder',
+            recipient: apt.email,
+            message: emailMsg,
+          },
+        })
       }
-      console.log(`  [REMINDER] Queued for ${apt.reference_number}`)
+      console.log(`  [REMINDER] Queued for ${apt.referenceNumber}`)
     }
-    if (due.length) save()
   } catch (err) {
     console.error('Reminder processor error:', err.message)
   }
 }
 
 function simulateSend(notif) {
-  // In production, replace with actual Twilio/SMTP calls
-  // For now, simulate 90% success rate
   return Math.random() > 0.1
 }
 

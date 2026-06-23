@@ -4,7 +4,7 @@
 
 pnpm monorepo with two packages:
 - `frontend/` — Vue 3 + Vite SPA (port 3500, proxies `/api` → `localhost:8000`)
-- `backend/` — Express 4 + SQLite (sql.js) (port 8000)
+- `backend/` — Express 4 + PostgreSQL (Prisma ORM) (port 8000)
 
 ## Prerequisites
 
@@ -17,8 +17,7 @@ pnpm monorepo with two packages:
 |--------|---------|
 | Enable pnpm (one-time) | `corepack enable` |
 | Install all | `pnpm install` |
-| Install all | `pnpm install` |
-| Seed DB | `pnpm run seed` |
+| Apply schema & seed DB | `pnpm run seed` |
 | Start both dev servers | `pnpm run dev` |
 | Start backend only (with --watch) | `pnpm run dev:backend` |
 | Start frontend only | `pnpm run dev:frontend` |
@@ -37,19 +36,20 @@ pnpm monorepo with two packages:
 
 ## Docker
 
-- `docker compose up` for dev (two containers: frontend:3500, backend:8000).
+- `docker compose up` for dev (three containers: postgres:5432, frontend:3500, backend:8000).
+- PostgreSQL container has a health check — backend waits for it before serving.
+- `DATABASE_URL` env var configures the Prisma connection. Inside Docker it points to `postgresql://zaneco:secret@postgres:5432/zaneco_appointments`.
 - `VITE_API_PROXY` env var configures the Vite proxy target (`frontend/vite.config.js`). Inside Docker it points to `http://backend:8000`; defaults to `http://localhost:8000` for local dev.
 - Anonymous volumes (`/app/*/node_modules`) prevent bind-mounts from overwriting installed deps.
-- Named volume `zaneco-data` persists the SQLite DB across container restarts.
-- File watching uses `CHOKIDAR_USEPOLLING=1` for both containers (needed for bind mounts on macOS/Windows).
+- Named volume `zaneco-pg-data` persists PostgreSQL data across container restarts.
+- File watching uses `CHOKIDAR_USEPOLLING=1` for all containers (needed for bind mounts on macOS/Windows).
 
 ## Database
 
-- SQLite via `sql.js` — no separate DB server, no migration files.
-- Schema applied from `backend/db/schema.sql` on every startup (idempotent).
-- DB file at `backend/data/zaneco.db` (gitignored).
-- Auto-saves to disk every 5s via `setInterval` (see `backend/db/database.js:119`).
-- DB NOT auto-saved after every write — rely on the 5s interval or call `save()` explicitly.
+- PostgreSQL via Prisma ORM (`@prisma/client` + `pg`).
+- Schema defined in `backend/prisma/schema.prisma` — 9 models: Office, OfficeSchedule, TimeSlot, ConcernType, Administrator, Appointment, Notification, RequestLog, AuditLog.
+- Migrations managed by Prisma Migrate (no manual SQL files).
+- Run `pnpm run seed` to apply schema (`prisma db push`) and insert seed data.
 
 ## Key gotchas
 
@@ -60,7 +60,7 @@ pnpm monorepo with two packages:
 - **Auth**: Admin JWT stored in `localStorage` key `admin_token`. The axios interceptor (`frontend/src/api/client.js`) attaches it automatically and redirects to `/admin/login` on 401.
 - **Notifications**: `backend/worker.js` runs a 30s interval. Currently simulates sending. Wire real providers via `.env` (see README).
 - **Email receipts**: `backend/services/emailService.js` sends confirmation emails via Nodemailer (fire-and-forget after booking). Configure `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` in `.env`. Unconfigured SMTP silently skips sending — no crash.
-- **No SQL ORM** — raw SQL via `prepare()` / `get()` / `all()` / `run()` in `backend/db/database.js`.
+- **Prisma ORM** — All DB access goes through Prisma Client. Schema at `backend/prisma/schema.prisma`. Reports with complex aggregations use `$queryRaw` with PostgreSQL syntax.
 
 ## Style conventions
 

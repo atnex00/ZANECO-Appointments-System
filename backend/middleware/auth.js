@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken')
-const db = require('../db/database')
+const prisma = require('../db/database')
 const config = require('../config')
 const { AppError } = require('./errors')
 
@@ -11,10 +11,14 @@ function authenticate(req, res, next) {
   const token = header.slice(7)
   try {
     const decoded = jwt.verify(token, config.jwt.secret)
-    const admin = db.prepare('SELECT id, email, full_name, role, office_id FROM administrators WHERE id = ? AND is_active = 1').get(decoded.sub)
-    if (!admin) return next(new AppError(401, 'UNAUTHORIZED', 'Account not found'))
-    req.admin = admin
-    next()
+    prisma.administrator.findUnique({
+      where: { id: decoded.sub, isActive: true },
+      select: { id: true, email: true, fullName: true, role: true, officeId: true },
+    }).then(admin => {
+      if (!admin) return next(new AppError(401, 'UNAUTHORIZED', 'Account not found'))
+      req.admin = admin
+      next()
+    }).catch(() => next(new AppError(401, 'UNAUTHORIZED', 'Account not found')))
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
       return next(new AppError(401, 'TOKEN_EXPIRED', 'Token expired'))

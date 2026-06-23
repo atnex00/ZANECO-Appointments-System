@@ -1,6 +1,6 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
-const db = require('../db/database')
+const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
 const { AppError, asyncHandler } = require('../middleware/errors')
 const Joi = require('joi')
@@ -18,7 +18,10 @@ const createSchema = Joi.object({
 
 router.get('/', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') throw new AppError(403, 'FORBIDDEN', 'Insufficient permissions')
-  const admins = db.prepare("SELECT id, email, full_name, role, office_id, is_active, last_login_at FROM administrators ORDER BY full_name").all()
+  const admins = await prisma.administrator.findMany({
+    select: { id: true, email: true, fullName: true, role: true, officeId: true, isActive: true, lastLoginAt: true },
+    orderBy: { fullName: 'asc' },
+  })
   res.json({ success: true, data: admins })
 }))
 
@@ -27,31 +30,34 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { error, value } = createSchema.validate(req.body)
   if (error) throw new AppError(422, 'VALIDATION_ERROR', error.details[0].message)
 
-  const existing = db.prepare('SELECT id FROM administrators WHERE email = ?').get(value.email)
+  const existing = await prisma.administrator.findUnique({ where: { email: value.email } })
   if (existing) throw new AppError(409, 'CONFLICT', 'Email already registered')
 
   const hash = bcrypt.hashSync(value.password, 10)
-  const isActive = value.is_active !== undefined ? (value.is_active ? 1 : 0) : 1
-  db.prepare('INSERT INTO administrators (email, password_hash, full_name, role, office_id, is_active) VALUES (?,?,?,?,?,?)').run(value.email, hash, value.full_name, value.role, value.office_id || null, isActive)
+  await prisma.administrator.create({
+    data: {
+      email: value.email,
+      passwordHash: hash,
+      fullName: value.full_name,
+      role: value.role,
+      officeId: value.office_id || null,
+      isActive: value.is_active !== undefined ? value.is_active : true,
+    },
+  })
   res.status(201).json({ success: true, message: 'Admin created' })
 }))
 
 router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') throw new AppError(403, 'FORBIDDEN', 'Insufficient permissions')
-  const fields = []
-  const params = []
+  const data = {}
   for (const key of ['full_name', 'role', 'office_id']) {
-    if (req.body[key] !== undefined) { fields.push(`${key} = ?`); params.push(req.body[key]) }
+    if (req.body[key] !== undefined) data[key] = req.body[key]
   }
-  if (req.body.is_active !== undefined) { fields.push('is_active = ?'); params.push(req.body.is_active ? 1 : 0) }
-  if (req.body.password) {
-    fields.push('password_hash = ?')
-    params.push(bcrypt.hashSync(req.body.password, 10))
-  }
-  if (!fields.length) throw new AppError(400, 'BAD_REQUEST', 'No fields to update')
-  fields.push("updated_at = datetime('now')")
-  params.push(req.params.id)
-  db.prepare(`UPDATE administrators SET ${fields.join(', ')} WHERE id = ?`).run(...params)
+  if (req.body.is_active !== undefined) data.is_active = req.body.is_active
+  if (req.body.password) data.password_hash = bcrypt.hashSync(req.body.password, 10)
+  if (!Object.keys(data).length) throw new AppError(400, 'BAD_REQUEST', 'No fields to update')
+
+  await prisma.administrator.update({ where: { id: Number(req.params.id) }, data })
   res.json({ success: true, message: 'Admin updated' })
 }))
 
