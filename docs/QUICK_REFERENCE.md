@@ -12,7 +12,7 @@
 | **Appointment Duration** | 30 minutes |
 | **Office Hours** | Mon-Fri, 8:00 AM - 5:00 PM |
 | **Booking Window** | Up to 30 days in advance |
-| **Statuses** | Pending → Confirmed → (Completed / Cancelled / No-Show) |
+| **Statuses** | Pending → Confirmed → (Completed / Cancelled / No-Show / Rescheduled) |
 
 ## Database Tables (7)
 
@@ -55,8 +55,8 @@
 | POST | `/admin/offices/{id}/generate-slots` | Generate time slots |
 | GET/POST/PUT/DELETE | `/admin/concern-types` | Concern type CRUD |
 | GET | `/admin/dashboard/summary` | Dashboard metrics |
-| GET | `/admin/reports/*` | Reports (by office, concern, daily, weekly, monthly) |
-| GET | `/admin/reports/export` | Export PDF/Excel |
+| GET | `/admin/reports/*` | Reports (by office, concern, daily, weekly, monthly, summary) |
+| GET | `/admin/reports/export` | Export PDF/CSV |
 | GET | `/admin/notifications` | Notification history |
 | POST | `/admin/notifications/resend/{id}` | Retry notification |
 | GET | `/admin/audit-logs` | Audit log viewer |

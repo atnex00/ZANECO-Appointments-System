@@ -16,6 +16,16 @@ pnpm monorepo with two packages:
 | Start backend only (with --watch) | `pnpm run dev:backend` |
 | Start frontend only | `pnpm run dev:frontend` |
 | Build frontend | `pnpm run build` |
+| Docker (both services) | `docker compose up` |
+| Docker seed DB | `docker compose run backend pnpm run seed` |
+
+## Docker
+
+- `docker compose up` for dev (two containers: frontend:3500, backend:8000).
+- `VITE_API_PROXY` env var configures the Vite proxy target (`frontend/vite.config.js`). Inside Docker it points to `http://backend:8000`; defaults to `http://localhost:8000` for local dev.
+- Anonymous volumes (`/app/*/node_modules`) prevent bind-mounts from overwriting installed deps.
+- Named volume `zaneco-data` persists the SQLite DB across container restarts.
+- File watching uses `CHOKIDAR_USEPOLLING=1` for both containers (needed for bind mounts on macOS/Windows).
 
 ## Database
 

@@ -16,6 +16,7 @@ Consumers can schedule appointments online at any of five ZANECO service offices
 | **Auth** | JWT + bcrypt |
 | **Validation** | Joi |
 | **Charts** | Chart.js + vue-chartjs |
+| **PDF** | pdfmake (server-side) |
 | **Notifications** | DB-backed queue with worker (Twilio, SendGrid, or free alternatives) |
 
 ## Offices
@@ -30,12 +31,12 @@ Consumers can schedule appointments online at any of five ZANECO service offices
 
 ## Quick Start
 
-### Prerequisites
+### Option A — Local (pnpm)
+
+#### Prerequisites
 
 - Node.js 18+ ([download](https://nodejs.org))
 - pnpm ([install](https://pnpm.io/installation))
-
-### Setup
 
 ```bash
 # Install all dependencies (frontend + backend)
@@ -44,15 +45,29 @@ pnpm install
 # Seed the database
 pnpm run seed
 
-# Start the backend API (port 8000)
-pnpm run dev:backend
-
-# Start the frontend dev server (port 3500) — in a separate terminal
-pnpm run dev:frontend
-
-# Or start both at once
+# Start both dev servers at once
 pnpm run dev
+
+# Or start them separately:
+pnpm run dev:backend  # API on port 8000 (with --watch)
+pnpm run dev:frontend # SPA on port 3500
 ```
+
+### Option B — Docker
+
+#### Prerequisites
+
+- Docker Desktop ([download](https://www.docker.com/products/docker-desktop/))
+
+```bash
+# Build and start both services
+docker compose up
+
+# Seed the database (first time or reset)
+docker compose run backend pnpm run seed
+```
+
+Then open **http://localhost:3500**. The frontend proxies `/api` requests to the backend container automatically.
 
 ### Notification Providers (Free Alternatives)
 
@@ -81,26 +96,33 @@ To wire a provider, replace `simulateSend()` in `backend/worker.js` with the SDK
 
 ```
 ZANECO-Appointments-System/
-├── frontend/          # Vue 3 + Vite SPA
+├── frontend/              # Vue 3 + Vite SPA
+│   ├── Dockerfile         # Dev container (port 3500, hot-reload)
+│   ├── vite.config.js     # Vite config with API proxy
 │   └── src/
-│       ├── api/       # Axios API client modules
-│       ├── components/# Shared + page-specific components
-│       ├── layouts/   # Consumer and admin layout shells
-│       ├── pages/     # Consumer portal + admin dashboard pages
-│       ├── stores/    # Pinia state management
-│       ├── router/    # Vue Router with auth guards
-│       ├── composables/ # useToast, useTheme
-│       ├── utils/     # Formatters, validators
-│       └── assets/    # CSS variables + global styles
-├── backend/           # Express + SQLite API
-│   ├── routes/        # Auth, appointments, offices, reports, etc.
-│   ├── middleware/    # Auth, errors, logger, rate limiting
-│   ├── db/            # Schema, seed, database adapter (sql.js)
-│   ├── config.js      # Environment config loader
-│   ├── worker.js      # Notification + reminder queue
-│   └── server.js      # Express app entry point
-├── docs/              # System design, API spec, ERD, wireframes
-└── database/          # SQL migration + seed scripts
+│       ├── api/           # Axios API client modules
+│       ├── components/    # Shared + page-specific components
+│       ├── layouts/       # Consumer and admin layout shells
+│       ├── pages/         # Consumer portal + admin dashboard pages
+│       ├── stores/        # Pinia state management
+│       ├── router/        # Vue Router with auth guards
+│       ├── composables/   # useToast, useClock
+│       ├── utils/         # Formatters, validators
+│       └── assets/        # CSS variables + global styles
+├── backend/               # Express + SQLite API
+│   ├── Dockerfile         # Dev container (port 8000, --watch)
+│   ├── config.js          # Environment config loader
+│   ├── server.js          # Express app entry point
+│   ├── worker.js          # Notification + reminder queue
+│   ├── services/          # Business logic services
+│   │   └── pdfGenerator.js # PDF report generation (pdfmake)
+│   ├── routes/            # Auth, appointments, offices, reports, etc.
+│   ├── middleware/        # Auth, errors, logger, rate limiting
+│   └── db/                # Schema, seed, database adapter (sql.js)
+├── docker-compose.yml     # Two services: frontend + backend
+├── .dockerignore
+├── AGENTS.md              # Agent/contributor guide
+└── docs/                  # System design, API spec, ERD, wireframes
 ```
 
 ## Documentation
@@ -128,7 +150,7 @@ Full documentation is available in the `docs/` directory:
 - Concern type CRUD
 - Admin user management (super admin only)
 - Calendar view with daily breakdown
-- Report generation and CSV export
+- Report generation with PDF and CSV export (with office/concern type filters)
 - Notification log with resend
 - Audit trail viewer
 - Dark mode toggle
