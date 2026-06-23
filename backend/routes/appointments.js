@@ -2,6 +2,7 @@ const express = require('express')
 const db = require('../db/database')
 const { AppError, asyncHandler } = require('../middleware/errors')
 const Joi = require('joi')
+const emailService = require('../services/emailService')
 
 const router = express.Router()
 
@@ -102,6 +103,19 @@ router.post('/', asyncHandler(async (req, res) => {
   db.prepare("INSERT INTO audit_logs (appointment_id, action, entity_type, entity_id, new_values) VALUES (?, 'APPOINTMENT_CREATED', 'appointment', ?, ?)").run(result.lastInsertRowid, result.lastInsertRowid, JSON.stringify(req.body))
 
   const a = db.prepare("SELECT a.*, c.name AS ct, o.name AS oname FROM appointments a JOIN concern_types c ON a.concern_type_id = c.id JOIN offices o ON a.office_id = o.id WHERE a.id = ?").get(result.lastInsertRowid)
+  if (a.email) {
+    emailService.sendConfirmation({
+      email: a.email,
+      consumer_name: a.consumer_name,
+      reference_number: a.reference_number,
+      appointment_date: a.appointment_date,
+      start_time: a.start_time,
+      end_time: a.end_time,
+      office: a.oname,
+      concern_type: a.ct,
+      status: a.status,
+    }).catch(() => {})
+  }
   res.status(201).json({ success: true, data: { reference_number: a.reference_number, consumer_name: a.consumer_name, account_name: a.account_name, account_number: a.account_number, mobile_number: a.mobile_number, email: a.email, concern_type: a.ct, office: a.oname, appointment_date: a.appointment_date, start_time: a.start_time, end_time: a.end_time, status: a.status, created_at: a.created_at } })
 }))
 

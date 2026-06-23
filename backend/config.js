@@ -43,6 +43,11 @@ const config = {
   },
 
   email: {
+    smtpHost: process.env.SMTP_HOST || '',
+    smtpPort: parseInt(process.env.SMTP_PORT, 10) || 587,
+    smtpSecure: process.env.SMTP_SECURE === 'true',
+    smtpUser: process.env.SMTP_USER || '',
+    smtpPass: process.env.SMTP_PASS || '',
     sendgridKey: process.env.SENDGRID_API_KEY || '',
     from: process.env.EMAIL_FROM || 'noreply@zaneco.ph',
   },

@@ -1,5 +1,6 @@
 // Notification worker — polls for pending notifications and 24h reminders
 const { prepare, save } = require('./db/database')
+const emailService = require('./services/emailService')
 
 let interval = null
 
@@ -16,21 +17,35 @@ function stop() {
   console.log('Notification worker stopped')
 }
 
+async function sendNotification(notif) {
+  if (notif.channel === 'email') {
+    return emailService.sendEmail({
+      to: notif.recipient,
+      subject: `ZANECO Appointment — ${notif.type}`,
+      html: notif.message.replace(/\n/g, '<br>'),
+    })
+  }
+  // SMS simulation (wire Twilio via .env when ready)
+  return simulateSend(notif)
+}
+
 function processQueue() {
   try {
     const pending = prepare("SELECT * FROM notifications WHERE status = 'pending' AND retry_count < 3 ORDER BY created_at LIMIT 10").all()
     for (const notif of pending) {
-      // Simulate sending via appropriate channel
-      const success = simulateSend(notif)
-      if (success) {
-        prepare("UPDATE notifications SET status = 'sent', sent_at = datetime('now') WHERE id = ?").run(notif.id)
-        console.log(`  [SENT] ${notif.channel} ${notif.type} → ${notif.recipient}`)
-      } else {
-        prepare("UPDATE notifications SET status = 'retrying', retry_count = retry_count + 1 WHERE id = ?").run(notif.id)
-        console.log(`  [FAIL] ${notif.channel} ${notif.type} → ${notif.recipient} (retry ${notif.retry_count + 1})`)
-      }
+      sendNotification(notif).then(success => {
+        if (success) {
+          prepare("UPDATE notifications SET status = 'sent', sent_at = datetime('now') WHERE id = ?").run(notif.id)
+          console.log(`  [SENT] ${notif.channel} ${notif.type} → ${notif.recipient}`)
+        } else {
+          prepare("UPDATE notifications SET status = 'retrying', retry_count = retry_count + 1 WHERE id = ?").run(notif.id)
+          console.log(`  [FAIL] ${notif.channel} ${notif.type} → ${notif.recipient} (retry ${notif.retry_count + 1})`)
+        }
+        save()
+      }).catch(err => {
+        console.error(`Notification send error: ${err.message}`)
+      })
     }
-    if (pending.length) save()
   } catch (err) {
     console.error('Notification worker error:', err.message)
   }

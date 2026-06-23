@@ -16,8 +16,17 @@ pnpm monorepo with two packages:
 | Start backend only (with --watch) | `pnpm run dev:backend` |
 | Start frontend only | `pnpm run dev:frontend` |
 | Build frontend | `pnpm run build` |
+| One-click start (Windows) | Double-click `start.bat` |
+| One-click start (macOS/Linux) | `./start.sh` |
 | Docker (both services) | `docker compose up` |
 | Docker seed DB | `docker compose run backend pnpm run seed` |
+
+## One-click launcher scripts
+
+- `start.bat` (Windows) and `start.sh` (macOS/Linux) require **only Node.js 18+** — no pnpm install, no Docker.
+- Script checks for Node.js, enables corepack (built-in), runs `pnpm install` if needed, seeds the DB if empty, starts both servers, and opens the browser.
+- Two separate terminal windows on Windows (one per server), background processes on macOS/Linux.
+- Close the windows / Ctrl+C to stop.
 
 ## Docker
 
@@ -43,6 +52,7 @@ pnpm monorepo with two packages:
 - **Express 4 does not catch async errors in route handlers**; backend routes use `asyncHandler` wrapper (`backend/middleware/errors.js:42`) or explicit try/catch.
 - **Auth**: Admin JWT stored in `localStorage` key `admin_token`. The axios interceptor (`frontend/src/api/client.js`) attaches it automatically and redirects to `/admin/login` on 401.
 - **Notifications**: `backend/worker.js` runs a 30s interval. Currently simulates sending. Wire real providers via `.env` (see README).
+- **Email receipts**: `backend/services/emailService.js` sends confirmation emails via Nodemailer (fire-and-forget after booking). Configure `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` in `.env`. Unconfigured SMTP silently skips sending — no crash.
 - **No SQL ORM** — raw SQL via `prepare()` / `get()` / `all()` / `run()` in `backend/db/database.js`.
 
 ## Style conventions
