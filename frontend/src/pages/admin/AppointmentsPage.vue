@@ -35,6 +35,7 @@
           <option value="rescheduled">Rescheduled</option>
           <option value="completed">Completed</option>
           <option value="cancelled">Cancelled</option>
+          <option value="rejected">Rejected</option>
           <option value="no_show">No Show</option>
           <option value="archived">Archived</option>
         </select>
@@ -108,6 +109,7 @@
                   <button v-if="['pending', 'rescheduled'].includes(row.status)" class="row-action" @click="quickAction(row.id, 'confirmed')" title="Confirm" style="color:#059669"><span class="material-symbols-outlined">check_circle</span></button>
                   <button v-if="row.status === 'confirmed'" class="row-action" @click="quickAction(row.id, 'completed')" title="Complete" style="color:#059669"><span class="material-symbols-outlined">task_alt</span></button>
                   <button v-if="['pending','confirmed','rescheduled'].includes(row.status)" class="row-action" @click="quickAction(row.id, 'cancelled')" title="Cancel" style="color:#dc2626"><span class="material-symbols-outlined">cancel</span></button>
+                  <button v-if="row.status === 'pending'" class="row-action" @click="openReject(row)" title="Reject" style="color:#991b1b"><span class="material-symbols-outlined">block</span></button>
                   <button v-if="['pending','confirmed','rescheduled'].includes(row.status)" class="row-action" @click="openReschedule(row)" title="Reschedule" style="color:#0284c7"><span class="material-symbols-outlined">edit_calendar</span></button>
                   <button v-if="!['archived','cancelled','completed'].includes(row.status)" class="row-action" @click="quickAction(row.id, 'archived')" title="Archive" style="color:#6b7280"><span class="material-symbols-outlined">archive</span></button>
                   <button v-if="isSuperAdmin" class="row-action" @click="deleteRow(row)" title="Delete" style="color:#dc2626"><span class="material-symbols-outlined">delete</span></button>
@@ -187,6 +189,34 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Reject Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showRejectModal" class="resched-overlay" @click.self="showRejectModal = false">
+          <div class="resched-modal">
+            <div class="resched-header">
+              <h3>Reject Appointment</h3>
+              <button class="resched-close" @click="showRejectModal = false">&times;</button>
+            </div>
+            <div class="resched-body">
+              <p class="resched-consumer"><strong>{{ rejectApt?.consumer_name }}</strong></p>
+              <p class="resched-ref">{{ rejectApt?.reference_number }}</p>
+              <div class="form-group">
+                <label class="form-label">Reason for Rejection</label>
+                <textarea v-model="rejectReason" class="form-input" rows="3" placeholder="Why is this appointment being rejected?"></textarea>
+              </div>
+            </div>
+            <div class="resched-footer">
+              <button class="btn btn-secondary" @click="showRejectModal = false">Keep</button>
+              <button class="btn btn-danger" @click="confirmReject" :disabled="rejectSaving">
+                {{ rejectSaving ? 'Rejecting...' : 'Reject Appointment' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -227,6 +257,7 @@ const statusTabs = computed(() => {
     { key: 'rescheduled', label: 'Rescheduled', count: counts['rescheduled'] || 0 },
     { key: 'completed', label: 'Completed', count: counts['completed'] || 0 },
     { key: 'cancelled', label: 'Cancelled', count: counts['cancelled'] || 0 },
+    { key: 'rejected', label: 'Rejected', count: counts['rejected'] || 0 },
     { key: 'no_show', label: 'No Show', count: counts['no_show'] || 0 },
     { key: 'archived', label: 'Archived', count: counts['archived'] || 0 },
   ]
@@ -267,6 +298,10 @@ const reschedReason = ref('')
 const reschedSlots = ref([])
 const reschedSlotsLoading = ref(false)
 const reschedSaving = ref(false)
+const showRejectModal = ref(false)
+const rejectApt = ref(null)
+const rejectReason = ref('')
+const rejectSaving = ref(false)
 const minDate = new Date().toISOString().split('T')[0]
 
 async function fetchReschedSlots(date) {
@@ -322,6 +357,26 @@ async function deleteRow(row) {
     await store.fetchAppointments(currentPage.value)
   } catch (err) {
     alert('Delete failed: ' + (err.response?.data?.error?.message || 'Permission denied'))
+  }
+}
+
+function openReject(apt) {
+  rejectApt.value = apt
+  rejectReason.value = ''
+  showRejectModal.value = true
+}
+
+async function confirmReject() {
+  if (!rejectApt.value) return
+  rejectSaving.value = true
+  try {
+    await adminApi.updateAppointmentStatus(rejectApt.value.id, { status: 'rejected', notes: rejectReason.value })
+    showRejectModal.value = false
+    await store.fetchAppointments(currentPage.value)
+  } catch (err) {
+    alert('Reject failed: ' + (err.response?.data?.error?.message || err.message))
+  } finally {
+    rejectSaving.value = false
   }
 }
 
@@ -497,6 +552,7 @@ onMounted(() => store.fetchAppointments(1))
 .status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .status-rescheduled { background-color: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
 .status-cancelled { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.status-rejected { background-color: #fce4ec; color: #991b1b; border: 1px solid #f48fb1; }
 .status-completed { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
 .status-no_show { background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
 .status-archived { background-color: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }

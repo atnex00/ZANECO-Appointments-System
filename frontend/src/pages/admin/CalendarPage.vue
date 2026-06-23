@@ -149,6 +149,7 @@ onMounted(async () => {
 .status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .status-rescheduled { background-color: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
 .status-cancelled { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.status-rejected { background-color: #fce4ec; color: #991b1b; border: 1px solid #f48fb1; }
 .status-completed { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
 .status-no_show { background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
 </style>

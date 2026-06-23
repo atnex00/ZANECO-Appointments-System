@@ -99,6 +99,7 @@ const COLUMN_LABELS = {
   total: 'Total',
   completed: 'Completed',
   cancelled: 'Cancelled',
+  rejected: 'Rejected',
   no_show: 'No Show',
   rescheduled: 'Rescheduled',
   pending: 'Pending',

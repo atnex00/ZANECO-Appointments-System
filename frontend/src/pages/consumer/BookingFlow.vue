@@ -67,11 +67,7 @@
                   <input v-model="form.accountNumber" class="form-input" placeholder="1000293481" maxlength="8" inputmode="numeric" aria-required="true" />
                   <span v-if="errors.accountNumber" class="form-error" role="alert">{{ errors.accountNumber }}</span>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Mobile Number</label>
-                  <input v-model="form.mobileNumber" class="form-input" placeholder="09123456789" type="tel" autocomplete="tel" aria-required="true" maxlength="11" />
-                  <span v-if="errors.mobileNumber" class="form-error" role="alert">{{ errors.mobileNumber }}</span>
-                </div>
+
                 <div class="form-group">
                   <label class="form-label">Email Address</label>
                   <input v-model="form.email" class="form-input" placeholder="juan@example.com" type="email" autocomplete="email" />
@@ -259,7 +255,6 @@ const form = reactive({
   fullName: store.consumerName || '',
   accountName: store.accountName || '',
   accountNumber: store.accountNumber || '',
-  mobileNumber: store.mobileNumber || '',
   email: store.email || '',
   concernId: store.concernTypeId || '',
   officeId: store.officeId || '',
@@ -319,8 +314,6 @@ function validateStep(step) {
     if (!form.fullName.trim()) e.fullName = 'Required'
     if (!form.accountName.trim()) e.accountName = 'Required'
     if (!form.accountNumber.trim()) e.accountNumber = 'Required'
-    if (!form.mobileNumber.trim()) e.mobileNumber = 'Required'
-    else if (form.mobileNumber.replace(/\D/g, '').length !== 11) e.mobileNumber = 'Must be 11 digits (09XXXXXXXXX)'
   }
   if (step === 2) { if (!form.concernId) e.concernId = 'Please select a concern' }
   if (step === 3) { if (!form.officeId) e.officeId = 'Please select an office' }
@@ -398,7 +391,7 @@ async function selectDate(date) {
 async function submitBooking() {
   if (!validateStep(5)) return
   submitting.value = true
-  store.setPersonalInfo({ consumerName: form.fullName, accountName: form.accountName, accountNumber: form.accountNumber, mobileNumber: form.mobileNumber, email: form.email })
+  store.setPersonalInfo({ consumerName: form.fullName, accountName: form.accountName, accountNumber: form.accountNumber, email: form.email })
   store.setConcernAndOffice(Number(form.concernId), Number(form.officeId))
   store.setDateTime(form.appointmentDate, form.startTime)
   try {

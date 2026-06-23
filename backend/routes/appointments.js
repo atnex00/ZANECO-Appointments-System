@@ -22,7 +22,6 @@ const createSchema = Joi.object({
   consumer_name: Joi.string().trim().min(1).max(150).required(),
   account_name: Joi.string().trim().min(1).max(150).required(),
   account_number: Joi.string().trim().max(50).required(),
-  mobile_number: Joi.string().pattern(/^09\d{9}$/).required().messages({ 'string.pattern.base': 'Invalid mobile number format (09XXXXXXXXX)' }),
   email: Joi.string().email().allow('', null).optional(),
   concern_type_id: Joi.number().integer().required(),
   office_id: Joi.number().integer().required(),
@@ -31,7 +30,6 @@ const createSchema = Joi.object({
 })
 
 router.post('/', asyncHandler(async (req, res) => {
-  if (req.body.mobile_number) req.body.mobile_number = req.body.mobile_number.replace(/[^0-9]/g, '')
   if (req.body.start_time) {
     const parts = req.body.start_time.replace(/[^0-9]/g, '')
     if (parts.length >= 4) {
@@ -49,7 +47,7 @@ router.post('/', asyncHandler(async (req, res) => {
     error.details.forEach(d => { const k = d.path[0]; if (!details[k]) details[k] = []; details[k].push(d.message) })
     throw new AppError(422, 'VALIDATION_ERROR', 'Validation failed', details)
   }
-  let { consumer_name, account_name, account_number, mobile_number, email, concern_type_id, office_id, appointment_date, start_time } = value
+  let { consumer_name, account_name, account_number, email, concern_type_id, office_id, appointment_date, start_time } = value
   appointment_date = appointment_date.slice(0, 10)
 
   const [office, concern] = await Promise.all([
@@ -99,7 +97,6 @@ router.post('/', asyncHandler(async (req, res) => {
           consumerName: consumer_name,
           accountName: account_name,
           accountNumber: account_number,
-          mobileNumber: mobile_number.replace(/\s/g, ''),
           email: email || null,
           concernTypeId: concern_type_id,
           officeId: office_id,
@@ -149,7 +146,6 @@ router.post('/', asyncHandler(async (req, res) => {
       consumer_name: appointment.consumerName,
       account_name: appointment.accountName,
       account_number: appointment.accountNumber,
-      mobile_number: appointment.mobileNumber,
       email: appointment.email,
       concern_type: appointment.concernType.name,
       office: appointment.office.name,
@@ -175,7 +171,6 @@ router.get('/:reference_number', asyncHandler(async (req, res) => {
       consumer_name: a.consumerName,
       account_name: a.accountName,
       account_number: a.accountNumber,
-      mobile_number: a.mobileNumber,
       email: a.email,
       concern_type: a.concernType.name,
       office: a.office.name,
@@ -191,10 +186,9 @@ router.get('/:reference_number', asyncHandler(async (req, res) => {
 }))
 
 router.put('/:reference_number/reschedule', asyncHandler(async (req, res) => {
-  const { mobile_number, new_date, new_start_time } = req.body
+  const { new_date, new_start_time } = req.body
   const a = await prisma.appointment.findUnique({ where: { referenceNumber: req.params.reference_number } })
   if (!a) throw new AppError(404, 'NOT_FOUND', 'Appointment not found')
-  if (a.mobileNumber !== mobile_number) throw new AppError(403, 'FORBIDDEN', 'Mobile number does not match')
   if (['cancelled', 'completed'].includes(a.status)) throw new AppError(400, 'BAD_REQUEST', 'Cannot reschedule')
   if (a.rescheduleCount >= 2) throw new AppError(400, 'MAX_RESCHEDULE', 'Maximum reschedule limit')
   const oldD = a.appointmentDate, oldT = a.startTime
@@ -233,10 +227,8 @@ router.put('/:reference_number/reschedule', asyncHandler(async (req, res) => {
 }))
 
 router.put('/:reference_number/cancel', asyncHandler(async (req, res) => {
-  const { mobile_number } = req.body
   const a = await prisma.appointment.findUnique({ where: { referenceNumber: req.params.reference_number } })
   if (!a) throw new AppError(404, 'NOT_FOUND', 'Appointment not found')
-  if (a.mobileNumber !== mobile_number) throw new AppError(403, 'FORBIDDEN', 'Mobile number does not match')
 
   await prisma.$transaction([
     prisma.timeSlot.updateMany({

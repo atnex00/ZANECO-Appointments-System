@@ -74,17 +74,6 @@ async function processReminders() {
     })
 
     for (const apt of due) {
-      const smsMsg = `REMINDER: Your ZANECO appointment is tomorrow.\nRef: ${apt.referenceNumber}\nDate: ${apt.appointmentDate}\nTime: ${apt.startTime?.slice(0,5)}\nOffice: ${apt.office.name}\nPlease arrive 10 minutes early.`
-      await prisma.notification.create({
-        data: {
-          appointmentId: apt.id,
-          channel: 'sms',
-          type: 'reminder',
-          recipient: apt.mobileNumber,
-          message: smsMsg,
-        },
-      })
-
       if (apt.email) {
         const emailMsg = `Dear ${apt.consumerName},\n\nThis is a reminder of your ZANECO appointment tomorrow.\n\nReference: ${apt.referenceNumber}\nDate: ${apt.appointmentDate}\nTime: ${apt.startTime?.slice(0,5)}\nOffice: ${apt.office.name}\n\nPlease arrive 10 minutes early and bring your valid ID.\n\n— ZANECO Appointments`
         await prisma.notification.create({

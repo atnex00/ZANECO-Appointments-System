@@ -18,17 +18,13 @@ export function formatTimeSlot(start, end) {
   return `${formatTime(start)} - ${formatTime(end)}`
 }
 
-export function formatMobile(mobile) {
-  if (!mobile) return ''
-  return mobile.replace(/(\d{4})(\d{3})(\d{4})/, '$1***$3')
-}
-
 export function statusLabel(status) {
   const labels = {
     pending: 'Pending',
     confirmed: 'Confirmed',
     rescheduled: 'Rescheduled',
     cancelled: 'Cancelled',
+    rejected: 'Rejected',
     completed: 'Completed',
     no_show: 'No Show',
     archived: 'Archived',

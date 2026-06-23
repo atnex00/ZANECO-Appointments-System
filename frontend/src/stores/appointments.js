@@ -67,7 +67,7 @@ export const useAppointmentsStore = defineStore('appointments', {
             this.detail = {
               id: mock.reference_number, reference_number: mock.reference_number,
               consumer_name: mock.consumer_name, account_name: mock.account_name || mock.consumer_name,
-              account_number: mock.account_number, mobile_number: mock.mobile_number || '09171234567',
+              account_number: mock.account_number, 
               email: mock.email || null, concern_type: mock.concern_type, office: mock.office,
               appointment_date: mock.appointment_date, start_time: mock.start_time,
               end_time: mock.end_time, status: mock.status, admin_notes: null,

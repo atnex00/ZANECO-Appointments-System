@@ -2,15 +2,11 @@
   <div class="container">
     <div class="card form-card" v-if="step === 'verify'">
       <h2>Cancel Appointment</h2>
-      <p class="text-sm text-muted mb-4">Enter your reference number and mobile to find your appointment</p>
+      <p class="text-sm text-muted mb-4">Enter your reference number to find your appointment</p>
       <form @submit.prevent="handleVerify">
         <div class="form-group">
           <label class="form-label">Reference Number</label>
           <input v-model="refNumber" class="form-input" placeholder="ZNC2607000214" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Registered Mobile Number</label>
-          <input v-model="mobileNumber" class="form-input" placeholder="0917 123 4567" type="tel" />
         </div>
         <button type="submit" class="btn btn-primary btn-lg" style="width:100%" :disabled="loading">{{ loading ? 'Finding...' : 'Verify & Continue' }}</button>
       </form>
@@ -36,7 +32,7 @@
       <div class="cancelled-icon">✕</div>
       <h2>Appointment Cancelled</h2>
       <p class="text-muted mt-2">Your appointment has been cancelled successfully.</p>
-      <p class="text-sm text-muted mt-2">A cancellation notice has been sent to your mobile.</p>
+      <p class="text-sm text-muted mt-2">A cancellation notice has been sent to your email.</p>
       <div class="mt-6 flex gap-4">
         <router-link to="/book" class="btn btn-primary" style="flex:1">Book New Appointment</router-link>
         <router-link to="/" class="btn btn-secondary" style="flex:1">Go Home</router-link>
@@ -55,14 +51,13 @@ import { formatDate, formatTime } from '../../utils/formatters'
 const route = useRoute()
 const step = ref('verify')
 const refNumber = ref(route.query.ref || '')
-const mobileNumber = ref('')
 const appointment = ref(null)
 const loading = ref(false)
 const submitting = ref(false)
 const error = ref('')
 
 async function handleVerify() {
-  if (!refNumber.value || !mobileNumber.value) { error.value = 'Please fill in all fields'; return }
+  if (!refNumber.value) { error.value = 'Please enter your reference number'; return }
   loading.value = true; error.value = ''
   try {
     const { data } = await consumerApi.getAppointment(refNumber.value.trim())
@@ -78,7 +73,7 @@ async function handleVerify() {
 async function handleCancel() {
   submitting.value = true; error.value = ''
   try {
-    await consumerApi.cancelAppointment(refNumber.value.trim(), { mobile_number: mobileNumber.value })
+    await consumerApi.cancelAppointment(refNumber.value.trim())
     step.value = 'done'
   } catch (err) {
     error.value = err.response?.data?.error?.message || 'Cancellation failed.'

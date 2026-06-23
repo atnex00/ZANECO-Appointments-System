@@ -2,15 +2,11 @@
   <div class="container">
     <div class="card form-card" v-if="step === 'verify'">
       <h2>Reschedule Appointment</h2>
-      <p class="text-sm text-muted mb-4">Enter your reference number and mobile to verify your identity</p>
+      <p class="text-sm text-muted mb-4">Enter your reference number to verify your identity</p>
       <form @submit.prevent="handleVerify">
         <div class="form-group">
           <label class="form-label">Reference Number</label>
           <input v-model="refNumber" class="form-input" placeholder="ZNC2607000214" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Registered Mobile Number</label>
-          <input v-model="mobileNumber" class="form-input" placeholder="0917 123 4567" type="tel" />
         </div>
         <button type="submit" class="btn btn-primary btn-lg" style="width:100%" :disabled="loading">{{ loading ? 'Verifying...' : 'Verify & Continue' }}</button>
       </form>
@@ -63,7 +59,6 @@ import { formatDate, formatTime } from '../../utils/formatters'
 const route = useRoute()
 const step = ref('verify')
 const refNumber = ref(route.query.ref || '')
-const mobileNumber = ref('')
 const appointment = ref(null)
 const newDate = ref('')
 const newTime = ref('')
@@ -79,7 +74,7 @@ watch(newDate, () => {
 })
 
 async function handleVerify() {
-  if (!refNumber.value || !mobileNumber.value) { error.value = 'Please fill in all fields'; return }
+  if (!refNumber.value) { error.value = 'Please enter your reference number'; return }
   loading.value = true; error.value = ''
   try {
     const { data } = await consumerApi.getAppointment(refNumber.value.trim())
@@ -126,7 +121,6 @@ async function handleReschedule() {
   submitting.value = true; error.value = ''
   try {
     await consumerApi.rescheduleAppointment(refNumber.value.trim(), {
-      mobile_number: mobileNumber.value,
       new_date: newDate.value,
       new_start_time: newTime.value,
     })

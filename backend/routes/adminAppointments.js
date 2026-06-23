@@ -30,7 +30,6 @@ router.get('/', authenticate, async (req, res) => {
       { referenceNumber: { contains: search } },
       { consumerName: { contains: search } },
       { accountNumber: { contains: search } },
-      { mobileNumber: { contains: search } },
     ]
   }
 
@@ -92,7 +91,6 @@ router.get('/today', authenticate, async (req, res) => {
       reference_number: a.referenceNumber,
       consumer_name: a.consumerName,
       account_number: a.accountNumber,
-      mobile_number: a.mobileNumber,
       email: a.email,
       concern_type: a.concernType.name,
       office: a.office.name,
@@ -129,7 +127,6 @@ router.get('/:id', authenticate, async (req, res) => {
       consumer_name: appt.consumerName,
       account_name: appt.accountName,
       account_number: appt.accountNumber,
-      mobile_number: appt.mobileNumber,
       email: appt.email,
       concern_type: appt.concernType.name,
       office: appt.office.name,
@@ -163,7 +160,7 @@ router.put('/:id/notes', authenticate, async (req, res) => {
 
 router.put('/:id/status', authenticate, async (req, res) => {
   const { status, notes } = req.body
-  const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'no_show', 'archived']
+  const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'rejected', 'no_show', 'archived']
   if (!validStatuses.includes(status)) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid status' } })
 
   const appt = await prisma.appointment.findUnique({ where: { id: Number(req.params.id) } })
@@ -175,7 +172,7 @@ router.put('/:id/status', authenticate, async (req, res) => {
   const oldStatus = appt.status
   const operations = []
 
-  if (['cancelled', 'no_show', 'archived'].includes(status)) {
+  if (['cancelled', 'rejected', 'no_show', 'archived'].includes(status)) {
     operations.push(
       prisma.timeSlot.updateMany({
         where: { officeId: appt.officeId, slotDate: appt.appointmentDate, startTime: appt.startTime },
@@ -184,7 +181,7 @@ router.put('/:id/status', authenticate, async (req, res) => {
     )
   }
 
-  if (['cancelled', 'no_show', 'archived', 'completed'].includes(oldStatus) && status === 'pending') {
+  if (['cancelled', 'rejected', 'no_show', 'archived', 'completed'].includes(oldStatus) && status === 'pending') {
     operations.push(
       prisma.timeSlot.findUnique({
         where: { officeId_slotDate_startTime: { officeId: appt.officeId, slotDate: appt.appointmentDate, startTime: appt.startTime } },
@@ -240,6 +237,28 @@ router.put('/:id/status', authenticate, async (req, res) => {
           office: full.office.name,
           concern_type: full.concernType.name,
           status: full.status,
+        }).catch(() => {})
+      }
+    }).catch(() => {})
+  }
+
+  if (status === 'rejected' && appt.email) {
+    prisma.appointment.findUnique({
+      where: { id: appt.id },
+      include: { concernType: { select: { name: true } }, office: { select: { name: true } } },
+    }).then(full => {
+      if (full) {
+        emailService.sendRejected({
+          email: full.email,
+          consumer_name: full.consumerName,
+          reference_number: full.referenceNumber,
+          appointment_date: full.appointmentDate,
+          start_time: full.startTime,
+          end_time: full.endTime,
+          office: full.office.name,
+          concern_type: full.concernType.name,
+          status: full.status,
+          reason: notes || 'No reason provided',
         }).catch(() => {})
       }
     }).catch(() => {})

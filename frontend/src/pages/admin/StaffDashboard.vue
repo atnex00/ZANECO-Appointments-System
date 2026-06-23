@@ -59,7 +59,7 @@
           <div class="detail-grid">
             <div><span class="detail-label">Ref #</span><span class="detail-val mono">{{ apt.reference_number }}</span></div>
             <div><span class="detail-label">Account</span><span class="detail-val">{{ apt.account_number }}</span></div>
-            <div><span class="detail-label">Mobile</span><span class="detail-val">{{ apt.mobile_number }}</span></div>
+
             <div v-if="apt.email"><span class="detail-label">Email</span><span class="detail-val">{{ apt.email }}</span></div>
           </div>
 
@@ -73,16 +73,19 @@
             <button v-if="['pending', 'confirmed', 'rescheduled'].includes(apt.status)" class="action-btn action-outline" @click.stop="openReschedule(apt)">
               <span class="material-symbols-outlined">edit_calendar</span> Reschedule
             </button>
+            <button v-if="apt.status === 'pending'" class="action-btn action-reject" @click.stop="openReject(apt)">
+              <span class="material-symbols-outlined">block</span> Reject
+            </button>
             <button v-if="['pending', 'confirmed', 'rescheduled'].includes(apt.status)" class="action-btn action-cancel" @click.stop="openCancel(apt)">
               <span class="material-symbols-outlined">cancel</span> Cancel
             </button>
             <button v-if="['pending', 'confirmed', 'rescheduled'].includes(apt.status)" class="action-btn action-noshow" @click.stop="markNoShow(apt)">
               <span class="material-symbols-outlined">visibility_off</span> No Show
             </button>
-            <button v-if="['no_show', 'completed', 'cancelled'].includes(apt.status)" class="action-btn action-reopen" @click.stop="reopen(apt)">
+            <button v-if="['no_show', 'completed', 'cancelled', 'rejected'].includes(apt.status)" class="action-btn action-reopen" @click.stop="reopen(apt)">
               <span class="material-symbols-outlined">undo</span> Reopen
             </button>
-            <button v-if="['cancelled', 'no_show', 'completed'].includes(apt.status)" class="action-btn action-archive" @click.stop="archiveApt(apt)">
+            <button v-if="['cancelled', 'rejected', 'no_show', 'completed'].includes(apt.status)" class="action-btn action-archive" @click.stop="archiveApt(apt)">
               <span class="material-symbols-outlined">archive</span> Archive
             </button>
           </div>
@@ -144,6 +147,34 @@
               <button class="btn btn-secondary" @click="showCancelModal = false">Keep</button>
               <button class="btn btn-danger" @click="cancelAppointment" :disabled="saving">
                 {{ saving ? 'Cancelling...' : 'Cancel Appointment' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Reject Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showRejectModal" class="modal-overlay" @click.self="showRejectModal = false">
+          <div class="complete-modal">
+            <div class="complete-header">
+              <h3>Reject Appointment</h3>
+              <button class="modal-close" @click="showRejectModal = false">&times;</button>
+            </div>
+            <div class="complete-body">
+              <p class="complete-consumer"><strong>{{ actionApt?.consumer_name }}</strong></p>
+              <p class="complete-ref">{{ actionApt?.reference_number }}</p>
+              <div class="form-group">
+                <label class="form-label">Reason for Rejection</label>
+                <textarea v-model="rejectReason" class="form-input" rows="3" placeholder="Why is this appointment being rejected?"></textarea>
+              </div>
+            </div>
+            <div class="complete-footer">
+              <button class="btn btn-secondary" @click="showRejectModal = false">Keep</button>
+              <button class="btn btn-danger" @click="rejectAppointment" :disabled="saving">
+                {{ saving ? 'Rejecting...' : 'Reject Appointment' }}
               </button>
             </div>
           </div>
@@ -213,10 +244,12 @@ const todayStr = new Date().toISOString().split('T')[0]
 const viewMode = ref('date')
 const showCompleteModal = ref(false)
 const showCancelModal = ref(false)
+const showRejectModal = ref(false)
 const showRescheduleModal = ref(false)
 const actionApt = ref(null)
 const serviceNotes = ref('')
 const cancelReason = ref('')
+const rejectReason = ref('')
 const rescheduleDate = ref('')
 const rescheduleTime = ref('')
 const rescheduleReason = ref('')
@@ -378,6 +411,26 @@ async function cancelAppointment() {
     actionApt.value.status = 'cancelled'
     actionApt.value.admin_notes = cancelReason.value
     showCancelModal.value = false
+    actionApt.value = null
+  } catch {} finally {
+    saving.value = false
+  }
+}
+
+function openReject(apt) {
+  actionApt.value = apt
+  rejectReason.value = ''
+  showRejectModal.value = true
+}
+
+async function rejectAppointment() {
+  if (!actionApt.value) return
+  saving.value = true
+  try {
+    await adminApi.updateAppointmentStatus(actionApt.value.id, { status: 'rejected', notes: rejectReason.value })
+    actionApt.value.status = 'rejected'
+    actionApt.value.admin_notes = rejectReason.value
+    showRejectModal.value = false
     actionApt.value = null
   } catch {} finally {
     saving.value = false
@@ -738,6 +791,8 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
 .action-confirm:hover { background-color: #a7f3d0; }
 .action-cancel { background-color: #fee2e2; color: #991b1b; }
 .action-cancel:hover { background-color: #fecaca; }
+.action-reject { background-color: #fce4ec; color: #991b1b; }
+.action-reject:hover { background-color: #f48fb1; }
 .action-noshow { background-color: #f3f4f6; color: #4b5563; }
 .action-noshow:hover { background-color: #e5e7eb; }
 .action-outline { background-color: #eef4ff; color: #1e40af; }
@@ -892,6 +947,7 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
 .status-rescheduled { background-color: #f3e8ff; color: #6b21a8; }
 .status-completed { background-color: #d1fae5; color: #065f46; }
 .status-cancelled { background-color: #fee2e2; color: #991b1b; }
+.status-rejected { background-color: #fce4ec; color: #991b1b; }
 .status-noshow { background-color: #f3f4f6; color: #4b5563; }
 .status-archived { background-color: #f3f4f6; color: #6b7280; }
 

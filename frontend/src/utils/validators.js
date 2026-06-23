@@ -3,13 +3,6 @@ export function required(value) {
   return ''
 }
 
-export function mobileNumber(value) {
-  if (!value) return ''
-  const cleaned = value.replace(/\s/g, '')
-  if (!/^09\d{9}$/.test(cleaned)) return 'Enter a valid mobile number (09XXXXXXXXX)'
-  return ''
-}
-
 export function email(value) {
   if (!value) return ''
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address'

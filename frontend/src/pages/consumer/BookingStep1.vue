@@ -20,11 +20,7 @@
           <input id="f-account-no" v-model="form.accountNumber" class="form-input" :class="{ error: errors.accountNumber }" placeholder="12345678" maxlength="8" inputmode="numeric" autocomplete="off" aria-required="true" />
           <span v-if="errors.accountNumber" class="form-error" role="alert">{{ errors.accountNumber }}</span>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="f-mobile">Mobile Number *</label>
-          <input id="f-mobile" v-model="form.mobileNumber" class="form-input" :class="{ error: errors.mobileNumber }" placeholder="0917 123 4567" type="tel" autocomplete="tel" aria-required="true" />
-          <span v-if="errors.mobileNumber" class="form-error" role="alert">{{ errors.mobileNumber }}</span>
-        </div>
+
         <div class="form-group">
           <label class="form-label" for="f-email">Email Address (optional)</label>
           <input id="f-email" v-model="form.email" class="form-input" :class="{ error: errors.email }" placeholder="juan@example.com" type="email" autocomplete="email" />
@@ -42,7 +38,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBookingStore } from '../../stores/booking'
-import { required, mobileNumber, email, accountNumber } from '../../utils/validators'
+import { required, email, accountNumber } from '../../utils/validators'
 import Stepper from '../../components/common/Stepper.vue'
 
 const router = useRouter()
@@ -53,7 +49,6 @@ const form = reactive({
   consumerName: store.consumerName,
   accountName: store.accountName,
   accountNumber: store.accountNumber,
-  mobileNumber: store.mobileNumber,
   email: store.email,
 })
 
@@ -62,9 +57,7 @@ function validateForm() {
   if (required(form.consumerName)) e.consumerName = required(form.consumerName)
   if (required(form.accountName)) e.accountName = required(form.accountName)
   if (required(form.accountNumber)) e.accountNumber = required(form.accountNumber)
-  if (required(form.mobileNumber)) e.mobileNumber = required(form.mobileNumber)
   if (form.accountNumber && accountNumber(form.accountNumber)) e.accountNumber = accountNumber(form.accountNumber)
-  if (form.mobileNumber && mobileNumber(form.mobileNumber)) e.mobileNumber = mobileNumber(form.mobileNumber)
   if (form.email && email(form.email)) e.email = email(form.email)
   return e
 }
@@ -77,7 +70,6 @@ function handleNext() {
     consumerName: form.consumerName,
     accountName: form.accountName,
     accountNumber: form.accountNumber,
-    mobileNumber: form.mobileNumber,
     email: form.email,
   })
   router.push('/book/step2')

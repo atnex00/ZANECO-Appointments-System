@@ -32,6 +32,7 @@ const QUERIES = {
            COUNT(a.id) AS total,
            SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) AS completed,
            SUM(CASE WHEN a.status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
+           SUM(CASE WHEN a.status = 'rejected' THEN 1 ELSE 0 END) AS rejected,
            SUM(CASE WHEN a.status = 'no_show' THEN 1 ELSE 0 END) AS no_show,
            SUM(CASE WHEN a.status = 'rescheduled' THEN 1 ELSE 0 END) AS rescheduled,
            SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) AS pending,
@@ -101,11 +102,12 @@ router.get('/summary', authenticate, async (req, res) => {
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); const ws = weekStart.toISOString().split('T')[0]
   const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); const wa = weekAgo.toISOString().split('T')[0]
 
-  const [totalToday, pending, completed, cancelled, no_show, totalMonth, totalWeek, weeklyTrend] = await Promise.all([
+  const [totalToday, pending, completed, cancelled, rejected, no_show, totalMonth, totalWeek, weeklyTrend] = await Promise.all([
     prisma.appointment.count({ where: { appointmentDate: { startsWith: today } } }),
     prisma.appointment.count({ where: { status: 'pending' } }),
     prisma.appointment.count({ where: { status: 'completed' } }),
     prisma.appointment.count({ where: { status: 'cancelled' } }),
+    prisma.appointment.count({ where: { status: 'rejected' } }),
     prisma.appointment.count({ where: { status: 'no_show' } }),
     prisma.appointment.count({ where: { appointmentDate: { gte: ms } } }),
     prisma.appointment.count({ where: { appointmentDate: { gte: ws } } }),
@@ -126,6 +128,7 @@ router.get('/summary', authenticate, async (req, res) => {
       pending,
       completed,
       cancelled,
+      rejected,
       no_show,
       weekly_trend: weeklyTrend.map(w => ({ date: w.appointmentDate, count: w._count.id })),
     },

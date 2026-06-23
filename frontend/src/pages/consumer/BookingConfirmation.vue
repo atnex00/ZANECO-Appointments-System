@@ -64,7 +64,7 @@ import { computed } from 'vue'
 import { useBookingStore } from '../../stores/booking'
 import Stepper from '../../components/common/Stepper.vue'
 import StatusBadge from '../../components/common/StatusBadge.vue'
-import { formatDate, formatTime, formatMobile } from '../../utils/formatters'
+import { formatDate, formatTime } from '../../utils/formatters'
 
 const store = useBookingStore()
 const appointment = computed(() => store.appointmentResult)

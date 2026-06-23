@@ -18,7 +18,7 @@
             <div class="detail-card-body">
               <div class="d-row"><span class="d-label">Name</span><span class="d-value">{{ detail.consumer_name }}</span></div>
               <div class="d-row"><span class="d-label">Account</span><span class="d-value">{{ detail.account_name }} / {{ detail.account_number }}</span></div>
-              <div class="d-row"><span class="d-label">Mobile</span><span class="d-value">{{ detail.mobile_number }}</span></div>
+
               <div class="d-row"><span class="d-label">Email</span><span class="d-value">{{ detail.email || '—' }}</span></div>
             </div>
           </div>
@@ -38,10 +38,11 @@
               <div class="actions-grid">
                 <button v-if="['pending','rescheduled'].includes(detail.status)" class="action-chip action-confirm" @click="updateStatus('confirmed')"><span class="material-symbols-outlined">check_circle</span> Confirm</button>
                 <button v-if="detail.status === 'confirmed'" class="action-chip action-complete" @click="updateStatus('completed')"><span class="material-symbols-outlined">task_alt</span> Complete</button>
+                <button v-if="detail.status === 'pending'" class="action-chip action-reject" @click="updateStatus('rejected')"><span class="material-symbols-outlined">block</span> Reject</button>
                 <button v-if="['pending','confirmed','rescheduled'].includes(detail.status)" class="action-chip action-cancel" @click="updateStatus('cancelled')"><span class="material-symbols-outlined">cancel</span> Cancel</button>
                 <button v-if="['confirmed','rescheduled'].includes(detail.status)" class="action-chip action-noshow" @click="updateStatus('no_show')"><span class="material-symbols-outlined">visibility_off</span> No Show</button>
-                <button v-if="['cancelled','completed','no_show','archived'].includes(detail.status)" class="action-chip action-reopen" @click="updateStatus('pending')"><span class="material-symbols-outlined">undo</span> Reopen</button>
-                <button v-if="['cancelled','completed','no_show'].includes(detail.status)" class="action-chip action-archive" @click="updateStatus('archived')"><span class="material-symbols-outlined">archive</span> Archive</button>
+                <button v-if="['cancelled','rejected','completed','no_show','archived'].includes(detail.status)" class="action-chip action-reopen" @click="updateStatus('pending')"><span class="material-symbols-outlined">undo</span> Reopen</button>
+                <button v-if="['cancelled','rejected','completed','no_show'].includes(detail.status)" class="action-chip action-archive" @click="updateStatus('archived')"><span class="material-symbols-outlined">archive</span> Archive</button>
                 <button v-if="isSuperAdmin" class="action-chip action-delete" @click="handleDelete"><span class="material-symbols-outlined">delete</span> Delete</button>
               </div>
               <div class="notes-section">
@@ -109,7 +110,7 @@ async function updateStatus(status) {
   try {
     await adminApi.updateAppointmentStatus(route.params.id, { status, notes: notes.value })
     // If reopened to pending, go back to appointments list
-    if (status === 'pending' && ['archived', 'cancelled', 'completed', 'no_show'].includes(detail.value?.status)) {
+    if (status === 'pending' && ['archived', 'cancelled', 'rejected', 'completed', 'no_show'].includes(detail.value?.status)) {
       router.push('/admin/appointments')
     } else {
       await fetchDetail()
@@ -178,6 +179,7 @@ onMounted(fetchDetail)
 .status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .status-rescheduled { background-color: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
 .status-cancelled { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.status-rejected { background-color: #fce4ec; color: #991b1b; border: 1px solid #f48fb1; }
 .status-completed { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
 .status-no_show { background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
 .status-archived { background-color: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
@@ -190,6 +192,7 @@ onMounted(fetchDetail)
 .action-confirm { background-color: #ecfdf5; color: #059669; border-color: #a7f3d0; }
 .action-complete { background-color: #ecfdf5; color: #059669; border-color: #a7f3d0; }
 .action-cancel { background-color: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.action-reject { background-color: #fce4ec; color: #991b1b; border-color: #f48fb1; }
 .action-noshow { background-color: #fff7ed; color: #c2410c; border-color: #fed7aa; }
 .action-reopen { background-color: #eef4ff; color: #1e40af; border-color: #b8c4ff; }
 .action-archive { background-color: #f3f4f6; color: #6b7280; border-color: #d1d5db; }

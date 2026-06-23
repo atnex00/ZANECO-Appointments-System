@@ -12,6 +12,7 @@
       <div class="stat-card"><span class="stat-label">PENDING</span><span class="stat-value" style="color:var(--color-warning)">{{ summary?.pending ?? '-' }}</span></div>
       <div class="stat-card"><span class="stat-label">COMPLETED</span><span class="stat-value" style="color:var(--color-success)">{{ summary?.completed ?? '-' }}</span></div>
       <div class="stat-card"><span class="stat-label">CANCELLED</span><span class="stat-value" style="color:var(--color-danger)">{{ summary?.cancelled ?? '-' }}</span></div>
+      <div class="stat-card"><span class="stat-label">REJECTED</span><span class="stat-value" style="color:#991b1b">{{ summary?.rejected ?? '-' }}</span></div>
     </div>
 
     <div v-if="!loading" class="chart-row">
@@ -53,6 +54,7 @@
                   <router-link :to="`/admin/appointments/${apt.id}`" class="row-action" title="View"><span class="material-symbols-outlined">visibility</span></router-link>
                   <button v-if="apt.status === 'pending'" class="row-action" @click="quickAction(apt.id, 'confirmed', $event)" title="Confirm"><span class="material-symbols-outlined">check_circle</span></button>
                   <button v-if="apt.status === 'confirmed'" class="row-action" @click="quickAction(apt.id, 'completed', $event)" title="Complete"><span class="material-symbols-outlined">task_alt</span></button>
+                  <button v-if="apt.status === 'pending'" class="row-action" @click="quickAction(apt.id, 'rejected', $event)" title="Reject" style="color:#991b1b"><span class="material-symbols-outlined">block</span></button>
                   <button v-if="['pending','confirmed'].includes(apt.status)" class="row-action" @click="quickAction(apt.id, 'cancelled', $event)" title="Cancel" style="color:#dc2626"><span class="material-symbols-outlined">cancel</span></button>
                 </td>
               </tr>
@@ -169,6 +171,7 @@ onMounted(async () => {
 .status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .status-rescheduled { background-color: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
 .status-cancelled { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.status-rejected { background-color: #fce4ec; color: #991b1b; border: 1px solid #f48fb1; }
 .status-completed { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
 .status-no_show { background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
 

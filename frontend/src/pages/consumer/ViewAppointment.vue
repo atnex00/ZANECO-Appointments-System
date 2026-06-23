@@ -44,7 +44,7 @@ const error = ref('')
 function getMockAppointment(ref) {
   // First check the hardcoded demo
   const demos = {
-    'ZNC2607000001': { reference_number: 'ZNC2607000001', consumer_name: 'Juan Dela Cruz', account_number: '12345678', concern_type: 'Clarification of Electric Bill Charges', office: 'Main Office', appointment_date: '2026-07-21', start_time: '09:00:00', end_time: '09:30:00', status: 'confirmed', created_at: '2026-06-20T10:30:00+08:00', mobile_number: '09171234567' },
+    'ZNC2607000001': { reference_number: 'ZNC2607000001', consumer_name: 'Juan Dela Cruz', account_number: '12345678', concern_type: 'Clarification of Electric Bill Charges', office: 'Main Office', appointment_date: '2026-07-21', start_time: '09:00:00', end_time: '09:30:00', status: 'confirmed', created_at: '2026-06-20T10:30:00+08:00' },
   }
   if (demos[ref]) return demos[ref]
   // Then check localStorage for recently created mock appointments

@@ -72,11 +72,12 @@ app.get('/api/v1/admin/dashboard/summary', require('./middleware/auth').authenti
     const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); const ws = weekStart.toISOString().split('T')[0]
     const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); const wa = weekAgo.toISOString().split('T')[0]
 
-    const [totalToday, pending, completed, cancelled, no_show, totalMonth, totalWeek] = await Promise.all([
+    const [totalToday, pending, completed, cancelled, rejected, no_show, totalMonth, totalWeek] = await Promise.all([
       prisma.appointment.count({ where: { appointmentDate: { startsWith: today } } }),
       prisma.appointment.count({ where: { status: 'pending' } }),
       prisma.appointment.count({ where: { status: 'completed' } }),
       prisma.appointment.count({ where: { status: 'cancelled' } }),
+      prisma.appointment.count({ where: { status: 'rejected' } }),
       prisma.appointment.count({ where: { status: 'no_show' } }),
       prisma.appointment.count({ where: { appointmentDate: { gte: ms } } }),
       prisma.appointment.count({ where: { appointmentDate: { gte: ws } } }),
@@ -123,6 +124,7 @@ app.get('/api/v1/admin/dashboard/summary', require('./middleware/auth').authenti
         pending,
         completed,
         cancelled,
+        rejected,
         no_show,
         busiest_office: busyOfficeName,
         busiest_hour: peakHour ? `${String(peakHour.hour).padStart(2,'0')}:00-${String(peakHour.hour+1).padStart(2,'0')}:00` : 'N/A',

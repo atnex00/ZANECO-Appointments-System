@@ -109,7 +109,6 @@ model Appointment {
   consumerName    String   @map("consumer_name")
   accountName     String   @map("account_name")
   accountNumber   String   @map("account_number")
-  mobileNumber    String   @map("mobile_number")
   email           String?
   concernTypeId   Int      @map("concern_type_id")
   officeId        Int      @map("office_id")

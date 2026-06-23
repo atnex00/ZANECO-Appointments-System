@@ -7,7 +7,6 @@ export const useBookingStore = defineStore('booking', {
     consumerName: '',
     accountName: '',
     accountNumber: '',
-    mobileNumber: '',
     email: '',
     concernTypeId: null,
     officeId: null,
@@ -28,7 +27,6 @@ export const useBookingStore = defineStore('booking', {
       this.consumerName = data.consumerName
       this.accountName = data.accountName
       this.accountNumber = data.accountNumber
-      this.mobileNumber = data.mobileNumber
       this.email = data.email
       this.step = 2
     },
@@ -49,7 +47,6 @@ export const useBookingStore = defineStore('booking', {
           consumer_name: this.consumerName,
           account_name: this.accountName,
           account_number: this.accountNumber,
-          mobile_number: this.mobileNumber,
           email: this.email || undefined,
           concern_type_id: this.concernTypeId,
           office_id: this.officeId,

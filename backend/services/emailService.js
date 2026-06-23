@@ -123,4 +123,33 @@ async function sendConfirmed(appointment) {
   })
 }
 
-module.exports = { sendConfirmation, sendReminder, sendConfirmed, sendEmail }
+async function sendRejected(appointment) {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: #991b1b; color: white; padding: 20px; text-align: center;">
+        <h2 style="margin: 0;">Appointment Not Approved</h2>
+      </div>
+      <div style="padding: 20px; border: 1px solid #ddd;">
+        <p>Dear <strong>${appointment.consumer_name}</strong>,</p>
+        <p>We regret to inform you that your appointment request could not be approved at this time.</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Reference No.</td><td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">${appointment.reference_number}</td></tr>
+          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Date</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.appointment_date}</td></tr>
+          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Time</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.start_time?.slice(0,5)} - ${appointment.end_time?.slice(0,5)}</td></tr>
+          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Office</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.office}</td></tr>
+          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Reason</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.reason}</td></tr>
+          <tr><td style="padding: 8px; color: #666;">Status</td><td style="padding: 8px; font-weight: bold; color: #dc2626;">Not Approved</td></tr>
+        </table>
+        <p style="color: #888; font-size: 12px;">If you have questions, please contact ZANECO customer support.</p>
+        <p style="color: #888; font-size: 12px;">— ZANECO Appointments System</p>
+      </div>
+    </div>`
+
+  return sendEmail({
+    to: appointment.email,
+    subject: `Appointment Not Approved — ${appointment.reference_number}`,
+    html,
+  })
+}
+
+module.exports = { sendConfirmation, sendReminder, sendConfirmed, sendRejected, sendEmail }

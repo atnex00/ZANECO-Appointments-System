@@ -47,6 +47,7 @@
               <tr><td><span class="status-badge status-rescheduled">Rescheduled</span></td><td>Appointment date/time changed</td><td>Confirm, Cancel, Reschedule, No Show</td></tr>
               <tr><td><span class="status-badge status-completed">Completed</span></td><td>Consumer visited and was served</td><td>Archive, Reopen</td></tr>
               <tr><td><span class="status-badge status-cancelled">Cancelled</span></td><td>Appointment was cancelled</td><td>Archive, Reopen</td></tr>
+              <tr><td><span class="status-badge status-rejected">Rejected</span></td><td>Appointment was rejected by admin</td><td>Archive, Reopen</td></tr>
               <tr><td><span class="status-badge status-noshow">No Show</span></td><td>Consumer did not arrive</td><td>Archive, Reopen</td></tr>
               <tr><td><span class="status-badge status-archived">Archived</span></td><td>Moved to archive</td><td>Reopen</td></tr>
             </tbody>
@@ -167,7 +168,7 @@
         <p class="guide-p">Use the tabs at the top to filter the queue: <strong>All</strong> (everyone), <strong>Waiting</strong> (pending and confirmed arrivals), <strong>Completed</strong> (finished appointments), and <strong>No Show</strong> (consumers who didn't arrive).</p>
 
         <h3 class="guide-h3">Check-in Flow</h3>
-        <p class="guide-p">Tap an appointment card to expand it and see full details (reference number, account number, mobile number, email). From the expanded view, you can take the following actions:</p>
+        <p class="guide-p">Tap an appointment card to expand it and see full details (reference number, account number, email). From the expanded view, you can take the following actions:</p>
         <ul class="guide-ul">
           <li><strong>Mark Arrived</strong> &mdash; Confirms the consumer's arrival. Changes status from pending to confirmed.</li>
           <li><strong>Complete Service</strong> &mdash; Opens a modal to add service notes about what was done, then marks the appointment as completed.</li>
@@ -439,6 +440,7 @@ function scrollTo(id) {
 .status-rescheduled { background-color: #f3e8ff; color: #6b21a8; }
 .status-completed { background-color: #d1fae5; color: #065f46; }
 .status-cancelled { background-color: #fee2e2; color: #991b1b; }
+.status-rejected { background-color: #fce4ec; color: #991b1b; }
 .status-noshow { background-color: #f3f4f6; color: #4b5563; }
 .status-archived { background-color: #f3f4f6; color: #6b7280; }
 
