@@ -35,7 +35,7 @@
       </div>
 
       <p class="text-sm text-muted">
-        A confirmation SMS has been sent to {{ formatMobile(appointment.mobile_number) }}.
+        A confirmation email has been sent to {{ appointment.email }}.
       </p>
 
       <div class="flex gap-4 mt-6">

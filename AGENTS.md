@@ -59,7 +59,7 @@ pnpm monorepo with two packages:
 - **Express 4 does not catch async errors in route handlers**; backend routes use `asyncHandler` wrapper (`backend/middleware/errors.js:42`) or explicit try/catch.
 - **Auth**: Admin JWT stored in `localStorage` key `admin_token`. The axios interceptor (`frontend/src/api/client.js`) attaches it automatically and redirects to `/admin/login` on 401.
 - **Notifications**: `backend/worker.js` runs a 30s interval. Currently simulates sending. Wire real providers via `.env` (see README).
-- **Email receipts**: `backend/services/emailService.js` sends confirmation emails via Nodemailer (fire-and-forget after booking). Configure `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` in `.env`. Unconfigured SMTP silently skips sending — no crash.
+- **Email receipts**: `backend/services/emailService.js` sends confirmation emails via Nodemailer (fire-and-forget after booking). Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` in `.env`. Unconfigured SMTP silently skips — no crash. For Gmail, use an [App Password](https://myaccount.google.com/apppasswords) (requires 2FA).
 - **Prisma ORM** — All DB access goes through Prisma Client. Schema at `backend/prisma/schema.prisma`. Reports with complex aggregations use `$queryRaw` with PostgreSQL syntax.
 
 ## Style conventions
