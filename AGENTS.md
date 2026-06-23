@@ -9,12 +9,14 @@ pnpm monorepo with two packages:
 ## Prerequisites
 
 - **Node.js 18+** — ships with `corepack` (no global pnpm install needed).
+- **Node.js 25+** — corepack is no longer bundled; install it first: `npm install -g corepack`
 
 ## Commands
 
 | Action | Command |
 |--------|---------|
 | Enable pnpm (one-time) | `corepack enable` |
+| Install all | `pnpm install` |
 | Install all | `pnpm install` |
 | Seed DB | `pnpm run seed` |
 | Start both dev servers | `pnpm run dev` |
