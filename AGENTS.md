@@ -74,15 +74,14 @@ pnpm monorepo with two packages:
 
 ## Installed skills (`.opencode/skills/`)
 
-Three skills are available. The agent loads them automatically when the task matches, but these are the triggers:
+Four skills are available. The agent loads them automatically when the task matches, but these are the triggers:
 
 | Skill | When to use | Key rule |
 |-------|-------------|----------|
 | `brainstorming` | Before any creative or feature work — new pages, components, backend features, behavior changes | **Hard gate**: no code until design is presented and approved. Must write `docs/design/YYYY-MM-DD-<topic>-design.md`. |
+| `collab-design` | When working on the col.lab collaboration platform UI | Student-focused, warm aesthetic, coral/teal palette, existing architecture constraints. |
 | `frontend-design` | When building new UI components or reshaping existing ones | Use two-pass process: first design a color/type/layout/signature token system, then build. Avoid generic defaults. |
 | `find-skills` | When user asks "how do I do X" or "find a skill for X" | Check `skills.sh` leaderboard first, verify install counts and source reputation. |
-
-`collab-design` is also installed but applies to a different project (col.lab platform) — not relevant here.
 
 ## Key entrypoints
 

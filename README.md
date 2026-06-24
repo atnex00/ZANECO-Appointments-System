@@ -259,9 +259,9 @@ Add this cron job (`crontab -e`):
 
 ```cron
 # Daily database backup at 2 AM
-0 2 * * * cp /var/www/zaneco/backend/data/zaneco.db /var/backups/zaneco/zaneco-$(date +\%Y\%m\%d).db
+0 2 * * * pg_dump -U zaneco -d zaneco_appointments | gzip > /var/backups/zaneco/zaneco-$(date +\%Y\%m\%d).sql.gz
 # Keep 30 days
-0 3 * * * find /var/backups/zaneco/ -name "*.db" -mtime +30 -delete
+0 3 * * * find /var/backups/zaneco/ -name "*.sql.gz" -mtime +30 -delete
 ```
 
 ### 8. Monitoring

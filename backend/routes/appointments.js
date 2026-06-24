@@ -73,7 +73,7 @@ router.post('/', asyncHandler(async (req, res) => {
         const eh = m + duration >= 60 ? h + 1 : h
         const em = m + duration >= 60 ? m + duration - 60 : m + duration
         const et = String(eh).padStart(2,'0') + ':' + String(em).padStart(2,'0') + ':00'
-        if (eh < 17) {
+        if (eh < 17 && h !== 12) {
           slots.push({ officeId: office_id, slotDate: appointment_date, startTime: st, endTime: et, maxCapacity: office.slotCapacity })
         }
       }

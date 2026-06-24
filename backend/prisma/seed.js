@@ -88,10 +88,11 @@ async function runSeed() {
     })
   }
 
-  // Generate time slots for next 30 days
+  // Generate time slots for next 30 days (skip 12:00-12:30 lunch break)
   const today = new Date()
   const slotTimes = []
   for (let h = 8; h < 17; h++) {
+    if (h === 12) continue
     slotTimes.push(`${String(h).padStart(2, '0')}:00:00`)
     if (h < 16) slotTimes.push(`${String(h).padStart(2, '0')}:30:00`)
   }
