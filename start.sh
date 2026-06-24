@@ -8,11 +8,21 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Enable corepack (built-in pnpm; npm install -g corepack for Node 25+)
-if ! corepack enable 2>/dev/null; then
-    echo "corepack not bundled — installing via npm..."
-    npm install -g corepack || { echo "Failed. Try: npm install -g pnpm"; exit 1; }
-    corepack enable
+# Ensure pnpm is available
+if ! command -v pnpm &> /dev/null; then
+    # Try corepack (built-in pnpm on Node <25, or installable via npm)
+    if ! corepack enable 2>/dev/null; then
+        echo "corepack not bundled — installing via npm..."
+        # Global npm install may fail with EACCES; fall back to user-local prefix
+        if ! npm install -g corepack 2>/dev/null; then
+            echo "Global npm install needs root. Using user-local prefix instead..."
+            npm config set prefix "$HOME/.npm-global"
+            export PATH="$HOME/.npm-global/bin:$PATH"
+            npm install -g corepack
+        fi
+        corepack enable
+        hash -r 2>/dev/null || true
+    fi
 fi
 
 # Install dependencies if needed
