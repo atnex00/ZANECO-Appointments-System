@@ -196,7 +196,7 @@ async function saveSchedule() {
       is_working_day: scheduleData.value[d.key].working,
     }))
     await adminApi.updateOfficeSchedule(scheduleOffice.value.id, { schedules })
-  } catch {} finally { savingSchedule.value = false; scheduleOffice.value = null }
+  } catch (err) { console.error('Save schedule failed:', err) } finally { savingSchedule.value = false; scheduleOffice.value = null }
 }
 
 function editOffice(office) {
@@ -207,7 +207,7 @@ async function generateSlots(office) {
   if (!confirm(`Generate 30 days of time slots for ${office.name}?`)) return
   try {
     await adminApi.updateOffice(office.id, {})
-  } catch {}
+  } catch (err) { console.error('Generate slots failed:', err); alert('Failed to generate time slots'); return }
   alert('Time slots generated successfully')
 }
 </script>

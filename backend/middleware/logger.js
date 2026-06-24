@@ -42,7 +42,7 @@ function requestLogger(req, res, next) {
         bodyPreview: ['POST', 'PUT'].includes(req.method) ? JSON.stringify(req.body).slice(0, 500) : null,
         errorMessage: res.statusCode >= 400 ? res.statusMessage || null : null,
       },
-    }).catch(() => {})
+    }).catch(err => console.error('Audit log write failed:', err))
 
     if (!config.isProduction) {
       const ts = new Date().toISOString().slice(11, 19)

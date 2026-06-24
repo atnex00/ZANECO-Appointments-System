@@ -108,7 +108,7 @@ async function quickAction(id, status, event) {
     // Refresh recent appointments
     const { data } = await adminApi.getAppointments({ per_page: 8, sort_by: 'created_at', sort_order: 'desc' })
     recentAppts.value = data.data.appointments || []
-  } catch {}
+  } catch (err) { console.error('Quick status update failed:', err) }
 }
 
 onMounted(async () => {
@@ -119,7 +119,7 @@ onMounted(async () => {
     ])
     summary.value = sumRes.data.data
     recentAppts.value = aptRes.data.data.appointments || []
-  } catch {} finally { loading.value = false }
+  } catch (err) { console.error('Dashboard load failed:', err) } finally { loading.value = false }
 })
 </script>
 

@@ -83,7 +83,7 @@ const saving = ref(false)
 const form = ref({ name: '', code: '', description: '', estimated_duration_minutes: 30, sort_order: 0, is_active: true })
 
 async function fetchData() {
-  try { const { data } = await adminApi.getConcernTypes(); concernTypes.value = data.data } catch {} finally { loading.value = false }
+  try { const { data } = await adminApi.getConcernTypes(); concernTypes.value = data.data } catch (err) { console.error('Fetch concern types failed:', err) } finally { loading.value = false }
 }
 function openAdd() { editingItem.value = null; form.value = { name: '', code: '', description: '', estimated_duration_minutes: 30, sort_order: 0, is_active: true }; showForm.value = true }
 function editItem(item) { editingItem.value = item; form.value = { ...item }; showForm.value = true }

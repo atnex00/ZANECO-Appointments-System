@@ -146,7 +146,7 @@ onMounted(async () => {
     const [offRes, ctRes] = await Promise.all([adminApi.getOffices(), adminApi.getConcernTypes()])
     offices.value = offRes.data.data || offRes.data
     concernTypes.value = ctRes.data.data || ctRes.data
-  } catch {}
+  } catch (err) { console.error('Fetch reports metadata failed:', err) }
 })
 
 async function generateReport() {

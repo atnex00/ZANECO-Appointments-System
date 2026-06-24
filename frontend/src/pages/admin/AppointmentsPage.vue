@@ -385,7 +385,7 @@ async function quickAction(id, status) {
   try {
     await adminApi.updateAppointmentStatus(id, { status })
     await store.fetchAppointments(currentPage.value)
-  } catch {}
+  } catch (err) { console.error('Quick action failed:', err); alert('Action failed. Please try again.') }
 }
 
 function changePage(p) { store.fetchAppointments(p) }

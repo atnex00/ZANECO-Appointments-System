@@ -12,13 +12,33 @@ if (fs.existsSync(envPath)) {
   console.log('No .env file found, using defaults (dev mode)')
 }
 
+function required(key, hint) {
+  if (!process.env[key]) {
+    const msg = `Missing required env var: ${key}${hint ? ` (${hint})` : ''}`
+    if (process.env.NODE_ENV === 'production') {
+      console.error(msg)
+      process.exit(1)
+    }
+    console.warn(`WARNING: ${msg} — using dev fallback`)
+  }
+}
+
+required('DATABASE_URL', 'set in .env or environment')
+
+const JWT_SECRET = process.env.JWT_SECRET
+if (JWT_SECRET === 'change-this-to-a-random-64-char-string') {
+  const msg = 'JWT_SECRET is still the placeholder value — generate a real 64-char secret'
+  if (process.env.NODE_ENV === 'production') { console.error(msg); process.exit(1) }
+  console.warn('WARNING: ' + msg)
+}
+
 const config = {
   port: parseInt(process.env.PORT, 10) || 8000,
   nodeEnv: process.env.NODE_ENV || 'development',
   isProduction: (process.env.NODE_ENV || 'development') === 'production',
 
   jwt: {
-    secret: process.env.JWT_SECRET || 'zaneco-dev-secret-change-in-production',
+    secret: JWT_SECRET || 'zaneco-dev-secret-change-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '1h',
   },
 

@@ -143,7 +143,7 @@ async function fetchDetail() {
     notes.value = data.data.admin_notes || ''
     notifications.value = data.data.notifications || []
     auditLogs.value = data.data.audit_trail || []
-  } catch {} finally { loading.value = false }
+  } catch (err) { console.error('Fetch detail failed:', err) } finally { loading.value = false }
 }
 
 onMounted(fetchDetail)

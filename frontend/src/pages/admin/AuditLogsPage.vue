@@ -63,7 +63,7 @@ async function fetchLogs(p = 1) {
     const { data } = await adminApi.getAuditLogs(params)
     logs.value = data.data?.audit_logs || data.data || []
     lastPage.value = data.data?.pagination?.last_page || 1
-  } catch {} finally { loading.value = false }
+  } catch (err) { console.error('Fetch audit logs failed:', err) } finally { loading.value = false }
 }
 
 function changePage(p) { fetchLogs(p) }

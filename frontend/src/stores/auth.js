@@ -34,7 +34,7 @@ export const useAuthStore = defineStore('auth', {
     async logout() {
       try {
         await adminApi.logout()
-      } catch {}
+      } catch (err) { console.error('Logout API call failed:', err) }
       this.token = ''
       this.user = null
       this.isAuthenticated = false

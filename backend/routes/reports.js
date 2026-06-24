@@ -2,6 +2,7 @@ const express = require('express')
 const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
 const { generateReportPDF } = require('../services/pdfGenerator')
+const { asyncHandler } = require('../middleware/errors')
 
 const router = express.Router()
 
@@ -11,15 +12,16 @@ function dateFilter(req, res, next) {
 
   const conditions = []
   const params = []
+  let p = 0
 
   if (req.admin.role === 'office_manager' || req.admin.role === 'staff') {
-    conditions.push('a.office_id = ?')
+    conditions.push(`a.office_id = $${++p}`)
     params.push(req.admin.officeId)
   }
-  if (date_from) { conditions.push('a.appointment_date >= ?'); params.push(date_from) }
-  if (date_to) { conditions.push('a.appointment_date <= ?'); params.push(date_to) }
-  if (office_id) { conditions.push('a.office_id = ?'); params.push(Number(office_id)) }
-  if (concern_type_id) { conditions.push('a.concern_type_id = ?'); params.push(Number(concern_type_id)) }
+  if (date_from) { conditions.push(`a.appointment_date >= $${++p}`); params.push(date_from) }
+  if (date_to) { conditions.push(`a.appointment_date <= $${++p}`); params.push(date_to) }
+  if (office_id) { conditions.push(`a.office_id = $${++p}`); params.push(Number(office_id)) }
+  if (concern_type_id) { conditions.push(`a.concern_type_id = $${++p}`); params.push(Number(concern_type_id)) }
 
   req.where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''
   req.params = params
@@ -66,37 +68,37 @@ const QUERIES = {
     GROUP BY month ORDER BY month`,
 }
 
-router.get('/appointments-by-office', authenticate, dateFilter, async (req, res) => {
+router.get('/appointments-by-office', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const sql = QUERIES['appointments-by-office'].replace('__WHERE__', req.where)
   const data = await prisma.$queryRawUnsafe(sql, ...req.params)
   res.json({ success: true, data })
-})
+}))
 
-router.get('/appointments-by-concern', authenticate, dateFilter, async (req, res) => {
+router.get('/appointments-by-concern', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const sql = QUERIES['appointments-by-concern'].replace('__WHERE__', req.where)
   const data = await prisma.$queryRawUnsafe(sql, ...req.params)
   res.json({ success: true, data })
-})
+}))
 
-router.get('/daily', authenticate, dateFilter, async (req, res) => {
+router.get('/daily', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const sql = QUERIES.daily.replace('__WHERE__', req.where)
   const data = await prisma.$queryRawUnsafe(sql, ...req.params)
   res.json({ success: true, data })
-})
+}))
 
-router.get('/weekly', authenticate, dateFilter, async (req, res) => {
+router.get('/weekly', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const sql = QUERIES.weekly.replace('__WHERE__', req.where)
   const data = await prisma.$queryRawUnsafe(sql, ...req.params)
   res.json({ success: true, data })
-})
+}))
 
-router.get('/monthly', authenticate, dateFilter, async (req, res) => {
+router.get('/monthly', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const sql = QUERIES.monthly.replace('__WHERE__', req.where)
   const data = await prisma.$queryRawUnsafe(sql, ...req.params)
   res.json({ success: true, data })
-})
+}))
 
-router.get('/summary', authenticate, async (req, res) => {
+router.get('/summary', authenticate, asyncHandler(async (req, res) => {
   const today = new Date().toISOString().split('T')[0]
   const monthStart = new Date(); monthStart.setDate(1); const ms = monthStart.toISOString().split('T')[0]
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); const ws = weekStart.toISOString().split('T')[0]
@@ -133,7 +135,7 @@ router.get('/summary', authenticate, async (req, res) => {
       weekly_trend: weeklyTrend.map(w => ({ date: w.appointmentDate, count: w._count.id })),
     },
   })
-})
+}))
 
 async function fetchReportData(type, where, params) {
   if (!QUERIES[type]) throw new Error('Invalid report type')
@@ -141,7 +143,7 @@ async function fetchReportData(type, where, params) {
   return await prisma.$queryRawUnsafe(sql, ...params)
 }
 
-router.get('/export', authenticate, dateFilter, async (req, res) => {
+router.get('/export', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const { type, format } = req.query
   if (!type) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Report type required' } })
 
@@ -177,6 +179,6 @@ router.get('/export', authenticate, dateFilter, async (req, res) => {
     console.error('Export error:', err)
     res.status(500).json({ success: false, error: { code: 'EXPORT_ERROR', message: err.message } })
   }
-})
+}))
 
 module.exports = router

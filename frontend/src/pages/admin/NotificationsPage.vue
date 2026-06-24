@@ -79,11 +79,11 @@ async function fetchData(p = 1) {
     notifications.value = data.data.notifications || []
     total.value = data.data.pagination?.total || 0
     lastPage.value = data.data.pagination?.last_page || 1
-  } catch {}
+  } catch (err) { console.error('Fetch notifications failed:', err) }
 }
 
 async function resend(id) {
-  try { await adminApi.resendNotification(id); await fetchData(page.value) } catch {}
+  try { await adminApi.resendNotification(id); await fetchData(page.value) } catch (err) { console.error('Resend notification failed:', err); alert('Failed to resend notification') }
 }
 
 function changePage(p) { fetchData(p) }

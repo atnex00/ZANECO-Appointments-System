@@ -1,10 +1,11 @@
 const express = require('express')
 const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
+const { asyncHandler } = require('../middleware/errors')
 
 const router = express.Router()
 
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { status, page = 1, per_page = 50 } = req.query
   const where = status ? { status } : {}
 
@@ -25,9 +26,9 @@ router.get('/', authenticate, async (req, res) => {
       pagination: { current_page: Number(page), per_page: Number(per_page), total, last_page: Math.ceil(total / per_page) || 1 },
     },
   })
-})
+}))
 
-router.post('/resend/:id', authenticate, async (req, res) => {
+router.post('/resend/:id', authenticate, asyncHandler(async (req, res) => {
   const notif = await prisma.notification.findUnique({ where: { id: Number(req.params.id) } })
   if (!notif) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Notification not found' } })
 
@@ -36,6 +37,6 @@ router.post('/resend/:id', authenticate, async (req, res) => {
     data: { status: 'pending', retryCount: 0 },
   })
   res.json({ success: true, message: 'Notification queued for resend' })
-})
+}))
 
 module.exports = router

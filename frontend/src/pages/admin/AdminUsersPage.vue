@@ -128,11 +128,11 @@ const saving = ref(false)
 const form = ref({ full_name: '', email: '', password: '', role: 'staff', office_id: null, is_active: true })
 
 async function fetchUsers() {
-  try { const { data } = await adminApi.getUsers(); users.value = data.data || [] } catch {}
+  try { const { data } = await adminApi.getUsers(); users.value = data.data || [] } catch (err) { console.error('Fetch users failed:', err) }
 }
 
 async function fetchOffices() {
-  try { const { data } = await adminApi.getOffices(); offices.value = data.data || [] } catch {}
+  try { const { data } = await adminApi.getOffices(); offices.value = data.data || [] } catch (err) { console.error('Fetch offices failed:', err) }
 }
 
 function officeName(id) {

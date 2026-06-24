@@ -97,7 +97,7 @@ onMounted(async () => {
     const me = format(endOfMonth(currentView.value), 'yyyy-MM-dd')
     const { data } = await adminApi.getAppointments({ date_from: ms, date_to: me, per_page: 200 })
     appointments.value = data.data.appointments || []
-  } catch {} finally { loading.value = false }
+  } catch (err) { console.error('Fetch appointments failed:', err) } finally { loading.value = false }
 })
 </script>
 

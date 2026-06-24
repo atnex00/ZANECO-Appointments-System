@@ -82,7 +82,7 @@
             <button v-if="['pending', 'confirmed', 'rescheduled'].includes(apt.status)" class="action-btn action-noshow" @click.stop="markNoShow(apt)">
               <span class="material-symbols-outlined">visibility_off</span> No Show
             </button>
-            <button v-if="['no_show', 'completed', 'cancelled', 'rejected'].includes(apt.status)" class="action-btn action-reopen" @click.stop="reopen(apt)">
+            <button v-if="['no_show', 'completed', 'cancelled', 'rejected', 'archived'].includes(apt.status)" class="action-btn action-reopen" @click.stop="reopen(apt)">
               <span class="material-symbols-outlined">undo</span> Reopen
             </button>
             <button v-if="['cancelled', 'rejected', 'no_show', 'completed'].includes(apt.status)" class="action-btn action-archive" @click.stop="archiveApt(apt)">
@@ -334,7 +334,7 @@ async function fetchOffices() {
   try {
     const { data } = await adminApi.getOffices()
     offices.value = data.data || []
-  } catch {}
+  } catch (err) { console.error('Failed to fetch offices:', err) }
 }
 
 function switchToUpcoming() {
@@ -374,7 +374,7 @@ async function confirmArrival(apt) {
   try {
     await adminApi.updateAppointmentStatus(apt.id, { status: 'confirmed' })
     apt.status = 'confirmed'
-  } catch {}
+  } catch (err) { console.error('Confirm arrival failed:', err); alert('Failed to confirm arrival. Please try again.') }
 }
 
 function openComplete(apt) {
@@ -392,7 +392,7 @@ async function completeService() {
     actionApt.value.admin_notes = serviceNotes.value
     showCompleteModal.value = false
     actionApt.value = null
-  } catch {} finally {
+  } catch (err) { console.error('Complete service failed:', err); alert('Failed to complete service. Please try again.') } finally {
     saving.value = false
   }
 }
@@ -412,7 +412,7 @@ async function cancelAppointment() {
     actionApt.value.admin_notes = cancelReason.value
     showCancelModal.value = false
     actionApt.value = null
-  } catch {} finally {
+  } catch (err) { console.error('Cancel failed:', err); alert('Failed to cancel appointment. Please try again.') } finally {
     saving.value = false
   }
 }
@@ -432,7 +432,7 @@ async function rejectAppointment() {
     actionApt.value.admin_notes = rejectReason.value
     showRejectModal.value = false
     actionApt.value = null
-  } catch {} finally {
+  } catch (err) { console.error('Reject failed:', err); alert('Failed to reject appointment. Please try again.') } finally {
     saving.value = false
   }
 }
@@ -480,7 +480,7 @@ async function rescheduleAppointment() {
     actionApt.value.admin_notes = rescheduleReason.value
     showRescheduleModal.value = false
     actionApt.value = null
-  } catch {} finally {
+  } catch (err) { console.error('Reschedule failed:', err); alert('Failed to reschedule appointment. Please try again.') } finally {
     saving.value = false
   }
 }
@@ -489,21 +489,27 @@ async function markNoShow(apt) {
   try {
     await adminApi.updateAppointmentStatus(apt.id, { status: 'no_show' })
     apt.status = 'no_show'
-  } catch {}
+  } catch (err) { console.error('Mark no-show failed:', err); alert('Failed to mark as no-show. Please try again.') }
 }
 
 async function reopen(apt) {
   try {
-    await adminApi.updateAppointmentStatus(apt.id, { status: 'pending' })
+    const res = await adminApi.updateAppointmentStatus(apt.id, { status: 'pending' })
     apt.status = 'pending'
-  } catch {}
+  } catch (err) {
+    console.error('Reopen failed:', err)
+    alert('Failed to reopen appointment. Please try again.')
+  }
 }
 
 async function archiveApt(apt) {
   try {
-    await adminApi.updateAppointmentStatus(apt.id, { status: 'archived' })
+    const res = await adminApi.updateAppointmentStatus(apt.id, { status: 'archived' })
     apt.status = 'archived'
-  } catch {}
+  } catch (err) {
+    console.error('Archive failed:', err)
+    alert('Failed to archive appointment. Please try again.')
+  }
 }
 
 watch(selectedDate, () => { fetchAppointments() })

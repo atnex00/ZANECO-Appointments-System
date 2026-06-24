@@ -1,10 +1,11 @@
 const express = require('express')
 const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
+const { asyncHandler } = require('../middleware/errors')
 
 const router = express.Router()
 
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { appointment_id, admin_id, action, date_from, date_to, page = 1, per_page = 50 } = req.query
   const where = {}
   if (appointment_id) where.appointmentId = Number(appointment_id)
@@ -38,6 +39,6 @@ router.get('/', authenticate, async (req, res) => {
       pagination: { current_page: Number(page), per_page: Number(per_page), total, last_page: Math.ceil(total / per_page) || 1 },
     },
   })
-})
+}))
 
 module.exports = router

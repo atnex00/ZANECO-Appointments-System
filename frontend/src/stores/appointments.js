@@ -47,7 +47,7 @@ export const useAppointmentsStore = defineStore('appointments', {
             this.lastPage = 1
             this.currentPage = 1
           }
-        } catch {}
+        } catch (err) { console.error('LocalStorage mock lookup failed:', err) }
       } finally {
         this.loading = false
       }
@@ -74,7 +74,7 @@ export const useAppointmentsStore = defineStore('appointments', {
               created_at: mock.created_at, notifications: [], audit_trail: [],
             }
           }
-        } catch {}
+        } catch (err) { console.error('LocalStorage detail mock failed:', err) }
       } finally {
         this.loading = false
       }

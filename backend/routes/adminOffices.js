@@ -1,15 +1,16 @@
 const express = require('express')
 const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
+const { asyncHandler } = require('../middleware/errors')
 
 const router = express.Router()
 
-router.get('/', authenticate, (req, res) => {
-  prisma.office.findMany({ orderBy: { name: 'asc' } })
-    .then(offices => res.json({ success: true, data: offices }))
-})
+router.get('/', authenticate, asyncHandler(async (req, res) => {
+  const offices = await prisma.office.findMany({ orderBy: { name: 'asc' } })
+  res.json({ success: true, data: offices })
+}))
 
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
   const { name, code, address, phone, email, opening_time, closing_time, slot_capacity, appointment_duration_minutes, max_advance_days, is_active } = req.body
   if (!name || !code) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Name and code required' } })
@@ -30,9 +31,9 @@ router.post('/', authenticate, async (req, res) => {
     },
   })
   res.status(201).json({ success: true, data: { id: result.id } })
-})
+}))
 
-router.put('/:id', authenticate, async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
   const data = {}
   for (const key of ['name', 'code', 'address', 'phone', 'email', 'opening_time', 'closing_time', 'slot_capacity', 'appointment_duration_minutes', 'max_advance_days']) {
@@ -43,9 +44,9 @@ router.put('/:id', authenticate, async (req, res) => {
 
   await prisma.office.update({ where: { id: Number(req.params.id) }, data })
   res.json({ success: true, message: 'Office updated' })
-})
+}))
 
-router.put('/:id/schedule', authenticate, async (req, res) => {
+router.put('/:id/schedule', authenticate, asyncHandler(async (req, res) => {
   const { schedules } = req.body
   if (!schedules || !Array.isArray(schedules)) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Schedules array required' } })
 
@@ -63,6 +64,6 @@ router.put('/:id/schedule', authenticate, async (req, res) => {
     })
   }
   res.json({ success: true, message: 'Schedule updated' })
-})
+}))
 
 module.exports = router

@@ -1,15 +1,16 @@
 const express = require('express')
 const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
+const { asyncHandler } = require('../middleware/errors')
 
 const router = express.Router()
 
-router.get('/', authenticate, (req, res) => {
-  prisma.concernType.findMany({ orderBy: { sortOrder: 'asc' } })
-    .then(types => res.json({ success: true, data: types }))
-})
+router.get('/', authenticate, asyncHandler(async (req, res) => {
+  const types = await prisma.concernType.findMany({ orderBy: { sortOrder: 'asc' } })
+  res.json({ success: true, data: types })
+}))
 
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
   const { name, code, description, estimated_duration_minutes, is_active, sort_order } = req.body
   if (!name || !code) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Name and code required' } })
@@ -25,9 +26,9 @@ router.post('/', authenticate, async (req, res) => {
     },
   })
   res.status(201).json({ success: true, message: 'Concern type created' })
-})
+}))
 
-router.put('/:id', authenticate, async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
   const update = {}
   for (const key of ['name', 'code', 'description', 'estimated_duration_minutes', 'sort_order']) {
@@ -38,6 +39,6 @@ router.put('/:id', authenticate, async (req, res) => {
 
   await prisma.concernType.update({ where: { id: Number(req.params.id) }, data: update })
   res.json({ success: true, message: 'Concern type updated' })
-})
+}))
 
 module.exports = router

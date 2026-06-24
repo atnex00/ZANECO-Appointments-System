@@ -1,24 +1,27 @@
 const express = require('express')
 const prisma = require('../db/database')
+const { asyncHandler } = require('../middleware/errors')
 
 const router = express.Router()
 
-router.get('/', (req, res) => {
-  prisma.office.findMany({
+router.get('/', asyncHandler(async (req, res) => {
+  const offices = await prisma.office.findMany({
     where: { isActive: true },
     select: { id: true, name: true, code: true, address: true, openingTime: true, closingTime: true },
     orderBy: { name: 'asc' },
-  }).then(offices => res.json({ success: true, data: offices }))
-})
+  })
+  res.json({ success: true, data: offices })
+}))
 
-router.get('/:id/schedule', (req, res) => {
-  prisma.officeSchedule.findMany({
+router.get('/:id/schedule', asyncHandler(async (req, res) => {
+  const schedules = await prisma.officeSchedule.findMany({
     where: { officeId: Number(req.params.id) },
     orderBy: { dayOfWeek: 'asc' },
-  }).then(schedules => res.json({ success: true, data: schedules }))
-})
+  })
+  res.json({ success: true, data: schedules })
+}))
 
-router.get('/:id/slots', (req, res) => {
+router.get('/:id/slots', asyncHandler(async (req, res) => {
   const { date } = req.query
   if (!date) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Date parameter required' } })
 
@@ -27,21 +30,20 @@ router.get('/:id/slots', (req, res) => {
     return res.json({ success: true, data: { date, office_id: Number(req.params.id), is_working_day: false, slots: [] } })
   }
 
-  prisma.timeSlot.findMany({
+  const slots = await prisma.timeSlot.findMany({
     where: { officeId: Number(req.params.id), slotDate: date },
     select: { startTime: true, endTime: true, bookedCount: true, maxCapacity: true },
     orderBy: { startTime: 'asc' },
-  }).then(slots => {
-    res.json({
-      success: true,
-      data: {
-        date,
-        office_id: Number(req.params.id),
-        is_working_day: true,
-        slots: slots.map(s => ({ start_time: s.startTime, end_time: s.endTime, available: s.bookedCount < s.maxCapacity })),
-      },
-    })
   })
-})
+  res.json({
+    success: true,
+    data: {
+      date,
+      office_id: Number(req.params.id),
+      is_working_day: true,
+      slots: slots.map(s => ({ start_time: s.startTime, end_time: s.endTime, available: s.bookedCount < s.maxCapacity })),
+    },
+  })
+}))
 
 module.exports = router

@@ -74,7 +74,7 @@ router.post('/logout', asyncHandler(async (req, res) => {
     try {
       const decoded = jwt.verify(header.slice(7), config.jwt.secret)
       await prisma.administrator.update({ where: { id: decoded.sub }, data: { refreshToken: null } })
-    } catch {}
+    } catch (err) { console.error('Logout token cleanup failed:', err) }
   }
   res.json({ success: true, message: 'Logged out successfully' })
 }))

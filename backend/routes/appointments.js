@@ -136,7 +136,7 @@ router.post('/', asyncHandler(async (req, res) => {
       office: appointment.office.name,
       concern_type: appointment.concernType.name,
       status: appointment.status,
-    }).catch(() => {})
+    }).catch(err => console.error('Email send failed:', err))
   }
 
   res.status(201).json({

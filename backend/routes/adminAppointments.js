@@ -2,6 +2,7 @@ const express = require('express')
 const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
 const emailService = require('../services/emailService')
+const { asyncHandler } = require('../middleware/errors')
 
 const router = express.Router()
 
@@ -15,7 +16,7 @@ function buildFilters(req) {
   return where
 }
 
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { status, office_id, date_from, date_to, search, page = 1, per_page = 20, sort_by = 'created_at', sort_order = 'desc' } = req.query
   const offset = (Number(page) - 1) * Number(per_page)
   const where = buildFilters(req)
@@ -67,9 +68,9 @@ router.get('/', authenticate, async (req, res) => {
       pagination: { current_page: Number(page), per_page: Number(per_page), total, last_page: lastPage || 1 },
     },
   })
-})
+}))
 
-router.get('/today', authenticate, async (req, res) => {
+router.get('/today', authenticate, asyncHandler(async (req, res) => {
   const where = buildFilters(req)
 
   if (req.query.date_from && req.query.date_to) {
@@ -101,9 +102,9 @@ router.get('/today', authenticate, async (req, res) => {
       admin_notes: a.adminNotes,
     })),
   })
-})
+}))
 
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const appt = await prisma.appointment.findUnique({
     where: { id: Number(req.params.id) },
     include: { concernType: { select: { name: true } }, office: true },
@@ -141,9 +142,9 @@ router.get('/:id', authenticate, async (req, res) => {
       audit_trail: auditLogs,
     },
   })
-})
+}))
 
-router.put('/:id/notes', authenticate, async (req, res) => {
+router.put('/:id/notes', authenticate, asyncHandler(async (req, res) => {
   const { notes } = req.body
   if (notes === undefined || notes === null) {
     return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Notes are required' } })
@@ -156,9 +157,9 @@ router.put('/:id/notes', authenticate, async (req, res) => {
 
   await prisma.appointment.update({ where: { id: appt.id }, data: { adminNotes: notes } })
   res.json({ success: true, data: { id: appt.id, admin_notes: notes } })
-})
+}))
 
-router.put('/:id/status', authenticate, async (req, res) => {
+router.put('/:id/status', authenticate, asyncHandler(async (req, res) => {
   const { status, notes } = req.body
   const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'rejected', 'no_show', 'archived']
   if (!validStatuses.includes(status)) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid status' } })
@@ -170,33 +171,26 @@ router.put('/:id/status', authenticate, async (req, res) => {
   }
 
   const oldStatus = appt.status
-  const operations = []
+  const completedAt = status === 'completed' ? new Date().toISOString() : null
 
-  if (['cancelled', 'rejected', 'no_show', 'archived'].includes(status)) {
-    operations.push(
-      prisma.timeSlot.updateMany({
+  await prisma.$transaction(async (tx) => {
+    if (['cancelled', 'rejected', 'no_show', 'archived', 'completed'].includes(status)) {
+      await tx.timeSlot.updateMany({
         where: { officeId: appt.officeId, slotDate: appt.appointmentDate, startTime: appt.startTime },
         data: { bookedCount: { decrement: 1 } },
       })
-    )
-  }
+    }
 
-  if (['cancelled', 'rejected', 'no_show', 'archived', 'completed'].includes(oldStatus) && status === 'pending') {
-    operations.push(
-      prisma.timeSlot.findUnique({
+    if (['cancelled', 'rejected', 'no_show', 'archived', 'completed'].includes(oldStatus) && status === 'pending') {
+      const slot = await tx.timeSlot.findUnique({
         where: { officeId_slotDate_startTime: { officeId: appt.officeId, slotDate: appt.appointmentDate, startTime: appt.startTime } },
-      }).then(slot => {
-        if (slot && slot.bookedCount < slot.maxCapacity) {
-          return prisma.timeSlot.update({ where: { id: slot.id }, data: { bookedCount: { increment: 1 } } })
-        }
       })
-    )
-  }
+      if (slot && slot.bookedCount < slot.maxCapacity) {
+        await tx.timeSlot.update({ where: { id: slot.id }, data: { bookedCount: { increment: 1 } } })
+      }
+    }
 
-  const completedAt = status === 'completed' ? new Date().toISOString() : null
-
-  operations.push(
-    prisma.appointment.update({
+    await tx.appointment.update({
       where: { id: appt.id },
       data: {
         status,
@@ -205,8 +199,9 @@ router.put('/:id/status', authenticate, async (req, res) => {
         processedBy: req.admin.id,
         updatedAt: new Date().toISOString(),
       },
-    }),
-    prisma.auditLog.create({
+    })
+
+    await tx.auditLog.create({
       data: {
         appointmentId: appt.id,
         adminId: req.admin.id,
@@ -217,9 +212,7 @@ router.put('/:id/status', authenticate, async (req, res) => {
         newValues: JSON.stringify({ status, notes }),
       },
     })
-  )
-
-  await prisma.$transaction(operations)
+  })
 
   if (status === 'confirmed' && appt.email) {
     prisma.appointment.findUnique({
@@ -237,9 +230,9 @@ router.put('/:id/status', authenticate, async (req, res) => {
           office: full.office.name,
           concern_type: full.concernType.name,
           status: full.status,
-        }).catch(() => {})
+        }).catch(err => console.error('Email send (confirmed) failed:', err))
       }
-    }).catch(() => {})
+    }).catch(err => console.error('Email lookup for confirmed failed:', err))
   }
 
   if (status === 'rejected' && appt.email) {
@@ -259,15 +252,15 @@ router.put('/:id/status', authenticate, async (req, res) => {
           concern_type: full.concernType.name,
           status: full.status,
           reason: notes || 'No reason provided',
-        }).catch(() => {})
+        }).catch(err => console.error('Email send (rejected) failed:', err))
       }
-    }).catch(() => {})
+    }).catch(err => console.error('Email lookup for rejected failed:', err))
   }
 
   res.json({ success: true, data: { id: appt.id, status }, message: `Appointment status updated to ${status}` })
-})
+}))
 
-router.put('/:id/reschedule', authenticate, async (req, res) => {
+router.put('/:id/reschedule', authenticate, asyncHandler(async (req, res) => {
   const { new_appointment_date, new_start_time, notes } = req.body
   const appt = await prisma.appointment.findUnique({ where: { id: Number(req.params.id) } })
   if (!appt) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Appointment not found' } })
@@ -317,9 +310,9 @@ router.put('/:id/reschedule', authenticate, async (req, res) => {
   ])
 
   res.json({ success: true, data: { reference_number: appt.referenceNumber, status: 'rescheduled' } })
-})
+}))
 
-router.delete('/:id', authenticate, async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') {
     return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only super admins can delete appointments' } })
   }
@@ -337,6 +330,6 @@ router.delete('/:id', authenticate, async (req, res) => {
   ])
 
   res.json({ success: true, message: 'Appointment deleted permanently' })
-})
+}))
 
 module.exports = router
