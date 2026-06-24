@@ -31,8 +31,17 @@ if [ ! -d "node_modules/.pnpm" ]; then
     pnpm install
 fi
 
+# Create backend .env from example if missing
+if [ ! -f "backend/.env" ] && [ -f "backend/.env.example" ]; then
+  cp backend/.env.example backend/.env
+  echo "Created backend/.env from .env.example"
+fi
+
 # Generate Prisma client (re-run after dependency updates)
 pnpm --filter zaneco-appointments-api exec prisma generate 2>/dev/null || true
+
+# Ensure PostgreSQL role & database exist
+scripts/setup-db.sh 2>/dev/null || echo "Warning: DB setup skipped (is PostgreSQL installed?)"
 
 # Apply schema migrations & seed
 echo "Applying database schema..."
