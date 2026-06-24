@@ -35,15 +35,29 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
 
 router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
+  const FIELD_MAP = {
+    opening_time: 'openingTime',
+    closing_time: 'closingTime',
+    slot_capacity: 'slotCapacity',
+    appointment_duration_minutes: 'appointmentDurationMinutes',
+    max_advance_days: 'maxAdvanceDays',
+    is_active: 'isActive',
+  }
   const data = {}
   for (const key of ['name', 'code', 'address', 'phone', 'email', 'opening_time', 'closing_time', 'slot_capacity', 'appointment_duration_minutes', 'max_advance_days']) {
-    if (req.body[key] !== undefined) data[key] = req.body[key]
+    if (req.body[key] !== undefined) data[FIELD_MAP[key] || key] = req.body[key]
   }
-  if (req.body.is_active !== undefined) data.is_active = req.body.is_active
+  if (req.body.is_active !== undefined) data.isActive = req.body.is_active
   if (!Object.keys(data).length) return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'No fields to update' } })
 
   await prisma.office.update({ where: { id: Number(req.params.id) }, data })
   res.json({ success: true, message: 'Office updated' })
+}))
+
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
+  if (req.admin.role !== 'super_admin') return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
+  await prisma.office.update({ where: { id: Number(req.params.id) }, data: { isActive: false } })
+  res.json({ success: true, message: 'Office deactivated' })
 }))
 
 router.put('/:id/schedule', authenticate, asyncHandler(async (req, res) => {

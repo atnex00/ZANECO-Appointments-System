@@ -4,15 +4,14 @@
     <header class="admin-header">
       <div class="header-left">
         <h2 class="header-title">Offices</h2>
+        <button v-if="isSuperAdmin" class="ap-new-btn" @click="openAdd"><span class="material-symbols-outlined">add</span> Add Office</button>
       </div>
       <div class="header-center">
         <div class="search-box">
           <span class="material-symbols-outlined search-icon">search</span>
           <input v-model="searchTerm" class="search-input" placeholder="Search by name, address, or region..." />
         </div>
-        <button class="filter-btn">
-          <span class="material-symbols-outlined">filter_list</span> Filter
-        </button>
+
       </div>
     </header>
 
@@ -28,7 +27,7 @@
           <span class="stat-label">ACTIVE NOW</span>
           <div class="stat-inline">
             <span class="stat-value" style="color:var(--color-success)">{{ activeCount }}</span>
-            <span class="stat-sub">{{ Math.round((activeCount / offices.length) * 100) }}% Uptime</span>
+            <span class="stat-sub">{{ Math.round((activeCount / offices.length) * 100) }}% Active</span>
           </div>
         </div>
         <div class="stat-card">
@@ -37,8 +36,14 @@
         </div>
       </div>
 
+      <!-- Loading State -->
+      <div v-if="loading" class="loading-wrap">
+        <div class="loading-spinner"></div>
+        <p>Loading offices...</p>
+      </div>
+
       <!-- Office Cards Grid -->
-      <div class="office-grid">
+      <div v-else class="office-grid">
         <div v-for="office in filteredOffices" :key="office.id" class="office-card" :class="{ 'office-card-inactive': !office.active }">
           <div class="status-strip" :class="office.active ? 'strip-active' : 'strip-inactive'"></div>
           <div class="office-card-body">
@@ -74,15 +79,12 @@
                 <span class="detail-label uppercase">Capacity</span>
                 <span class="detail-value" style="color:var(--color-primary);font-weight:700">{{ office.slot_capacity || 2 }} slots/hr</span>
               </div>
-              <div class="progress-bar-wrap">
-                <div class="progress-bar" :style="{ width: (office.slot_capacity ? Math.min(100, (office.slot_capacity / 5) * 100) : 40) + '%' }"></div>
-              </div>
             </div>
           </div>
           <div class="office-card-actions">
             <button class="action-btn action-primary" @click="editOffice(office)">Edit Details</button>
             <button class="action-btn action-outline" @click="openSchedule(office)">Schedule</button>
-            <button class="action-btn action-primary" @click="generateSlots(office)">Generate Slots</button>
+            <button v-if="isSuperAdmin" class="action-icon" @click="deleteOffice(office)" title="Deactivate office"><span class="material-symbols-outlined">delete</span></button>
           </div>
         </div>
       </div>
@@ -117,6 +119,80 @@
       </div>
       </Transition>
     </Teleport>
+    <!-- Add/Edit Office Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
+          <div class="schedule-modal">
+            <div class="schedule-modal-header">
+              <h3>{{ editingOffice ? 'Edit Office' : 'Add Office' }}</h3>
+              <button class="modal-close" @click="showForm = false">&times;</button>
+            </div>
+            <div class="schedule-modal-body">
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label class="form-label">Name *</label>
+                  <input v-model="form.name" class="form-input" placeholder="e.g. Main Office" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Code *</label>
+                  <input v-model="form.code" class="form-input" placeholder="e.g. MAIN" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Address</label>
+                <input v-model="form.address" class="form-input" placeholder="Poblacion, Dipolog City" />
+              </div>
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label class="form-label">Phone</label>
+                  <input v-model="form.phone" class="form-input" placeholder="(065) 212-3456" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Email</label>
+                  <input v-model="form.email" class="form-input" type="email" placeholder="office@zaneco.ph" />
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label class="form-label">Opening Time</label>
+                  <input v-model="form.opening_time" class="form-input" type="time" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Closing Time</label>
+                  <input v-model="form.closing_time" class="form-input" type="time" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Slot Capacity</label>
+                  <input v-model.number="form.slot_capacity" class="form-input" type="number" min="1" max="20" />
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label class="form-label">Duration (min)</label>
+                  <input v-model.number="form.appointment_duration_minutes" class="form-input" type="number" min="15" step="5" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Advance Days</label>
+                  <input v-model.number="form.max_advance_days" class="form-input" type="number" min="1" max="90" />
+                </div>
+                <div class="form-group" v-if="editingOffice">
+                  <label class="form-label">Active</label>
+                  <select v-model="form.is_active" class="form-select">
+                    <option :value="true">Active</option>
+                    <option :value="false">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="schedule-modal-footer">
+              <button class="btn btn-secondary" @click="showForm = false">Cancel</button>
+              <button class="btn btn-primary" @click="saveOffice" :disabled="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -124,10 +200,15 @@
 import { ref, computed } from 'vue'
 import { onMounted } from 'vue'
 import { adminApi } from '../../api/admin'
+import { useAuthStore } from '../../stores/auth'
 
+
+const auth = useAuthStore()
+const isSuperAdmin = computed(() => auth.user?.role === 'super_admin')
 
 const searchTerm = ref('')
 const offices = ref([])
+const loading = ref(true)
 
 const fallbackOffices = [
   { id: 1, name: 'Main Office', code: 'MAIN', address: 'Poblacion, Dipolog City', phone: '(065) 212-3456', opening_time: '08:00:00', closing_time: '17:00:00', slot_capacity: 3, active: true },
@@ -148,23 +229,27 @@ const filteredOffices = computed(() => {
   const q = searchTerm.value.toLowerCase()
   return offices.value.filter(o =>
     o.name.toLowerCase().includes(q) ||
-    (o.address && o.address.toLowerCase().includes(q))
+    (o.code && o.code.toLowerCase().includes(q)) ||
+    (o.address && o.address.toLowerCase().includes(q)) ||
+    (o.phone && o.phone.toLowerCase().includes(q)) ||
+    (o.email && o.email.toLowerCase().includes(q))
   )
 })
 
-function toggleOffice(id) {
+async function toggleOffice(id) {
   const o = offices.value.find(x => x.id === id)
-  if (o) o.active = !o.active
+  if (!o) return
+  const next = !o.active
+  if (!next && !confirm(`Deactivate "${o.name}"? This will disable online booking for this office.`)) return
+  try {
+    await adminApi.updateOffice(id, { is_active: next })
+    o.active = next
+  } catch (err) {
+    alert('Failed to update office status: ' + (err.response?.data?.error?.message || err.message))
+  }
 }
 
-onMounted(async () => {
-  try {
-    const { data } = await adminApi.getOffices()
-    offices.value = (data.data || []).map(o => ({ ...o, active: o.is_active ?? true }))
-  } catch {
-    offices.value = fallbackOffices
-  }
-})
+onMounted(fetchOffices)
 
 // Schedule modal
 const scheduleOffice = ref(null)
@@ -176,12 +261,24 @@ const dayNames = [
   { key: 'saturday', label: 'Saturday' }, { key: 'sunday', label: 'Sunday' },
 ]
 
-function openSchedule(office) {
+async function openSchedule(office) {
   scheduleOffice.value = office
   scheduleData.value = {}
   for (const day of dayNames) {
     scheduleData.value[day.key] = { open: '08:00', close: '17:00', working: day.key !== 'saturday' && day.key !== 'sunday' }
   }
+  try {
+    const { data } = await adminApi.getOfficeSchedule(office.id)
+    const rows = data.data || []
+    for (const row of rows) {
+      const key = row.day_of_week || row.dayOfWeek
+      if (scheduleData.value[key]) {
+        scheduleData.value[key].open = (row.opening_time || row.openingTime || '08:00').slice(0, 5)
+        scheduleData.value[key].close = (row.closing_time || row.closingTime || '17:00').slice(0, 5)
+        scheduleData.value[key].working = row.is_working_day ?? row.isWorkingDay ?? true
+      }
+    }
+  } catch (err) { console.error('Failed to load schedule:', err) }
 }
 
 function closeSchedule() { scheduleOffice.value = null }
@@ -199,17 +296,87 @@ async function saveSchedule() {
   } catch (err) { console.error('Save schedule failed:', err) } finally { savingSchedule.value = false; scheduleOffice.value = null }
 }
 
-function editOffice(office) {
-  alert(`Edit office: ${office.name} — feature coming soon`)
+// Add/Edit form
+const showForm = ref(false)
+const editingOffice = ref(null)
+const saving = ref(false)
+const form = ref({ name: '', code: '', address: '', phone: '', email: '', opening_time: '08:00', closing_time: '17:00', slot_capacity: 2, appointment_duration_minutes: 30, max_advance_days: 30, is_active: true })
+
+function openAdd() {
+  editingOffice.value = null
+  form.value = { name: '', code: '', address: '', phone: '', email: '', opening_time: '08:00', closing_time: '17:00', slot_capacity: 2, appointment_duration_minutes: 30, max_advance_days: 30, is_active: true }
+  showForm.value = true
 }
 
-async function generateSlots(office) {
-  if (!confirm(`Generate 30 days of time slots for ${office.name}?`)) return
-  try {
-    await adminApi.updateOffice(office.id, {})
-  } catch (err) { console.error('Generate slots failed:', err); alert('Failed to generate time slots'); return }
-  alert('Time slots generated successfully')
+function editOffice(office) {
+  editingOffice.value = office
+  form.value = {
+    name: office.name || '',
+    code: office.code || '',
+    address: office.address || '',
+    phone: office.phone || '',
+    email: office.email || '',
+    opening_time: (office.opening_time || '08:00:00').slice(0, 5),
+    closing_time: (office.closing_time || '17:00:00').slice(0, 5),
+    slot_capacity: office.slot_capacity ?? 2,
+    appointment_duration_minutes: office.appointment_duration_minutes ?? 30,
+    max_advance_days: office.max_advance_days ?? 30,
+    is_active: office.is_active ?? true,
+  }
+  showForm.value = true
 }
+
+async function saveOffice() {
+  if (!form.value.name || !form.value.code) { alert('Name and code are required'); return }
+  saving.value = true
+  try {
+    const payload = {
+      name: form.value.name,
+      code: form.value.code,
+      address: form.value.address || null,
+      phone: form.value.phone || null,
+      email: form.value.email || null,
+      opening_time: form.value.opening_time + ':00',
+      closing_time: form.value.closing_time + ':00',
+      slot_capacity: form.value.slot_capacity,
+      appointment_duration_minutes: form.value.appointment_duration_minutes,
+      max_advance_days: form.value.max_advance_days,
+    }
+    if (editingOffice.value) {
+      if (form.value.is_active !== undefined) payload.is_active = form.value.is_active
+      await adminApi.updateOffice(editingOffice.value.id, payload)
+    } else {
+      await adminApi.createOffice(payload)
+    }
+    showForm.value = false
+    editingOffice.value = null
+    await fetchOffices()
+  } catch (err) {
+    alert('Error: ' + (err.response?.data?.error?.message || err.message))
+  } finally { saving.value = false }
+}
+
+async function deleteOffice(office) {
+  if (!confirm(`Deactivate "${office.name}"? This will disable online booking for this office.`)) return
+  try {
+    await adminApi.deleteOffice(office.id)
+    await fetchOffices()
+  } catch (err) {
+    alert('Error: ' + (err.response?.data?.error?.message || err.message))
+  }
+}
+
+async function fetchOffices() {
+  loading.value = true
+  try {
+    const { data } = await adminApi.getOffices()
+    offices.value = (data.data || []).map(o => ({ ...o, active: o.is_active ?? true }))
+  } catch (err) {
+    alert('Failed to load offices: ' + (err.response?.data?.error?.message || err.message))
+    offices.value = fallbackOffices
+  } finally { loading.value = false }
+}
+
 </script>
 
 <style scoped>
@@ -284,6 +451,11 @@ async function generateSlots(office) {
 .stat-value { font-size: 1.75rem; font-weight: 700; }
 .stat-inline { display: flex; align-items: flex-end; gap: 0.5rem; }
 .stat-sub { font-size: 0.875rem; color: #4edea3; padding-bottom: 0.25rem; }
+
+/* Loading */
+.loading-wrap { text-align: center; padding: 4rem 2rem; color: #757684; }
+.loading-spinner { width: 32px; height: 32px; border: 3px solid #dfe9fa; border-top-color: var(--color-primary); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Office Cards */
 .office-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1rem; }
@@ -361,6 +533,11 @@ async function generateSlots(office) {
 .action-outline:hover { background-color: var(--color-primary-light); }
 .action-icon { background: transparent; border: none; color: #444653; padding: 0.5rem; display: flex; align-items: center; }
 .action-icon:hover { background-color: #dfe9fa; border-radius: var(--radius-lg); }
+
+/* Add/Edit form */
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.ap-new-btn { display: flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1rem; border-radius: var(--radius-xl); background-color: var(--color-primary); border: none; color: var(--color-white); font-size: 0.875rem; font-weight: 600; cursor: pointer; white-space: nowrap; margin-left: auto; }
+.ap-new-btn:hover { filter: brightness(1.1); }
 
 /* Schedule Modal */
 .modal-enter-active { transition: opacity 0.2s ease; }

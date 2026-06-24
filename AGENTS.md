@@ -64,6 +64,8 @@ pnpm monorepo with two packages:
 - **Notifications**: `backend/worker.js` runs a 30s interval. Currently simulates sending. Wire real providers via `.env` (see README).
 - **Email receipts**: `backend/services/emailService.js` sends confirmation emails via Nodemailer (fire-and-forget after booking). Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` in `.env`. Unconfigured SMTP silently skips — no crash. For Gmail, use an [App Password](https://myaccount.google.com/apppasswords) (requires 2FA).
 - **Prisma ORM** — All DB access goes through Prisma Client. Schema at `backend/prisma/schema.prisma`. Reports with complex aggregations use `$queryRaw` with PostgreSQL syntax.
+- **PUT admin offices route field mapping** — `backend/routes/adminOffices.js:38-50` maps snake_case body keys (`opening_time`, `slot_capacity`, `is_active`) to Prisma camelCase fields via a `FIELD_MAP` object. If you add a new field to the `Office` model, update both the `FIELD_MAP` and the loop keys array.
+- **`generateSlots` button was removed** — The "Generate Slots" button was removed from the offices page because the backend route `POST /admin/offices/:id/generate-slots` was never implemented. The docs reference this endpoint but it exists nowhere in the code. Re-add the button only after implementing the endpoint with `TimeSlot` generation from `OfficeSchedule` data within a date range.
 
 ## Style conventions
 
@@ -100,3 +102,5 @@ Four skills are available. The agent loads them automatically when the task matc
 | Booking store | `frontend/src/stores/booking.js` |
 | PDF reports | `backend/services/pdfGenerator.js` |
 | Report routes | `backend/routes/reports.js` |
+| Admin offices route | `backend/routes/adminOffices.js` |
+| Admin offices page | `frontend/src/pages/admin/OfficesPage.vue` |

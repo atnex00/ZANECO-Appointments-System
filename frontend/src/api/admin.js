@@ -28,6 +28,9 @@ export const adminApi = {
   getOffices() {
     return api.get('/admin/offices')
   },
+  getOfficeSchedule(id) {
+    return api.get(`/offices/${id}/schedule`)
+  },
   createOffice(data) {
     return api.post('/admin/offices', data)
   },
@@ -36,6 +39,9 @@ export const adminApi = {
   },
   updateOfficeSchedule(id, data) {
     return api.put(`/admin/offices/${id}/schedule`, data)
+  },
+  deleteOffice(id) {
+    return api.delete(`/admin/offices/${id}`)
   },
   getConcernTypes() {
     return api.get('/admin/concern-types')
