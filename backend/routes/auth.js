@@ -19,10 +19,32 @@ router.post('/login', asyncHandler(async (req, res) => {
 
   const { email, password } = value
   const admin = await prisma.administrator.findUnique({ where: { email } })
+  const ipAddress = req.ip || req.connection?.remoteAddress || null
+  const userAgent = req.headers['user-agent'] || null
 
-  if (!admin || !admin.isActive) throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password')
+  if (!admin || !admin.isActive) {
+    await prisma.auditLog.create({
+      data: {
+        action: 'LOGIN_FAILED',
+        entityType: 'administrator',
+        ipAddress,
+        userAgent,
+      },
+    })
+    throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password')
+  }
 
   if (admin.lockedUntil && new Date(admin.lockedUntil) > new Date()) {
+    await prisma.auditLog.create({
+      data: {
+        action: 'ACCOUNT_LOCKED',
+        entityType: 'administrator',
+        entityId: admin.id,
+        adminId: admin.id,
+        ipAddress,
+        userAgent,
+      },
+    })
     throw new AppError(423, 'ACCOUNT_LOCKED', 'Account is locked. Try again later.')
   }
 
@@ -31,15 +53,46 @@ router.post('/login', asyncHandler(async (req, res) => {
     if (attempts >= 5) {
       const lockUntil = new Date(Date.now() + 30 * 60 * 1000).toISOString()
       await prisma.administrator.update({ where: { id: admin.id }, data: { failedLoginAttempts: attempts, lockedUntil } })
+      await prisma.auditLog.create({
+        data: {
+          action: 'ACCOUNT_LOCKED',
+          entityType: 'administrator',
+          entityId: admin.id,
+          adminId: admin.id,
+          ipAddress,
+          userAgent,
+        },
+      })
       throw new AppError(423, 'ACCOUNT_LOCKED', 'Account locked for 30 minutes.')
     }
     await prisma.administrator.update({ where: { id: admin.id }, data: { failedLoginAttempts: attempts } })
+    await prisma.auditLog.create({
+      data: {
+        action: 'LOGIN_FAILED',
+        entityType: 'administrator',
+        entityId: admin.id,
+        adminId: admin.id,
+        ipAddress,
+        userAgent,
+      },
+    })
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password')
   }
 
   await prisma.administrator.update({
     where: { id: admin.id },
     data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date().toISOString() },
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      action: 'LOGIN_SUCCESS',
+      entityType: 'administrator',
+      entityId: admin.id,
+      adminId: admin.id,
+      ipAddress,
+      userAgent,
+    },
   })
 
   const token = jwt.sign({ sub: admin.id, email: admin.email, role: admin.role }, config.jwt.secret, { expiresIn: config.jwt.expiresIn })

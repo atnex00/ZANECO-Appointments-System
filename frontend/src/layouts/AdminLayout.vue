@@ -119,7 +119,7 @@ onUnmounted(() => { window.removeEventListener('resize', updateCount) })
 const visibleNav = computed(() => mobileNav.value.slice(navStart.value, navStart.value + visibleCount.value))
 
 const isLoginPage = computed(() =>
-  ['/admin/login', '/admin/forgot-password', '/admin/reset-password'].includes(route.path)
+  ['/admin/login', '/admin/forgot-password', '/admin/reset-password', '/admin/system-status'].includes(route.path)
 )
 
 provide('toggleDrawer', (val) => { drawerOpen.value = val })

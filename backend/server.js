@@ -67,6 +67,7 @@ app.use('/api/v1/admin/reports', require('./routes/reports'))
 app.use('/api/v1/admin/notifications', require('./routes/notifications'))
 app.use('/api/v1/admin/audit-logs', require('./routes/auditLogs'))
 app.use('/api/v1/admin/users', require('./routes/adminUsers'))
+app.use('/api/v1/system', require('./routes/systemStatus'))
 
 // Dashboard summary
 app.get('/api/v1/admin/dashboard/summary', require('./middleware/auth').authenticate, async (req, res, next) => {

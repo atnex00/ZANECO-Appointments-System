@@ -84,8 +84,7 @@
         <footer class="login-footer">
           <span class="version-text">v1.0.0-PROD</span>
           <div class="footer-links">
-            <a href="#">System Status</a>
-            <a href="#">Help Desk</a>
+            <router-link to="/admin/system-status">System Status</router-link>
           </div>
         </footer>
       </section>

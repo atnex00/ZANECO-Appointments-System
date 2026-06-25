@@ -79,6 +79,9 @@ export const adminApi = {
   updateUser(id, data) {
     return api.put(`/admin/users/${id}`, data)
   },
+  unlockUser(id) {
+    return api.put(`/admin/users/${id}/unlock`)
+  },
   getTodayAppointments(params) {
     return api.get('/admin/appointments/today', { params })
   },
@@ -90,5 +93,8 @@ export const adminApi = {
   },
   resetPassword(token, password) {
     return api.post('/auth/reset-password', { token, password })
+  },
+  getSystemStatus() {
+    return api.get('/system/status')
   },
 }

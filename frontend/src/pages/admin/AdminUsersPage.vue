@@ -26,6 +26,7 @@
                 <th>Role</th>
                 <th>Office</th>
                 <th>Status</th>
+                <th>Lock Status</th>
                 <th>Last Login</th>
                 <th class="th-right">Actions</th>
               </tr>
@@ -37,9 +38,14 @@
                 <td><span class="role-badge" :class="'role-' + user.role">{{ user.role }}</span></td>
                 <td class="td-muted">{{ officeName(user.officeId) }}</td>
                 <td><span class="status-badge" :class="user.isActive ? 'status-confirmed' : 'status-cancelled'">{{ user.isActive ? 'Active' : 'Inactive' }}</span></td>
+                <td>
+                  <span v-if="isLocked(user)" class="status-badge status-locked">Locked</span>
+                  <span v-else class="text-muted" style="font-size:0.75rem">—</span>
+                </td>
                 <td class="td-date">{{ user.lastLoginAt ? user.lastLoginAt.slice(0, 10) : 'Never' }}</td>
                 <td class="td-actions">
                   <button class="row-action" @click="editUser(user)" title="Edit"><span class="material-symbols-outlined">edit</span></button>
+                  <button v-if="isLocked(user)" class="row-action" @click="unlockUser(user)" title="Unlock" style="color:#059669"><span class="material-symbols-outlined">lock_open</span></button>
                   <button class="row-action" @click="toggleActive(user)" :title="user.isActive ? 'Deactivate' : 'Activate'" :style="{ color: user.isActive ? '#dc2626' : '#059669' }"><span class="material-symbols-outlined">{{ user.isActive ? 'block' : 'check_circle' }}</span></button>
                 </td>
               </tr>
@@ -173,6 +179,20 @@ async function saveUser() {
   } finally { saving.value = false }
 }
 
+function isLocked(user) {
+  return user.lockedUntil && new Date(user.lockedUntil) > new Date()
+}
+
+async function unlockUser(user) {
+  if (!confirm(`Unlock account for ${user.fullName}?`)) return
+  try {
+    await adminApi.unlockUser(user.id)
+    await fetchUsers()
+  } catch (err) {
+    alert('Error: ' + (err.response?.data?.error?.message || err.message))
+  }
+}
+
 async function toggleActive(user) {
   try {
     await adminApi.updateUser(user.id, { is_active: !user.is_active })
@@ -223,6 +243,8 @@ onMounted(() => { fetchUsers(); fetchOffices() })
 .status-badge { display: inline-block; padding: 0.2rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
 .status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .status-cancelled { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
+.status-locked { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.text-muted { color: #9ca3af; }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; }
 .schedule-modal { background: var(--color-white); border-radius: var(--radius-xl); width: 90vw; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-xl); }

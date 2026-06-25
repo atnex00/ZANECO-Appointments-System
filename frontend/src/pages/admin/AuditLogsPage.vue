@@ -6,6 +6,9 @@
         <div class="form-group"><label class="form-label">Action</label>
           <select v-model="filters.action" class="form-select" @change="fetchLogs">
             <option value="">All Actions</option>
+            <option value="LOGIN_SUCCESS">Login Success</option>
+            <option value="LOGIN_FAILED">Login Failed</option>
+            <option value="ACCOUNT_LOCKED">Account Locked</option>
             <option value="APPOINTMENT_CREATED">Created</option>
             <option value="APPOINTMENT_CONFIRMED">Confirmed</option>
             <option value="APPOINTMENT_CANCELLED">Cancelled</option>

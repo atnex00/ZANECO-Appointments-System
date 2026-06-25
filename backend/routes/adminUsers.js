@@ -19,7 +19,7 @@ const createSchema = Joi.object({
 router.get('/', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') throw new AppError(403, 'FORBIDDEN', 'Insufficient permissions')
   const admins = await prisma.administrator.findMany({
-    select: { id: true, email: true, fullName: true, role: true, officeId: true, isActive: true, lastLoginAt: true },
+    select: { id: true, email: true, fullName: true, role: true, officeId: true, isActive: true, lastLoginAt: true, lockedUntil: true, failedLoginAttempts: true },
     orderBy: { fullName: 'asc' },
   })
   res.json({ success: true, data: admins })
@@ -65,6 +65,31 @@ router.put('/:id', authenticate, asyncHandler(async (req, res) => {
 
   await prisma.administrator.update({ where: { id: Number(req.params.id) }, data })
   res.json({ success: true, message: 'Admin updated' })
+}))
+
+router.put('/:id/unlock', authenticate, asyncHandler(async (req, res) => {
+  if (req.admin.role !== 'super_admin') throw new AppError(403, 'FORBIDDEN', 'Insufficient permissions')
+  const id = Number(req.params.id)
+  const admin = await prisma.administrator.findUnique({ where: { id } })
+  if (!admin) throw new AppError(404, 'NOT_FOUND', 'Admin not found')
+
+  await prisma.administrator.update({
+    where: { id },
+    data: { failedLoginAttempts: 0, lockedUntil: null },
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      action: 'ACCOUNT_UNLOCKED',
+      entityType: 'administrator',
+      entityId: id,
+      adminId: req.admin.id,
+      ipAddress: req.ip || req.connection?.remoteAddress || null,
+      userAgent: req.headers['user-agent'] || null,
+    },
+  })
+
+  res.json({ success: true, message: 'Account unlocked' })
 }))
 
 module.exports = router

@@ -21,6 +21,7 @@ const routes = [
       { path: 'login', name: 'admin-login', meta: { guest: true, title: 'Admin Login' }, component: () => import('../pages/admin/LoginPage.vue') },
       { path: 'forgot-password', name: 'admin-forgot-password', meta: { guest: true, title: 'Forgot Password' }, component: () => import('../pages/admin/ForgotPasswordPage.vue') },
       { path: 'reset-password', name: 'admin-reset-password', meta: { guest: true, title: 'Reset Password' }, component: () => import('../pages/admin/ResetPasswordPage.vue') },
+      { path: 'system-status', name: 'admin-system-status', meta: { guest: true, title: 'System Status' }, component: () => import('../pages/admin/SystemStatusPage.vue') },
       { path: 'dashboard', name: 'admin-dashboard', meta: { auth: true, title: 'Dashboard' }, component: () => import('../pages/admin/DashboardPage.vue') },
       { path: 'appointments', name: 'admin-appointments', meta: { auth: true, title: 'Appointments' }, component: () => import('../pages/admin/AppointmentsPage.vue') },
       { path: 'appointments/:id', name: 'admin-appointment-detail', meta: { auth: true, title: 'Appointment Detail' }, component: () => import('../pages/admin/AppointmentDetail.vue') },
