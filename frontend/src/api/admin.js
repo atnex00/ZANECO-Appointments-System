@@ -85,4 +85,10 @@ export const adminApi = {
   saveAppointmentNotes(id, data) {
     return api.put(`/admin/appointments/${id}/notes`, data)
   },
+  forgotPassword(email) {
+    return api.post('/auth/forgot-password', { email })
+  },
+  resetPassword(token, password) {
+    return api.post('/auth/reset-password', { token, password })
+  },
 }

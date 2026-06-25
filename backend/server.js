@@ -12,6 +12,9 @@ const worker = require('./worker')
 const app = express()
 const server = app.listen.bind(app)
 
+// --- Trust proxy (for req.ip to respect X-Forwarded-For) ---
+app.set('trust proxy', 1)
+
 // --- Security ---
 app.use(helmet({
   contentSecurityPolicy: false, // Disabled for API — enable if serving frontend assets
@@ -53,6 +56,7 @@ app.use(requestLogger)
 
 // --- Routes ---
 app.use('/api/v1/auth', authLimiter, require('./routes/auth'))
+app.use('/api/v1/auth', authLimiter, require('./routes/passwordReset'))
 app.use('/api/v1/appointments', require('./routes/appointments'))
 app.use('/api/v1/offices', require('./routes/offices'))
 app.use('/api/v1/concern-types', require('./routes/concernTypesPublic'))

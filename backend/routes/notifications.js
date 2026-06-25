@@ -8,6 +8,9 @@ const router = express.Router()
 router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { status, page = 1, per_page = 50 } = req.query
   const where = status ? { status } : {}
+  if (req.admin.role !== 'super_admin') {
+    where.appointment = { officeId: req.admin.officeId }
+  }
 
   const [total, notifications] = await Promise.all([
     prisma.notification.count({ where }),
@@ -29,8 +32,14 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
 }))
 
 router.post('/resend/:id', authenticate, asyncHandler(async (req, res) => {
-  const notif = await prisma.notification.findUnique({ where: { id: Number(req.params.id) } })
+  const notif = await prisma.notification.findUnique({
+    where: { id: Number(req.params.id) },
+    include: { appointment: { select: { officeId: true } } },
+  })
   if (!notif) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Notification not found' } })
+  if (req.admin.role !== 'super_admin' && notif.appointment.officeId !== req.admin.officeId) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } })
+  }
 
   await prisma.notification.update({
     where: { id: notif.id },

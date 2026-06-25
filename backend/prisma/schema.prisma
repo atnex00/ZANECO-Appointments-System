@@ -93,6 +93,8 @@ model Administrator {
   failedLoginAttempts  Int      @default(0) @map("failed_login_attempts")
   lockedUntil          String?  @map("locked_until")
   refreshToken         String?  @map("refresh_token")
+  resetToken           String?  @unique @map("reset_token")
+  resetTokenExpiresAt  String?  @map("reset_token_expires_at")
   createdAt            String   @default("now()") @map("created_at")
   updatedAt            String   @default("now()") @map("updated_at")
 
@@ -173,6 +175,15 @@ model RequestLog {
   @@index([createdAt])
   @@index([status])
   @@map("request_logs")
+}
+
+model BookingRequest {
+  id        Int    @id @default(autoincrement())
+  ip        String
+  createdAt String @default("now()") @map("created_at")
+
+  @@index([ip, createdAt])
+  @@map("booking_requests")
 }
 
 model AuditLog {

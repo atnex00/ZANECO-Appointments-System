@@ -17,6 +17,13 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
     if (date_to) where.createdAt.lte = date_to
   }
 
+  if (req.admin.role !== 'super_admin') {
+    where.OR = [
+      { adminId: null },
+      { administrator: { officeId: req.admin.officeId } },
+    ]
+  }
+
   const [total, logs] = await Promise.all([
     prisma.auditLog.count({ where }),
     prisma.auditLog.findMany({

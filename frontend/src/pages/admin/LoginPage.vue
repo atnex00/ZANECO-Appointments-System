@@ -43,7 +43,7 @@
             <div class="field-group">
               <div class="password-header">
                 <label class="field-label" for="login-password">Password</label>
-                <a class="forgot-link" href="#">Forgot Password?</a>
+                <router-link class="forgot-link" to="/admin/forgot-password">Forgot Password?</router-link>
               </div>
               <div class="input-wrap">
                 <span class="input-icon material-symbols-outlined">lock</span>

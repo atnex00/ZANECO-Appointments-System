@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer')
+const path = require('path')
 const config = require('../config')
 
 let transporter = null
@@ -30,6 +31,11 @@ async function sendEmail({ to, subject, html }) {
       to,
       subject,
       html,
+      attachments: [{
+        path: LOGO_PATH,
+        cid: LOGO_CID,
+        contentDisposition: 'inline',
+      }],
     })
     return true
   } catch (err) {
@@ -38,55 +44,83 @@ async function sendEmail({ to, subject, html }) {
   }
 }
 
-async function sendConfirmation(appointment) {
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: #1a5276; color: white; padding: 20px; text-align: center;">
-        <h2 style="margin: 0;">ZANECO Appointments</h2>
-      </div>
-      <div style="padding: 20px; border: 1px solid #ddd;">
-        <p>Dear <strong>${appointment.consumer_name}</strong>,</p>
-        <p>Your appointment has been successfully booked. Please find the details below:</p>
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Reference No.</td><td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">${appointment.reference_number}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Date</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.appointment_date}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Time</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.start_time?.slice(0,5)} - ${appointment.end_time?.slice(0,5)}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Office</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.office}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Concern</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.concern_type}</td></tr>
-          <tr><td style="padding: 8px; color: #666;">Status</td><td style="padding: 8px; font-weight: bold; color: #e67e22;">${appointment.status}</td></tr>
-        </table>
-        <p style="color: #888; font-size: 12px;">Please arrive 10 minutes early and bring a valid ID.</p>
-        <p style="color: #888; font-size: 12px;">— ZANECO Appointments System</p>
-      </div>
-    </div>`
+const FONTS = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 
+const LOGO_CID = 'logo@zaneco'
+const LOGO_PATH = path.resolve(__dirname, '../../frontend/public/logo-combined.png')
+
+function emailShell(body, options = {}) {
+  const { subtitle, statusBadge } = options
+  return `
+    <div style="font-family: ${FONTS}; background: #fffbeb; padding: 24px 16px;">
+      <table style="max-width: 560px; margin: 0 auto; width: 100%;" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="background: #d97706; border-radius: 12px 12px 0 0; padding: 28px 32px; text-align: center;">
+            <div style="margin-bottom: 8px;"><img src="cid:${LOGO_CID}" alt="ZANECO" width="160" style="display: block; margin: 0 auto;" /></div>
+            <p style="margin: 0; color: #ffffff; font-size: 16px; font-weight: 700; letter-spacing: -0.01em;">Appointments System</p>
+            <p style="margin: 6px 0 0; color: #fef3c7; font-size: 13px;">${subtitle || 'Consumer Appointment System'}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background: #ffffff; padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+            ${statusBadge ? `<div style="text-align: center; margin-bottom: 20px;">${statusBadge}</div>` : ''}
+            ${body}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 16px 32px; text-align: center;">
+            <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.5;">ZANECO Appointments System</p>
+            <p style="margin: 2px 0 0; color: #9ca3af; font-size: 12px; line-height: 1.5;">This is an automated message. Please do not reply.</p>
+          </td>
+        </tr>
+      </table>
+    </div>`
+}
+
+function detailRow(label, value) {
+  return `
+    <tr>
+      <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; font-size: 13px; vertical-align: top; width: 40%;">${label}</td>
+      <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827; font-size: 14px; font-weight: 600; vertical-align: top;">${value}</td>
+    </tr>`
+}
+
+async function sendConfirmation(appointment) {
+  const html = emailShell(`
+    <p style="margin: 0 0 16px; color: #374151; font-size: 15px; line-height: 1.6;">Dear <strong style="color: #111827;">${appointment.consumer_name}</strong>,</p>
+    <p style="margin: 0 0 20px; color: #374151; font-size: 15px; line-height: 1.6;">Your appointment has been successfully booked. Please find the details below:</p>
+    <table style="width: 100%; border-collapse: collapse;">
+      ${detailRow('Reference No.', appointment.reference_number)}
+      ${detailRow('Date', appointment.appointment_date)}
+      ${detailRow('Time', `${appointment.start_time?.slice(0,5)} - ${appointment.end_time?.slice(0,5)}`)}
+      ${detailRow('Office', appointment.office)}
+      ${detailRow('Concern', appointment.concern_type)}
+    </table>
+    <div style="margin-top: 20px; padding: 12px 16px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px;">
+      <p style="margin: 0; color: #92400e; font-size: 13px; line-height: 1.5;"><strong>Tip:</strong> Please arrive 10 minutes early and bring a valid ID.</p>
+    </div>
+  `, { subtitle: 'Booking Confirmation', statusBadge: '<span style="display: inline-block; padding: 4px 14px; background: #d97706; color: #ffffff; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Pending</span>' })
   return sendEmail({
     to: appointment.email,
-    subject: `Appointment Confirmed — ${appointment.reference_number}`,
+    subject: `Booking Confirmed — ${appointment.reference_number}`,
     html,
   })
 }
 
 async function sendReminder(appointment) {
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: #1a5276; color: white; padding: 20px; text-align: center;">
-        <h2 style="margin: 0;">Appointment Reminder</h2>
-      </div>
-      <div style="padding: 20px; border: 1px solid #ddd;">
-        <p>Dear <strong>${appointment.consumer_name}</strong>,</p>
-        <p>This is a reminder of your ZANECO appointment scheduled for <strong>tomorrow</strong>.</p>
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Reference No.</td><td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">${appointment.reference_number}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Date</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.appointment_date}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Time</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.start_time?.slice(0,5)}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Office</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.office_name}</td></tr>
-        </table>
-        <p style="color: #888; font-size: 12px;">Please arrive 10 minutes early and bring your valid ID.</p>
-        <p style="color: #888; font-size: 12px;">— ZANECO Appointments System</p>
-      </div>
-    </div>`
-
+  const html = emailShell(`
+    <p style="margin: 0 0 16px; color: #374151; font-size: 15px; line-height: 1.6;">Dear <strong style="color: #111827;">${appointment.consumer_name}</strong>,</p>
+    <p style="margin: 0 0 20px; color: #374151; font-size: 15px; line-height: 1.6;">This is a reminder of your ZANECO appointment scheduled for <strong>tomorrow</strong>.</p>
+    <table style="width: 100%; border-collapse: collapse;">
+      ${detailRow('Reference No.', appointment.reference_number)}
+      ${detailRow('Date', appointment.appointment_date)}
+      ${detailRow('Time', appointment.start_time?.slice(0,5))}
+      ${detailRow('Office', appointment.office_name)}
+    </table>
+    <div style="margin-top: 20px; padding: 12px 16px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px;">
+      <p style="margin: 0; color: #92400e; font-size: 13px; line-height: 1.5;"><strong>Reminder:</strong> Please arrive 10 minutes early and bring your valid ID.</p>
+    </div>
+  `, { subtitle: 'Appointment Reminder' })
   return sendEmail({
     to: appointment.email,
     subject: `Reminder: Appointment Tomorrow — ${appointment.reference_number}`,
@@ -95,27 +129,20 @@ async function sendReminder(appointment) {
 }
 
 async function sendConfirmed(appointment) {
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: #1a5276; color: white; padding: 20px; text-align: center;">
-        <h2 style="margin: 0;">Appointment Confirmed</h2>
-      </div>
-      <div style="padding: 20px; border: 1px solid #ddd;">
-        <p>Dear <strong>${appointment.consumer_name}</strong>,</p>
-        <p>Your appointment has been <strong>confirmed</strong> by ZANECO. Please see the details below:</p>
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Reference No.</td><td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">${appointment.reference_number}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Date</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.appointment_date}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Time</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.start_time?.slice(0,5)} - ${appointment.end_time?.slice(0,5)}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Office</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.office}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Concern</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.concern_type}</td></tr>
-          <tr><td style="padding: 8px; color: #666;">Status</td><td style="padding: 8px; font-weight: bold; color: #27ae60;">Confirmed</td></tr>
-        </table>
-        <p style="color: #888; font-size: 12px;">Please arrive 10 minutes early and bring a valid ID.</p>
-        <p style="color: #888; font-size: 12px;">— ZANECO Appointments System</p>
-      </div>
-    </div>`
-
+  const html = emailShell(`
+    <p style="margin: 0 0 16px; color: #374151; font-size: 15px; line-height: 1.6;">Dear <strong style="color: #111827;">${appointment.consumer_name}</strong>,</p>
+    <p style="margin: 0 0 20px; color: #374151; font-size: 15px; line-height: 1.6;">Your appointment has been <strong>confirmed</strong> by ZANECO. Please see the details below:</p>
+    <table style="width: 100%; border-collapse: collapse;">
+      ${detailRow('Reference No.', appointment.reference_number)}
+      ${detailRow('Date', appointment.appointment_date)}
+      ${detailRow('Time', `${appointment.start_time?.slice(0,5)} - ${appointment.end_time?.slice(0,5)}`)}
+      ${detailRow('Office', appointment.office)}
+      ${detailRow('Concern', appointment.concern_type)}
+    </table>
+    <div style="margin-top: 20px; padding: 12px 16px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px;">
+      <p style="margin: 0; color: #065f46; font-size: 13px; line-height: 1.5;">Please arrive 10 minutes early and bring a valid ID.</p>
+    </div>
+  `, { subtitle: 'Appointment Confirmed', statusBadge: '<span style="display: inline-block; padding: 4px 14px; background: #059669; color: #ffffff; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Confirmed</span>' })
   return sendEmail({
     to: appointment.email,
     subject: `Appointment Confirmed by ZANECO — ${appointment.reference_number}`,
@@ -124,27 +151,25 @@ async function sendConfirmed(appointment) {
 }
 
 async function sendRejected(appointment) {
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: #991b1b; color: white; padding: 20px; text-align: center;">
-        <h2 style="margin: 0;">Appointment Not Approved</h2>
-      </div>
-      <div style="padding: 20px; border: 1px solid #ddd;">
-        <p>Dear <strong>${appointment.consumer_name}</strong>,</p>
-        <p>We regret to inform you that your appointment request could not be approved at this time.</p>
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Reference No.</td><td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">${appointment.reference_number}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Date</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.appointment_date}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Time</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.start_time?.slice(0,5)} - ${appointment.end_time?.slice(0,5)}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Office</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.office}</td></tr>
-          <tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #666;">Reason</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${appointment.reason}</td></tr>
-          <tr><td style="padding: 8px; color: #666;">Status</td><td style="padding: 8px; font-weight: bold; color: #dc2626;">Not Approved</td></tr>
-        </table>
-        <p style="color: #888; font-size: 12px;">If you have questions, please contact ZANECO customer support.</p>
-        <p style="color: #888; font-size: 12px;">— ZANECO Appointments System</p>
-      </div>
-    </div>`
-
+  const reason = appointment.reason ? `
+    <tr>
+      <td style="padding: 10px 0; color: #6b7280; font-size: 13px; vertical-align: top; width: 40%;">Reason</td>
+      <td style="padding: 10px 0; color: #111827; font-size: 14px; font-weight: 600; vertical-align: top;">${appointment.reason}</td>
+    </tr>` : ''
+  const html = emailShell(`
+    <p style="margin: 0 0 16px; color: #374151; font-size: 15px; line-height: 1.6;">Dear <strong style="color: #111827;">${appointment.consumer_name}</strong>,</p>
+    <p style="margin: 0 0 20px; color: #374151; font-size: 15px; line-height: 1.6;">We regret to inform you that your appointment request could not be approved at this time.</p>
+    <table style="width: 100%; border-collapse: collapse;">
+      ${detailRow('Reference No.', appointment.reference_number)}
+      ${detailRow('Date', appointment.appointment_date)}
+      ${detailRow('Time', `${appointment.start_time?.slice(0,5)} - ${appointment.end_time?.slice(0,5)}`)}
+      ${detailRow('Office', appointment.office)}
+      ${reason}
+    </table>
+    <div style="margin-top: 20px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">
+      <p style="margin: 0; color: #991b1b; font-size: 13px; line-height: 1.5;">If you have questions, please contact ZANECO customer support.</p>
+    </div>
+  `, { subtitle: 'Appointment Update', statusBadge: '<span style="display: inline-block; padding: 4px 14px; background: #dc2626; color: #ffffff; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Not Approved</span>' })
   return sendEmail({
     to: appointment.email,
     subject: `Appointment Not Approved — ${appointment.reference_number}`,
@@ -152,4 +177,4 @@ async function sendRejected(appointment) {
   })
 }
 
-module.exports = { sendConfirmation, sendReminder, sendConfirmed, sendRejected, sendEmail }
+module.exports = { sendConfirmation, sendReminder, sendConfirmed, sendRejected, sendEmail, emailShell }

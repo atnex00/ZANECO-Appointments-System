@@ -18,10 +18,13 @@
         <p class="guide-p">The <strong>ZANECO Appointments System</strong> is a web-based platform that allows ZANECO customer service offices to manage consumer appointments digitally. This guide covers the complete Admin Panel, where authorized staff can oversee appointments, offices, schedules, users, and reports.</p>
 
         <h3 class="guide-h3">Logging In</h3>
-        <p class="guide-p">Navigate to <code class="guide-code">/admin/login</code>. Enter your registered email address and password. If you are a new administrator, your system administrator will provide your credentials. After logging in, you will be redirected to the Dashboard.</p>
+        <p class="guide-p">Navigate to <code class="guide-code">/admin/login</code>. Enter your registered email address and password. After logging in, you will be redirected to the Dashboard.</p>
+
+        <h3 class="guide-h3">Password Reset</h3>
+        <p class="guide-p">If you forget your password, click the <strong>Forgot Password?</strong> link on the login page. Enter your registered email address. If the email exists in the system, a password reset link will be sent to that email. The link expires after <strong>1 hour</strong>. Click the link to choose a new password (minimum 8 characters). After resetting, you can log in with your new password.</p>
 
         <h3 class="guide-h3">Navigating the Admin Panel</h3>
-        <p class="guide-p">The sidebar on the left gives you access to all management modules. On mobile devices, the sidebar collapses into a bottom navigation bar. The header section shows your name and role, along with a logout button.</p>
+        <p class="guide-p">The sidebar on the left gives you access to all management modules. On mobile devices, the sidebar collapses into a bottom navigation bar. The header section shows your name and role, along with a logout button. Your role determines which modules you can see and what actions you can perform.</p>
 
         <div class="guide-tip">
           <span class="material-symbols-outlined" style="font-size:1.25rem">lightbulb</span>
@@ -33,6 +36,9 @@
       <section ref="appointmentsRef" id="appointments" class="guide-section">
         <h2 class="guide-h2">Managing Appointments</h2>
         <p class="guide-p">The Appointments page is the central hub for viewing and managing all consumer appointments. Access it from the sidebar under <strong>Appointments</strong>.</p>
+
+        <h3 class="guide-h3">Data Scoping by Role</h3>
+        <p class="guide-p"><strong>Super Admins</strong> see appointments across all offices. <strong>Office Managers</strong> and <strong>Staff</strong> only see appointments belonging to their assigned office.</p>
 
         <h3 class="guide-h3">Appointments List</h3>
         <p class="guide-p">The list displays each appointment with its reference number, consumer name, office, date, time, and current status. Use the <strong>Filters</strong> button to narrow down results by status, date range, office, or concern type. The search box lets you find appointments by reference number or consumer name.</p>
@@ -62,7 +68,7 @@
 
         <div class="guide-warning">
           <span class="material-symbols-outlined" style="font-size:1.25rem">warning</span>
-          <span>Deleting an appointment is permanent and cannot be undone. Only Super Admins have this ability.</span>
+          <span>Deleting an appointment is permanent and cannot be undone. Only Super Admins have this ability. Office Managers and Staff can only manage appointments within their own office.</span>
         </div>
       </section>
 
@@ -72,10 +78,10 @@
         <p class="guide-p">Manage the office network and the types of concerns consumers can select when booking.</p>
 
         <h3 class="guide-h3">Offices</h3>
-        <p class="guide-p">The <strong>Offices</strong> page (sidebar <strong>Offices</strong>) lists all registered ZANECO offices. Each office has a name, address, and assigned schedule. You can add a new office by clicking the <strong>Add Office</strong> button, or edit an existing one inline. Each office can be enabled or disabled — disabled offices will not appear in the consumer booking flow.</p>
+        <p class="guide-p">The <strong>Offices</strong> page (sidebar <strong>Offices</strong>) lists all registered ZANECO offices. Each office has a name, address, and assigned schedule. <strong>Super Admins</strong> can add, edit, or deactivate offices. <strong>Office Managers</strong> and <strong>Staff</strong> can view offices but cannot create, edit, or deactivate them. Disabled offices will not appear in the consumer booking flow.</p>
 
         <h3 class="guide-h3">Concern Types</h3>
-        <p class="guide-p">The <strong>Concerns</strong> page (sidebar <strong>Concerns</strong>) lists all service categories, such as "Billing Inquiry" or "New Connection". These are the options consumers see when booking. Like offices, you can add, edit, or enable/disable concern types.</p>
+        <p class="guide-p">The <strong>Concerns</strong> page (sidebar <strong>Concerns</strong>) lists all service categories, such as "Billing Inquiry" or "New Connection". These are the options consumers see when booking. <strong>Super Admins</strong> can add, edit, or enable/disable concern types. <strong>Office Managers</strong> and <strong>Staff</strong> can view concern types but cannot modify them.</p>
 
         <div class="guide-tip">
           <span class="material-symbols-outlined" style="font-size:1.25rem">lightbulb</span>
@@ -95,7 +101,7 @@
         <p class="guide-p">Each office has configurable time slots that determine when consumers can book. Slots are managed per office and can be customized for each day of the week. The system automatically prevents double-booking within the same time slot.</p>
 
         <h3 class="guide-h3">Office Hours</h3>
-        <p class="guide-p">Each office has defined operating hours (e.g., 8:00 AM - 5:00 PM). Slots outside these hours are not available for booking. Holidays and office closures can be managed to block specific dates.</p>
+        <p class="guide-p">Each office has defined operating hours (e.g., 8:00 AM - 5:00 PM). Slots outside these hours are not available for booking. Holidays and office closures can be managed to block specific dates. Only <strong>Super Admins</strong> and <strong>Office Managers</strong> can edit office schedules. Staff can view schedules but cannot modify them.</p>
       </section>
 
       <!-- 5. Reports -->
@@ -104,10 +110,10 @@
         <p class="guide-p">The Dashboard and Reports modules provide insights into appointment data and system performance.</p>
 
         <h3 class="guide-h3">Dashboard</h3>
-        <p class="guide-p">The <strong>Dashboard</strong> shows a summary of key metrics: total appointments today, this week, and this month; counts by status (pending, confirmed, completed, cancelled, no-show); the busiest office today; peak booking hour; and a weekly trend chart. All numbers update in real time as appointments are processed.</p>
+        <p class="guide-p">The <strong>Dashboard</strong> shows a summary of key metrics: total appointments today, this week, and this month; counts by status (pending, confirmed, completed, cancelled, no-show); the busiest office today; peak booking hour; and a weekly trend chart. <strong>Super Admins</strong> see system-wide numbers. <strong>Office Managers</strong> and <strong>Staff</strong> see numbers scoped to their own office.</p>
 
         <h3 class="guide-h3">Reports Page</h3>
-        <p class="guide-p">The <strong>Reports</strong> page offers more detailed analytics. You can filter by date range, office, and status. Data is presented in both table and chart formats, and can be exported as a PDF for sharing with management or for record-keeping.</p>
+        <p class="guide-p">The <strong>Reports</strong> page offers more detailed analytics. You can filter by date range, office, and status. Data is presented in both table and chart formats, and can be exported as a PDF for sharing with management or for record-keeping. <strong>Super Admins</strong> see all offices' data. <strong>Office Managers</strong> and <strong>Staff</strong> only see data from their assigned office.</p>
 
         <div class="guide-tip">
           <span class="material-symbols-outlined" style="font-size:1.25rem">lightbulb</span>
@@ -118,15 +124,37 @@
       <!-- 6. Admin Users -->
       <section ref="usersRef" id="users" class="guide-section">
         <h2 class="guide-h2">Admin Users &amp; Permissions</h2>
-        <p class="guide-p">The <strong>Admin Users</strong> page (sidebar <strong>Admin Users</strong>) is where you manage who has access to the admin panel. This section is only available to Super Administrators.</p>
+        <p class="guide-p">The <strong>Admin Users</strong> page (sidebar <strong>User Management</strong>) is where you manage who has access to the admin panel. This section is only available to Super Administrators.</p>
 
         <h3 class="guide-h3">User Roles</h3>
         <div class="guide-table-wrap">
           <table class="guide-table">
             <thead><tr><th>Role</th><th>Permissions</th></tr></thead>
             <tbody>
-              <tr><td><strong>Super Admin</strong></td><td>Full access — can manage admin users, offices, concerns, all appointments, reports, and system settings</td></tr>
-              <tr><td><strong>Admin</strong></td><td>Can manage appointments, offices, concerns, schedules, and reports. Cannot create or delete other admin users.</td></tr>
+              <tr><td><strong>Super Admin</strong></td><td>Full system access — manage admin users, offices, concern types, all appointments across all offices, reports, audit logs, notifications, and system settings</td></tr>
+              <tr><td><strong>Office Manager</strong></td><td>Manage appointments (own office), update office schedules, view reports (own office), view all concern types, view audit logs and notifications, staff dashboard. Cannot manage admin users, create/edit offices or concern types, or delete appointments.</td></tr>
+              <tr><td><strong>Staff</strong></td><td>Manage appointments (own office), staff dashboard, view reports (own office), view audit logs. Cannot manage admin users, offices, concern types, schedules, or notifications. Sees a reduced sidebar with limited navigation.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="guide-h3">Role Permissions Matrix</h3>
+        <div class="guide-table-wrap">
+          <table class="guide-table">
+            <thead><tr><th>Capability</th><th>Super Admin</th><th>Office Manager</th><th>Staff</th></tr></thead>
+            <tbody>
+              <tr><td>View all appointments</td><td>All offices</td><td>Own office only</td><td>Own office only</td></tr>
+              <tr><td>Update appointment status</td><td>Any office</td><td>Own office only</td><td>Own office only</td></tr>
+              <tr><td>Delete appointments</td><td>Yes</td><td>No</td><td>No</td></tr>
+              <tr><td>Create/Edit/Deactivate offices</td><td>Yes</td><td>No</td><td>No</td></tr>
+              <tr><td>Edit office schedules</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+              <tr><td>Create/Edit concern types</td><td>Yes</td><td>No</td><td>No</td></tr>
+              <tr><td>Manage admin users</td><td>Yes</td><td>No</td><td>No</td></tr>
+              <tr><td>View reports</td><td>All offices</td><td>Own office only</td><td>Own office only</td></tr>
+              <tr><td>View audit logs</td><td>All offices</td><td>Own office only</td><td>Own office only</td></tr>
+              <tr><td>View notifications</td><td>All offices</td><td>Own office only</td><td>No</td></tr>
+              <tr><td>Staff Dashboard</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+              <tr><td>Full sidebar navigation</td><td>Yes</td><td>Yes</td><td>No (limited nav)</td></tr>
             </tbody>
           </table>
         </div>
@@ -136,7 +164,7 @@
 
         <div class="guide-warning">
           <span class="material-symbols-outlined" style="font-size:1.25rem">warning</span>
-          <span>Deactivate rather than delete whenever possible. This preserves the audit trail and prevents data loss.</span>
+          <span>Deactivate rather than delete whenever possible. This preserves the audit trail and prevents data loss. Only Super Admins can access the Admin Users page.</span>
         </div>
       </section>
 
@@ -145,10 +173,10 @@
         <h2 class="guide-h2">Notifications &amp; Audit Logs</h2>
 
         <h3 class="guide-h3">Notifications</h3>
-        <p class="guide-p">The <strong>Notifications</strong> page shows all SMS and email notifications sent to consumers. Each entry shows the recipient, channel (SMS or Email), status (Sent, Failed, Pending), and timestamps. Failed notifications can be retried by clicking the refresh icon.</p>
+        <p class="guide-p">The <strong>Notifications</strong> page shows all SMS and email notifications sent to consumers. Each entry shows the recipient, channel (SMS or Email), status (Sent, Failed, Pending), and timestamps. Failed notifications can be retried by clicking the refresh icon. <strong>Super Admins</strong> see all notifications system-wide. <strong>Office Managers</strong> only see notifications for their own office's appointments. <strong>Staff</strong> do not have access to the Notifications page.</p>
 
         <h3 class="guide-h3">Audit Logs</h3>
-        <p class="guide-p">The <strong>Audit Logs</strong> page provides a complete trail of all actions performed in the system. Each log entry records: timestamp, admin name, action type (e.g., APPOINTMENT_CONFIRMED, OFFICE_UPDATED), entity type, entity ID, and IP address. Filter logs by action type or date range.</p>
+        <p class="guide-p">The <strong>Audit Logs</strong> page provides a complete trail of all actions performed in the system. Each log entry records: timestamp, admin name, action type (e.g., APPOINTMENT_CONFIRMED, OFFICE_UPDATED), entity type, entity ID, and IP address. Filter logs by action type or date range. <strong>Super Admins</strong> see logs for all offices. <strong>Office Managers</strong> and <strong>Staff</strong> only see logs generated by users in their own office.</p>
 
         <div class="guide-tip">
           <span class="material-symbols-outlined" style="font-size:1.25rem">lightbulb</span>

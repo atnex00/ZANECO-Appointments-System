@@ -47,14 +47,20 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, message: 'Admin created' })
 }))
 
+const FIELD_MAP = {
+  full_name: 'fullName',
+  role: 'role',
+  office_id: 'officeId',
+  is_active: 'isActive',
+}
+
 router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') throw new AppError(403, 'FORBIDDEN', 'Insufficient permissions')
   const data = {}
-  for (const key of ['full_name', 'role', 'office_id']) {
-    if (req.body[key] !== undefined) data[key] = req.body[key]
+  for (const key of ['full_name', 'role', 'office_id', 'is_active']) {
+    if (req.body[key] !== undefined) data[FIELD_MAP[key]] = req.body[key]
   }
-  if (req.body.is_active !== undefined) data.is_active = req.body.is_active
-  if (req.body.password) data.password_hash = bcrypt.hashSync(req.body.password, 10)
+  if (req.body.password) data.passwordHash = bcrypt.hashSync(req.body.password, 10)
   if (!Object.keys(data).length) throw new AppError(400, 'BAD_REQUEST', 'No fields to update')
 
   await prisma.administrator.update({ where: { id: Number(req.params.id) }, data })

@@ -61,6 +61,9 @@ router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
 }))
 
 router.put('/:id/schedule', authenticate, asyncHandler(async (req, res) => {
+  if (req.admin.role !== 'super_admin' && req.admin.role !== 'office_manager') {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
+  }
   const { schedules } = req.body
   if (!schedules || !Array.isArray(schedules)) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Schedules array required' } })
 

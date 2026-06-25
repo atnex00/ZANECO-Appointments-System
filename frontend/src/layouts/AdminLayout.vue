@@ -118,7 +118,9 @@ onUnmounted(() => { window.removeEventListener('resize', updateCount) })
 
 const visibleNav = computed(() => mobileNav.value.slice(navStart.value, navStart.value + visibleCount.value))
 
-const isLoginPage = computed(() => route.path === '/admin/login')
+const isLoginPage = computed(() =>
+  ['/admin/login', '/admin/forgot-password', '/admin/reset-password'].includes(route.path)
+)
 
 provide('toggleDrawer', (val) => { drawerOpen.value = val })
 provide('setFab', (show, label) => { showFab.value = show; fabLabel.value = label })

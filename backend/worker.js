@@ -2,12 +2,19 @@ const prisma = require('./db/database')
 const emailService = require('./services/emailService')
 
 let interval = null
+let tickCount = 0
 
 function start(intervalMs = 30000) {
   console.log('Notification worker started (interval: ' + intervalMs + 'ms)')
-  interval = setInterval(processQueue, intervalMs)
-  processQueue()
-  processReminders()
+  interval = setInterval(tick, intervalMs)
+  tick()
+}
+
+async function tick() {
+  tickCount++
+  await processQueue()
+  await processReminders()
+  if (tickCount % 60 === 0) await cleanupOldBookingRequests()
 }
 
 function stop() {
@@ -90,6 +97,18 @@ async function processReminders() {
     }
   } catch (err) {
     console.error('Reminder processor error:', err.message)
+  }
+}
+
+async function cleanupOldBookingRequests() {
+  try {
+    const cutoff = new Date(Date.now() - 24 * 3600000).toISOString()
+    const { count } = await prisma.bookingRequest.deleteMany({
+      where: { createdAt: { lt: cutoff } },
+    })
+    if (count > 0) console.log(`[CLEANUP] Deleted ${count} old booking request records`)
+  } catch (err) {
+    console.error('Booking cleanup error:', err.message)
   }
 }
 

@@ -104,18 +104,22 @@ router.get('/summary', authenticate, asyncHandler(async (req, res) => {
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); const ws = weekStart.toISOString().split('T')[0]
   const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); const wa = weekAgo.toISOString().split('T')[0]
 
+  const officeFilter = req.admin.role !== 'super_admin' && req.admin.officeId
+    ? { officeId: req.admin.officeId }
+    : {}
+
   const [totalToday, pending, completed, cancelled, rejected, no_show, totalMonth, totalWeek, weeklyTrend] = await Promise.all([
-    prisma.appointment.count({ where: { appointmentDate: { startsWith: today } } }),
-    prisma.appointment.count({ where: { status: 'pending' } }),
-    prisma.appointment.count({ where: { status: 'completed' } }),
-    prisma.appointment.count({ where: { status: 'cancelled' } }),
-    prisma.appointment.count({ where: { status: 'rejected' } }),
-    prisma.appointment.count({ where: { status: 'no_show' } }),
-    prisma.appointment.count({ where: { appointmentDate: { gte: ms } } }),
-    prisma.appointment.count({ where: { appointmentDate: { gte: ws } } }),
+    prisma.appointment.count({ where: { appointmentDate: { startsWith: today }, ...officeFilter } }),
+    prisma.appointment.count({ where: { status: 'pending', ...officeFilter } }),
+    prisma.appointment.count({ where: { status: 'completed', ...officeFilter } }),
+    prisma.appointment.count({ where: { status: 'cancelled', ...officeFilter } }),
+    prisma.appointment.count({ where: { status: 'rejected', ...officeFilter } }),
+    prisma.appointment.count({ where: { status: 'no_show', ...officeFilter } }),
+    prisma.appointment.count({ where: { appointmentDate: { gte: ms }, ...officeFilter } }),
+    prisma.appointment.count({ where: { appointmentDate: { gte: ws }, ...officeFilter } }),
     prisma.appointment.groupBy({
       by: ['appointmentDate'],
-      where: { appointmentDate: { gte: wa, lte: today } },
+      where: { appointmentDate: { gte: wa, lte: today }, ...officeFilter },
       _count: { id: true },
       orderBy: { appointmentDate: 'asc' },
     }),

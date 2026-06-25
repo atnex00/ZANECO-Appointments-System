@@ -3,6 +3,7 @@ const prisma = require('../db/database')
 const { AppError, asyncHandler } = require('../middleware/errors')
 const Joi = require('joi')
 const emailService = require('../services/emailService')
+const rateLimitBooking = require('../middleware/rateLimitBooking')
 
 const router = express.Router()
 
@@ -29,7 +30,7 @@ const createSchema = Joi.object({
   start_time: Joi.string().pattern(/^\d{2}:\d{2}(:\d{2})?$/).required(),
 })
 
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', rateLimitBooking, asyncHandler(async (req, res) => {
   if (req.body.start_time) {
     const parts = req.body.start_time.replace(/[^0-9]/g, '')
     if (parts.length >= 4) {
@@ -124,6 +125,8 @@ router.post('/', asyncHandler(async (req, res) => {
       newValues: JSON.stringify(req.body),
     },
   })
+
+  prisma.bookingRequest.create({ data: { ip: req.ip } }).catch(err => console.error('Booking rate log failed:', err))
 
   if (appointment.email) {
     emailService.sendConfirmation({
