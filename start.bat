@@ -50,10 +50,10 @@ if %errorlevel% neq 0 echo Warning: Seed failed (is PostgreSQL running?)
 echo Starting servers...
 
 :: Start backend (new window)
-start "ZANECO Backend" cmd /c "pnpm run dev:backend & pause"
+start "ZANECO Backend" cmd /c "call pnpm run dev:backend & pause"
 
 :: Start frontend (new window)
-start "ZANECO Frontend" cmd /c "pnpm run dev:frontend & pause"
+start "ZANECO Frontend" cmd /c "call pnpm run dev:frontend & pause"
 
 :: Wait for servers to be ready
 timeout /t 4 /nobreak >nul

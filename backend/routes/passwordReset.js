@@ -45,6 +45,8 @@ router.post('/forgot-password', asyncHandler(async (req, res) => {
     `, { subtitle: 'Password Reset' })
 
     await sendEmail({ to: admin.email, subject: 'Password Reset — ZANECO Appointments', html })
+  } else {
+    await new Promise(r => setTimeout(r, 200))
   }
 
   res.json({ success: true, message: 'If that email is registered, a reset link has been sent.' })

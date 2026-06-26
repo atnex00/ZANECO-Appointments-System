@@ -20,8 +20,8 @@ model Office {
   slotCapacity               Int              @default(2) @map("slot_capacity")
   appointmentDurationMinutes Int              @default(30) @map("appointment_duration_minutes")
   maxAdvanceDays             Int              @default(30) @map("max_advance_days")
-  createdAt                  String           @default("now()") @map("created_at")
-  updatedAt                  String           @default("now()") @map("updated_at")
+  createdAt                  DateTime         @default(now()) @map("created_at")
+  updatedAt                  DateTime         @updatedAt @map("updated_at")
 
   officeSchedules   OfficeSchedule[]
   timeSlots         TimeSlot[]
@@ -38,8 +38,8 @@ model OfficeSchedule {
   openingTime  String  @map("opening_time")
   closingTime  String  @map("closing_time")
   isWorkingDay Boolean @default(true) @map("is_working_day")
-  createdAt    String  @default("now()") @map("created_at")
-  updatedAt    String  @default("now()") @map("updated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
 
@@ -55,8 +55,8 @@ model TimeSlot {
   endTime      String @map("end_time")
   maxCapacity  Int    @default(2) @map("max_capacity")
   bookedCount  Int    @default(0) @map("booked_count")
-  createdAt    String @default("now()") @map("created_at")
-  updatedAt    String @default("now()") @map("updated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
 
@@ -73,8 +73,8 @@ model ConcernType {
   estimatedDurationMinutes  Int     @default(30) @map("estimated_duration_minutes")
   isActive                  Boolean @default(true) @map("is_active")
   sortOrder                 Int     @default(0) @map("sort_order")
-  createdAt                 String  @default("now()") @map("created_at")
-  updatedAt                 String  @default("now()") @map("updated_at")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
 
   appointments Appointment[]
 
@@ -92,16 +92,17 @@ model Administrator {
   lastLoginAt          String?  @map("last_login_at")
   failedLoginAttempts  Int      @default(0) @map("failed_login_attempts")
   lockedUntil          String?  @map("locked_until")
-  refreshToken         String?  @map("refresh_token")
+  refreshToken         String?  @unique @map("refresh_token")
   resetToken           String?  @unique @map("reset_token")
   resetTokenExpiresAt  String?  @map("reset_token_expires_at")
-  createdAt            String   @default("now()") @map("created_at")
-  updatedAt            String   @default("now()") @map("updated_at")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  office        Office?       @relation(fields: [officeId], references: [id], onDelete: SetNull)
 
-  office        Office?       @relation(fields: [officeId], references: [id])
   appointments  Appointment[] @relation("processedBy")
   auditLogs     AuditLog[]
 
+  @@index([officeId])
   @@map("administrators")
 }
 
@@ -123,20 +124,21 @@ model Appointment {
   rescheduledAt   String?  @map("rescheduled_at")
   completedAt     String?  @map("completed_at")
   processedBy     Int?     @map("processed_by")
-  createdAt       String   @default("now()") @map("created_at")
-  updatedAt       String   @default("now()") @map("updated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  concernType   ConcernType   @relation(fields: [concernTypeId], references: [id])
-  office        Office        @relation(fields: [officeId], references: [id])
-  processor     Administrator? @relation("processedBy", fields: [processedBy], references: [id])
+  concernType   ConcernType     @relation(fields: [concernTypeId], references: [id], onDelete: Restrict)
+  office        Office          @relation(fields: [officeId], references: [id], onDelete: Restrict)
+  processor     Administrator?  @relation("processedBy", fields: [processedBy], references: [id], onDelete: SetNull)
   notifications Notification[]
   auditLogs     AuditLog[]
 
-  @@index([referenceNumber])
   @@index([accountNumber])
   @@index([status])
   @@index([appointmentDate])
   @@index([officeId, appointmentDate])
+  @@index([concernTypeId])
+  @@index([processedBy])
   @@map("appointments")
 }
 
@@ -150,7 +152,7 @@ model Notification {
   status        String  @default("pending")
   retryCount    Int     @default(0) @map("retry_count")
   sentAt        String? @map("sent_at")
-  createdAt     String  @default("now()") @map("created_at")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
@@ -170,7 +172,7 @@ model RequestLog {
   adminId      Int?     @map("admin_id")
   bodyPreview  String?  @map("body_preview")
   errorMessage String?  @map("error_message")
-  createdAt    String   @default("now()") @map("created_at")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   @@index([createdAt])
   @@index([status])
@@ -180,7 +182,7 @@ model RequestLog {
 model BookingRequest {
   id        Int    @id @default(autoincrement())
   ip        String
-  createdAt String @default("now()") @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@index([ip, createdAt])
   @@map("booking_requests")
@@ -197,7 +199,7 @@ model AuditLog {
   newValues     String?  @map("new_values")
   ipAddress     String?  @map("ip_address")
   userAgent     String?  @map("user_agent")
-  createdAt     String   @default("now()") @map("created_at")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   appointment  Appointment?   @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   administrator Administrator? @relation(fields: [adminId], references: [id], onDelete: SetNull)

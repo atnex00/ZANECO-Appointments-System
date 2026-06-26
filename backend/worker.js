@@ -42,7 +42,8 @@ async function processQueue() {
     })
 
     for (const notif of pending) {
-      sendNotification(notif).then(async success => {
+      try {
+        const success = await sendNotification(notif)
         if (success) {
           await prisma.notification.update({
             where: { id: notif.id },
@@ -50,18 +51,20 @@ async function processQueue() {
           })
           console.log(`  [SENT] ${notif.channel} ${notif.type} → ${notif.recipient}`)
         } else {
+          const newRetryCount = notif.retryCount + 1
+          const newStatus = newRetryCount >= 3 ? 'failed' : 'retrying'
           await prisma.notification.update({
             where: { id: notif.id },
-            data: { status: 'retrying', retryCount: { increment: 1 } },
+            data: { status: newStatus, retryCount: { increment: 1 } },
           })
-          console.log(`  [FAIL] ${notif.channel} ${notif.type} → ${notif.recipient} (retry ${notif.retryCount + 1})`)
+          console.log(`  [FAIL] ${notif.channel} ${notif.type} → ${notif.recipient} (retry ${newRetryCount})`)
         }
-      }).catch(err => {
-        console.error(`Notification send error: ${err.message}`)
-      })
+      } catch (err) {
+        console.error(`Notification send error:`, err)
+      }
     }
   } catch (err) {
-    console.error('Notification worker error:', err.message)
+    console.error('Notification worker error:', err)
   }
 }
 
@@ -75,7 +78,7 @@ async function processReminders() {
       where: {
         appointmentDate: dateStr,
         status: { in: ['confirmed', 'rescheduled'] },
-        notifications: { none: { type: 'reminder', status: 'sent' } },
+        notifications: { none: { type: 'reminder', status: { in: ['sent', 'pending'] } } },
       },
       include: { office: { select: { name: true } } },
     })
@@ -96,7 +99,7 @@ async function processReminders() {
       console.log(`  [REMINDER] Queued for ${apt.referenceNumber}`)
     }
   } catch (err) {
-    console.error('Reminder processor error:', err.message)
+    console.error('Reminder processor error:', err)
   }
 }
 
@@ -108,7 +111,7 @@ async function cleanupOldBookingRequests() {
     })
     if (count > 0) console.log(`[CLEANUP] Deleted ${count} old booking request records`)
   } catch (err) {
-    console.error('Booking cleanup error:', err.message)
+    console.error('Booking cleanup error:', err)
   }
 }
 

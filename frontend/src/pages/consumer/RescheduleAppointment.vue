@@ -63,14 +63,18 @@ const appointment = ref(null)
 const newDate = ref('')
 const newTime = ref('')
 const slots = ref([])
+const loadingSlots = ref(false)
+const slotsError = ref('')
 const loading = ref(false)
 const submitting = ref(false)
 const error = ref('')
 const minDate = new Date().toISOString().split('T')[0]
+const lastFetchedDate = ref('')
 
 watch(newDate, () => {
   newTime.value = ''
-  loadSlots()
+  lastFetchedDate.value = newDate.value
+  if (newDate.value) loadSlots()
 })
 
 async function handleVerify() {
@@ -91,7 +95,8 @@ async function handleVerify() {
       } else {
         error.value = 'Verification failed. Please check your details.'
       }
-    } catch {
+    } catch (err) {
+      console.error('Mock appointment lookup failed:', err)
       error.value = 'Verification failed. Please check your details.'
     }
   } finally {
@@ -108,12 +113,20 @@ function generateMockSlots(date) {
 }
 
 async function loadSlots() {
-  if (!appointment.value || !newDate.value) return
+  const date = newDate.value
+  if (!appointment.value?.office_id || !date) return
+  loadingSlots.value = true
+  slotsError.value = ''
   try {
-    const { data } = await consumerApi.getTimeSlots(appointment.value.office_id, newDate.value)
-    slots.value = data.data.slots
-  } catch {
-    slots.value = generateMockSlots(newDate.value)
+    const { data } = await consumerApi.getTimeSlots(appointment.value.office_id, date)
+    if (lastFetchedDate.value !== date) return
+    slots.value = (data.data?.slots || []).filter(s => s.available !== false)
+  } catch (err) {
+    if (lastFetchedDate.value !== date) return
+    console.error('Failed to load slots:', err)
+    slots.value = []
+  } finally {
+    if (lastFetchedDate.value === date) loadingSlots.value = false
   }
 }
 

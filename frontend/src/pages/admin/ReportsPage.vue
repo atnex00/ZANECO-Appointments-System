@@ -157,7 +157,8 @@ async function generateReport() {
     if (concernTypeId.value) params.concern_type_id = concernTypeId.value
     const { data } = await adminApi.getReports(reportType.value, params)
     reportData.value = data.data
-  } catch {
+  } catch (err) {
+    console.error('Failed to generate report:', err)
     reportData.value = null
     toastError('Failed to generate report')
   } finally {
@@ -176,11 +177,12 @@ async function exportReport(format) {
     link.href = url
     const ts = new Date().toISOString().replace(/[:.]/g, '-')
     const office = officeId.value ? (offices.value.find(o => o.id === Number(officeId.value))?.name || 'selected') : 'all-offices'
-    const officeSlug = office.toLowerCase().replace(/\s+/g, '-')
+    const officeSlug = office.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
     link.download = `appointment-reports-zaneco-${officeSlug}-${ts}.${format}`
     link.click()
     window.URL.revokeObjectURL(url)
-  } catch {
+  } catch (err) {
+    console.error('Failed to export ' + format.toUpperCase(), err)
     toastError(`Failed to export ${format.toUpperCase()}`)
   }
 }

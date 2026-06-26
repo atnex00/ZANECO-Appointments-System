@@ -128,10 +128,6 @@ onUnmounted(() => window.removeEventListener('scroll', handler))
   color: var(--color-primary);
   font-weight: 600;
 }
-.admin-link {
-  border: 1px solid var(--color-border);
-  margin-left: 0.5rem;
-}
 .consumer-main {
   flex: 1;
   padding-top: 5rem;

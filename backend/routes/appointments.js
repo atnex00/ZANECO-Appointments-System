@@ -7,13 +7,13 @@ const rateLimitBooking = require('../middleware/rateLimitBooking')
 
 const router = express.Router()
 
-async function generateRef(attempt = 0) {
+async function generateRef(prismaInstance = prisma, attempt = 0) {
   const now = new Date()
   const y = String(now.getFullYear()).slice(-2)
   const m = String(now.getMonth() + 1).padStart(2, '0')
-  const row = await prisma.$queryRaw`
+  const row = await prismaInstance.$queryRaw`
     SELECT COALESCE(MAX(CAST(SUBSTRING(reference_number, 8) AS INTEGER)), 0) + 1 AS next
-    FROM appointments WHERE reference_number LIKE ${y + m + '%'}
+    FROM appointments WHERE reference_number LIKE ${'ZNC' + y + m + '%'}
   `
   const seq = String(Number(row[0]?.next || 0) + attempt).padStart(6, '0')
   return 'ZNC' + y + m + seq
@@ -59,22 +59,28 @@ router.post('/', rateLimitBooking, asyncHandler(async (req, res) => {
   if (!concern || !concern.isActive) throw new AppError(404, 'NOT_FOUND', 'Concern type not found')
 
   const [h, m] = start_time.split(':').map(Number)
-  const endDate = new Date(2024, 0, 1, h, m + office.appointmentDurationMinutes)
+  const endDate = new Date(Date.UTC(2000, 0, 1, h, m + office.appointmentDurationMinutes))
   const end_time = String(endDate.getHours()).padStart(2, '0') + ':' + String(endDate.getMinutes()).padStart(2, '0') + ':00'
 
   const existingSlots = await prisma.timeSlot.count({ where: { officeId: office_id, slotDate: appointment_date } })
   if (existingSlots === 0) {
-    const dayOfWeek = new Date(appointment_date + 'T00:00:00').getDay()
-    if (dayOfWeek === 0 || dayOfWeek === 6) throw new AppError(400, 'BAD_REQUEST', 'Selected date is a weekend. Please choose a weekday.')
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const dayName = dayNames[new Date(appointment_date + 'T00:00:00').getDay()]
+    if (dayName === 'sunday' || dayName === 'saturday') throw new AppError(400, 'BAD_REQUEST', 'Selected date is a weekend. Please choose a weekday.')
+    const schedule = await prisma.officeSchedule.findUnique({
+      where: { officeId_dayOfWeek: { officeId: office_id, dayOfWeek: dayName } },
+    })
+    const openH = parseInt((schedule?.openingTime || office.openingTime || '08:00').slice(0, 2))
+    const closeH = parseInt((schedule?.closingTime || office.closingTime || '17:00').slice(0, 2))
     const duration = office.appointmentDurationMinutes
     const slots = []
-    for (let h = 8; h < 17; h++) {
+    for (let h = openH; h < closeH; h++) {
       for (let m = 0; m < 60; m += duration) {
         const st = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00'
         const eh = m + duration >= 60 ? h + 1 : h
         const em = m + duration >= 60 ? m + duration - 60 : m + duration
         const et = String(eh).padStart(2,'0') + ':' + String(em).padStart(2,'0') + ':00'
-        if (eh < 17 && h !== 12) {
+        if (eh < closeH && h !== 12) {
           slots.push({ officeId: office_id, slotDate: appointment_date, startTime: st, endTime: et, maxCapacity: office.slotCapacity })
         }
       }
@@ -82,39 +88,43 @@ router.post('/', rateLimitBooking, asyncHandler(async (req, res) => {
     await prisma.timeSlot.createMany({ data: slots, skipDuplicates: true })
   }
 
-  const slot = await prisma.timeSlot.findUnique({
-    where: { officeId_slotDate_startTime: { officeId: office_id, slotDate: appointment_date, startTime: start_time } },
-  })
-  if (!slot) throw new AppError(404, 'NOT_FOUND', 'Time slot not found for the selected time. Available times are 08:00-16:30 on weekdays.')
-  if (slot.bookedCount >= slot.maxCapacity) throw new AppError(409, 'SLOT_FULL', 'This time slot is no longer available')
+  const { appointment } = await prisma.$transaction(async (tx) => {
+    const slot = await tx.timeSlot.findUnique({
+      where: { officeId_slotDate_startTime: { officeId: office_id, slotDate: appointment_date, startTime: start_time } },
+    })
+    if (!slot) throw new AppError(404, 'NOT_FOUND', 'Time slot not found for the selected time. Available times are 08:00-16:30 on weekdays.')
+    if (slot.bookedCount >= slot.maxCapacity) throw new AppError(409, 'SLOT_FULL', 'This time slot is no longer available')
 
-  let ref, appointment
-  for (let attempt = 0; attempt < 5; attempt++) {
-    ref = await generateRef(attempt)
-    try {
-      appointment = await prisma.appointment.create({
-        data: {
-          referenceNumber: ref,
-          consumerName: consumer_name,
-          accountName: account_name,
-          accountNumber: account_number,
-          email: email || null,
-          concernTypeId: concern_type_id,
-          officeId: office_id,
-          appointmentDate: appointment_date,
-          startTime: start_time,
-          endTime: end_time,
-          status: 'pending',
-        },
-        include: { concernType: true, office: true },
-      })
-      break
-    } catch (err) {
-      if (attempt === 4) throw new AppError(500, 'INTERNAL_ERROR', 'Failed to generate unique reference number')
+    let ref, appointment
+    for (let attempt = 0; attempt < 5; attempt++) {
+      ref = await generateRef(tx, attempt)
+      try {
+        appointment = await tx.appointment.create({
+          data: {
+            referenceNumber: ref,
+            consumerName: consumer_name,
+            accountName: account_name,
+            accountNumber: account_number,
+            email: email || null,
+            concernTypeId: concern_type_id,
+            officeId: office_id,
+            appointmentDate: appointment_date,
+            startTime: start_time,
+            endTime: end_time,
+            status: 'pending',
+          },
+          include: { concernType: true, office: true },
+        })
+        break
+      } catch (err) {
+        if (attempt === 4) throw new AppError(500, 'INTERNAL_ERROR', 'Failed to generate unique reference number')
+      }
     }
-  }
 
-  await prisma.timeSlot.update({ where: { id: slot.id }, data: { bookedCount: { increment: 1 } } })
+    await tx.timeSlot.update({ where: { id: slot.id }, data: { bookedCount: { increment: 1 } } })
+
+    return { appointment }
+  })
 
   await prisma.auditLog.create({
     data: {
@@ -126,7 +136,7 @@ router.post('/', rateLimitBooking, asyncHandler(async (req, res) => {
     },
   })
 
-  prisma.bookingRequest.create({ data: { ip: req.ip } }).catch(err => console.error('Booking rate log failed:', err))
+  await prisma.bookingRequest.create({ data: { ip: req.ip } })
 
   if (appointment.email) {
     emailService.sendConfirmation({
@@ -198,22 +208,22 @@ router.put('/:reference_number/reschedule', asyncHandler(async (req, res) => {
 
   const o = await prisma.office.findUnique({ where: { id: a.officeId } })
   const [h, m] = new_start_time.split(':').map(Number)
-  const end = new Date(2024, 0, 1, h, m + o.appointmentDurationMinutes)
+  const end = new Date(Date.UTC(2000, 0, 1, h, m + o.appointmentDurationMinutes))
   const et = String(end.getHours()).padStart(2,'0')+':'+String(end.getMinutes()).padStart(2,'0')+':00'
   const cleanDate = new_date.slice(0, 10)
 
-  const s = await prisma.timeSlot.findUnique({
-    where: { officeId_slotDate_startTime: { officeId: a.officeId, slotDate: cleanDate, startTime: new_start_time } },
-  })
-  if (!s || s.bookedCount >= s.maxCapacity) throw new AppError(409, 'SLOT_FULL', 'Slot unavailable')
+  await prisma.$transaction(async (tx) => {
+    const s = await tx.timeSlot.findUnique({
+      where: { officeId_slotDate_startTime: { officeId: a.officeId, slotDate: cleanDate, startTime: new_start_time } },
+    })
+    if (!s || s.bookedCount >= s.maxCapacity) throw new AppError(409, 'SLOT_FULL', 'Slot unavailable')
 
-  await prisma.$transaction([
-    prisma.timeSlot.updateMany({
+    await tx.timeSlot.updateMany({
       where: { officeId: a.officeId, slotDate: oldD, startTime: oldT },
       data: { bookedCount: { decrement: 1 } },
-    }),
-    prisma.timeSlot.update({ where: { id: s.id }, data: { bookedCount: { increment: 1 } } }),
-    prisma.appointment.update({
+    })
+    await tx.timeSlot.update({ where: { id: s.id }, data: { bookedCount: { increment: 1 } } })
+    await tx.appointment.update({
       where: { id: a.id },
       data: {
         appointmentDate: cleanDate,
@@ -223,8 +233,8 @@ router.put('/:reference_number/reschedule', asyncHandler(async (req, res) => {
         rescheduleCount: { increment: 1 },
         rescheduledAt: new Date().toISOString(),
       },
-    }),
-  ])
+    })
+  })
 
   res.json({ success: true, data: { reference_number: a.referenceNumber, status: 'rescheduled', message: 'Appointment rescheduled successfully' } })
 }))

@@ -88,17 +88,26 @@ const selectedAppointments = computed(() =>
 )
 
 function selectDate(date) { selectedDate.value = date }
-function today() { currentView.value = new Date() }
-function changeMonth(delta) { currentView.value = delta > 0 ? addMonths(currentView.value, 1) : subMonths(currentView.value, 1) }
+function today() {
+  currentView.value = new Date()
+  fetchAppointments()
+}
+function changeMonth(delta) {
+  currentView.value = delta > 0 ? addMonths(currentView.value, 1) : subMonths(currentView.value, 1)
+  fetchAppointments()
+}
 
-onMounted(async () => {
+async function fetchAppointments() {
+  loading.value = true
   try {
     const ms = format(startOfMonth(currentView.value), 'yyyy-MM-dd')
     const me = format(endOfMonth(currentView.value), 'yyyy-MM-dd')
     const { data } = await adminApi.getAppointments({ date_from: ms, date_to: me, per_page: 200 })
     appointments.value = data.data.appointments || []
   } catch (err) { console.error('Fetch appointments failed:', err) } finally { loading.value = false }
-})
+}
+
+onMounted(fetchAppointments)
 </script>
 
 <style scoped>

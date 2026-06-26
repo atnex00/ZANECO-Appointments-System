@@ -88,14 +88,23 @@ async function fetchData() {
 function openAdd() { editingItem.value = null; form.value = { name: '', code: '', description: '', estimated_duration_minutes: 30, sort_order: 0, is_active: true }; showForm.value = true }
 function editItem(item) { editingItem.value = item; form.value = { ...item }; showForm.value = true }
 async function toggleActive(ct) {
-  await adminApi.updateConcernType(ct.id, { is_active: !ct.is_active })
-  await fetchData()
+  try {
+    await adminApi.updateConcernType(ct.id, { is_active: !ct.is_active })
+    await fetchData()
+  } catch (err) {
+    console.error('Toggle concern type failed:', err)
+  }
 }
 async function save() {
+  if (!form.value.name || !form.value.code) { alert('Name and code are required'); return }
   saving.value = true
-  if (editingItem.value) await adminApi.updateConcernType(editingItem.value.id, form.value)
-  else await adminApi.createConcernType(form.value)
-  showForm.value = false; editingItem.value = null; saving.value = false; await fetchData()
+  try {
+    if (editingItem.value) await adminApi.updateConcernType(editingItem.value.id, form.value)
+    else await adminApi.createConcernType(form.value)
+    showForm.value = false; editingItem.value = null; await fetchData()
+  } catch (err) {
+    alert('Error: ' + (err.response?.data?.error?.message || err.message))
+  } finally { saving.value = false }
 }
 onMounted(fetchData)
 </script>

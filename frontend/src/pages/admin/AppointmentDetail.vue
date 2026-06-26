@@ -9,7 +9,8 @@
 
     <div class="ap-content">
       <LoadingSpinner :visible="loading" />
-      <template v-if="!loading && detail">
+      <div v-if="loadError" class="error-state">{{ loadError }}</div>
+      <template v-if="!loading && detail && !loadError">
 
         <!-- Info Cards Row -->
         <div class="detail-cards-row">
@@ -105,10 +106,11 @@ const notes = ref('')
 const notifications = ref([])
 const auditLogs = ref([])
 const loading = ref(true)
+const loadError = ref('')
 
 async function updateStatus(status) {
   try {
-    await adminApi.updateAppointmentStatus(route.params.id, { status, notes: notes.value })
+    await adminApi.updateAppointmentStatus(route.params.id, { status })
     // If reopened to pending, go back to appointments list
     if (status === 'pending' && ['archived', 'cancelled', 'rejected', 'completed', 'no_show'].includes(detail.value?.status)) {
       router.push('/admin/appointments')
@@ -121,7 +123,12 @@ async function updateStatus(status) {
 }
 
 async function saveNotes() {
-  await adminApi.updateAppointmentStatus(route.params.id, { notes: notes.value })
+  try {
+    await adminApi.saveAppointmentNotes(route.params.id, { notes: notes.value })
+    alert('Notes saved successfully')
+  } catch (err) {
+    alert('Failed to save notes: ' + (err.response?.data?.error?.message || err.message))
+  }
 }
 
 async function handleDelete() {
@@ -137,13 +144,17 @@ async function handleDelete() {
 
 async function fetchDetail() {
   loading.value = true
+  loadError.value = ''
   try {
     const { data } = await adminApi.getAppointmentDetail(route.params.id)
     detail.value = data.data
     notes.value = data.data.admin_notes || ''
     notifications.value = data.data.notifications || []
     auditLogs.value = data.data.audit_trail || []
-  } catch (err) { console.error('Fetch detail failed:', err) } finally { loading.value = false }
+  } catch (err) {
+    console.error('Fetch detail failed:', err)
+    loadError.value = 'Failed to load appointment details. Please try again.'
+  } finally { loading.value = false }
 }
 
 onMounted(fetchDetail)
@@ -172,6 +183,7 @@ onMounted(fetchDetail)
 .d-label { color: #757684; font-weight: 500; }
 .d-value { font-weight: 600; color: #121c28; text-align: right; max-width: 60%; }
 .empty-text { font-size: 0.8125rem; color: #757684; text-align: center; padding: 0.5rem; }
+.error-state { text-align: center; padding: 3rem; color: #dc2626; font-size: 1rem; }
 
 /* Status badges */
 .status-badge { display: inline-block; padding: 0.2rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; white-space: nowrap; }

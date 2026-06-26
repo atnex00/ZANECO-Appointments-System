@@ -125,7 +125,7 @@ ZANECO-Appointments-System/
 │   ├── middleware/        # Auth, errors, logger, rate limiting
 │   └── db/                # Database adapter (Prisma Client)
 │   ├── prisma/            # Schema, seed, migrations (Prisma)
-├── docker-compose.yml     # Two services: frontend + backend
+├── docker-compose.yml     # Three services: postgres + backend + frontend
 ├── .dockerignore
 ├── AGENTS.md              # Agent/contributor guide
 └── docs/                  # System design, API spec, ERD, wireframes
@@ -179,7 +179,8 @@ npm install -g pnpm pm2
 ### 2. Deploy
 
 ```bash
-git clone https://github.com/zaneco/appointments-system.git /var/www/zaneco
+# Replace with your actual deployment repository URL
+git clone <your-repo-url> /var/www/zaneco
 cd /var/www/zaneco
 pnpm install
 pnpm run seed
@@ -241,7 +242,7 @@ server {
 
 ```bash
 cd /var/www/zaneco/backend
-pm2 start server.js --name zaneco-api -i 2
+pm2 start ecosystem.config.js --env production
 pm2 save
 pm2 startup
 ```
@@ -271,6 +272,64 @@ pm2 monit                    # Real-time metrics
 pm2 logs zaneco-api          # Tail logs
 # Or view logs via /api/v1/health endpoint + request_logs table
 ```
+
+## Changelog / Bug Fix History
+
+### June 2026 — Major Bug Fix Pass
+
+The following critical and high-severity bugs were identified during a comprehensive codebase audit and fixed:
+
+**Database & Schema**
+- `createdAt`/`updatedAt` fields changed from `String @default("now()")` to `DateTime @default(now())` / `@updatedAt` across all 9 models — auto-updates now work, string-based date comparisons no longer produce wrong results
+- Added `onDelete: Restrict|SetNull` on all relation fields to prevent foreign key violation crashes
+- Added missing indexes on foreign key columns (`concernTypeId`, `processedBy`, `Administrator.officeId`)
+- `Administrator.refreshToken` marked `@unique` to prevent token collisions
+- Seed admin accounts now reference the actual `MainOffice.id` instead of hardcoded `1`
+- Seed time slots no longer span the lunch break (fixed `11:30-13:00` → correct 30-min slots), and the last hour (`16:30-17:00`) is now generated
+
+**Backend Routes**
+- Reference number generation LIKE pattern fixed (`"ZNC" + y + m + "%"` instead of `y + m + "%"`) — every booking after the first no longer fails with a unique constraint violation
+- Slot capacity check moved inside interactive `$transaction` — TOCTOU race condition eliminated (was allowing oversubscription)
+- Auto-generated time slots now respect `OfficeSchedule` and office `openingTime`/`closingTime` instead of hardcoded `08:00-17:00` with lunch at 12:00
+- Admin status changes no longer double-decrement `bookedCount` on terminal→terminal transitions
+- Admin reschedule now checks new slot capacity before incrementing
+- Refresh token rotation implemented on `/auth/refresh` (stolen tokens now expire after use)
+- Dynamic `import('uuid')` replaced with `crypto.randomUUID()` (synchronous, better performance)
+- `req.params` in `reports.js` renamed to `req.queryParams` to avoid overwriting Express route params
+- LEFT JOIN queries in reports fixed (`WHERE a.office_id = $N` → `(a.office_id = $N OR a.office_id IS NULL)`) to prevent implicit INNER JOIN
+- 200ms constant-time delay added to forgot-password flow to prevent email enumeration timing attack
+- Schedule entries validation added in `adminOffices.js`
+
+**Backend Middleware & Services**
+- `middleware/auth.js`: Converted from `.then().catch()` dangling promise chain to `async/await`; added `lockedUntil` check; improved error messages
+- `middleware/rateLimitBooking.js`: Wrapped with `asyncHandler` — a database error no longer crashes the server
+- `services/pdfGenerator.js`: Module-scope `fs.readFileSync` wrapped in try/catch — missing `logo_combined.b64` no longer crashes server startup
+- `services/emailService.js`: Logo attachment is now conditional (`fs.existsSync`) — missing logo file no longer kills all email sending
+- `worker.js`: Notification queue changed from fire-and-forget `.then()` to sequential `await` — dangling promises and unhandled rejections eliminated; notifications with `retryCount >= 3` are now marked `failed` (not stuck in `retrying` forever)
+
+**Backend Server**
+- Dashboard summary route now applies `officeFilter` for non-`super_admin` roles — no more data leakage to staff
+- Converted to `asyncHandler` pattern (consistent with rest of codebase)
+
+**Frontend Core**
+- 401 interceptor only clears admin token for admin API requests, not consumer endpoints
+- Role-based route guard added — staff users can no longer access super_admin routes via direct URL
+- `AppointmentsPage`: Pagination range now shows correct range, `perPage` selector actually works, tab counts reflect total (not current page), stale race conditions in date watchers eliminated
+- `AppointmentDetail`: `saveNotes()` has proper error handling; unsaved notes no longer sent with status changes; fetch failures show error state instead of blank page
+- `LoginPage`: Uses `router.push` instead of `window.location.replace` (no full page reload)
+- `OfficesPage`: Standardized `active`/`is_active` naming; removed silent fallback data on API failure
+- All consumer pages: Silent mock-data fallbacks removed — users now see proper error messages when the backend is unavailable
+- `CancelAppointment`: Fixed missing `data` argument in API call
+- `BookingConfirmation`: Stepper now shows correct 5-step flow matching the booking wizard
+
+**Config & Deployment**
+- `CORS_ORIGIN` default changed from `5173` to `3500` (was blocking production requests)
+- `JWT_SECRET` now has a `required()` guard — missing secret fails early and loudly
+- `docker-compose.yml`: Added `restart: unless-stopped` to all services; PostgreSQL host port changed to `5433`
+- `.dockerignore`: `assets` pattern prefixed with `/` to prevent excluding `frontend/src/assets/`
+- `start.sh`: Added trap handler for background process cleanup
+- `start.bat`: Added `call` before pnpm exec commands
+- `scripts/setup-db.sh`: Input validation added for SQL injection prevention
 
 ## License
 

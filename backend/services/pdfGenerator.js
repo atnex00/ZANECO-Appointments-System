@@ -10,7 +10,12 @@ pdfmake.setFonts(fontContainer.fonts)
 pdfmake.setUrlAccessPolicy(() => false)
 pdfmake.setLocalAccessPolicy(() => false)
 
-const combinedLogoB64 = fs.readFileSync(path.join(__dirname, 'logo_combined.b64'), 'utf8')
+let combinedLogoB64 = ''
+try {
+  combinedLogoB64 = fs.readFileSync(path.join(__dirname, 'logo_combined.b64'), 'utf8')
+} catch (err) {
+  console.warn('PDF logo file not found, continuing without logo:', err.message)
+}
 
 const COLUMN_LABELS = {
   office: 'Office',

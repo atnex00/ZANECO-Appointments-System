@@ -1,12 +1,13 @@
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: zaneco_appointments
       POSTGRES_USER: zaneco
       POSTGRES_PASSWORD: secret
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - zaneco-pg-data:/var/lib/postgresql/data
     healthcheck:
@@ -19,6 +20,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
@@ -36,6 +38,7 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+    restart: unless-stopped
     ports:
       - "3500:3500"
     volumes:

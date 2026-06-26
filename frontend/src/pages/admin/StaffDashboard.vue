@@ -231,8 +231,12 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useAuthStore } from '../../stores/auth'
 import { adminApi } from '../../api/admin'
 import { consumerApi } from '../../api/consumer'
+import { storeToRefs } from 'pinia'
+
+const auth = useAuthStore()
 
 const appointments = ref([])
 const offices = ref([])
@@ -267,7 +271,7 @@ const headerDate = computed(() => {
 })
 
 const officeName = computed(() => {
-  const user = JSON.parse(localStorage.getItem('admin_user') || '{}')
+  const user = auth.user || {}
   if (!user.office_id) return 'All Offices'
   const office = offices.value.find(o => o.id === user.office_id)
   return office?.name || 'Office'
@@ -444,7 +448,8 @@ async function fetchRescheduleSlots(date) {
     const officeId = actionApt.value.office_id || 1
     const { data } = await consumerApi.getTimeSlots(officeId, date)
     rescheduleSlots.value = data.data?.slots || []
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch reschedule slots:', err)
     rescheduleSlots.value = []
   } finally {
     rescheduleSlotsLoading.value = false

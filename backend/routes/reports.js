@@ -15,16 +15,16 @@ function dateFilter(req, res, next) {
   let p = 0
 
   if (req.admin.role === 'office_manager' || req.admin.role === 'staff') {
-    conditions.push(`a.office_id = $${++p}`)
+    conditions.push(`(a.office_id = $${++p} OR a.office_id IS NULL)`)
     params.push(req.admin.officeId)
   }
   if (date_from) { conditions.push(`a.appointment_date >= $${++p}`); params.push(date_from) }
   if (date_to) { conditions.push(`a.appointment_date <= $${++p}`); params.push(date_to) }
-  if (office_id) { conditions.push(`a.office_id = $${++p}`); params.push(Number(office_id)) }
-  if (concern_type_id) { conditions.push(`a.concern_type_id = $${++p}`); params.push(Number(concern_type_id)) }
+  if (office_id) { conditions.push(`(a.office_id = $${++p} OR a.office_id IS NULL)`); params.push(Number(office_id)) }
+  if (concern_type_id) { conditions.push(`(a.concern_type_id = $${++p} OR a.concern_type_id IS NULL)`); params.push(Number(concern_type_id)) }
 
   req.where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''
-  req.params = params
+  req.queryParams = params
   next()
 }
 
@@ -70,31 +70,31 @@ const QUERIES = {
 
 router.get('/appointments-by-office', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const sql = QUERIES['appointments-by-office'].replace('__WHERE__', req.where)
-  const data = await prisma.$queryRawUnsafe(sql, ...req.params)
+  const data = await prisma.$queryRawUnsafe(sql, ...req.queryParams)
   res.json({ success: true, data })
 }))
 
 router.get('/appointments-by-concern', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const sql = QUERIES['appointments-by-concern'].replace('__WHERE__', req.where)
-  const data = await prisma.$queryRawUnsafe(sql, ...req.params)
+  const data = await prisma.$queryRawUnsafe(sql, ...req.queryParams)
   res.json({ success: true, data })
 }))
 
 router.get('/daily', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const sql = QUERIES.daily.replace('__WHERE__', req.where)
-  const data = await prisma.$queryRawUnsafe(sql, ...req.params)
+  const data = await prisma.$queryRawUnsafe(sql, ...req.queryParams)
   res.json({ success: true, data })
 }))
 
 router.get('/weekly', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const sql = QUERIES.weekly.replace('__WHERE__', req.where)
-  const data = await prisma.$queryRawUnsafe(sql, ...req.params)
+  const data = await prisma.$queryRawUnsafe(sql, ...req.queryParams)
   res.json({ success: true, data })
 }))
 
 router.get('/monthly', authenticate, dateFilter, asyncHandler(async (req, res) => {
   const sql = QUERIES.monthly.replace('__WHERE__', req.where)
-  const data = await prisma.$queryRawUnsafe(sql, ...req.params)
+  const data = await prisma.$queryRawUnsafe(sql, ...req.queryParams)
   res.json({ success: true, data })
 }))
 
@@ -152,15 +152,16 @@ router.get('/export', authenticate, dateFilter, asyncHandler(async (req, res) =>
   if (!type) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Report type required' } })
 
   try {
-    const data = await fetchReportData(type, req.where, req.params)
+    const data = await fetchReportData(type, req.where, req.queryParams)
 
     const title = req.filters?.date_from
       ? `${type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} (${req.filters.date_from} to ${req.filters.date_to})`
       : `${type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}`
 
     if (format === 'csv') {
-      const headers = Object.keys(data[0] || {}).join(',')
-      const rows = data.map(r => Object.values(r).join(',')).join('\n')
+      const esc = v => `"${String(v).replace(/"/g, '""')}"`
+      const headers = Object.keys(data[0] || {}).map(esc).join(',')
+      const rows = data.map(r => Object.values(r).map(esc).join(',')).join('\n')
       res.setHeader('Content-Type', 'text/csv')
       res.setHeader('Content-Disposition', `attachment; filename=zaneco-report-${type}.csv`)
       return res.send(headers + '\n' + rows)

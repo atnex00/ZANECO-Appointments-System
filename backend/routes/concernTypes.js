@@ -30,11 +30,17 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
 
 router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   if (req.admin.role !== 'super_admin') return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
-  const update = {}
-  for (const key of ['name', 'code', 'description', 'estimated_duration_minutes', 'sort_order']) {
-    if (req.body[key] !== undefined) update[key] = req.body[key]
+
+  const FIELD_MAP = {
+    estimated_duration_minutes: 'estimatedDurationMinutes',
+    sort_order: 'sortOrder',
+    is_active: 'isActive',
   }
-  if (req.body.is_active !== undefined) update.is_active = req.body.is_active
+
+  const update = {}
+  for (const key of ['name', 'code', 'description', 'estimated_duration_minutes', 'sort_order', 'is_active']) {
+    if (req.body[key] !== undefined) update[FIELD_MAP[key] || key] = req.body[key]
+  }
   if (!Object.keys(update).length) return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'No fields' } })
 
   await prisma.concernType.update({ where: { id: Number(req.params.id) }, data: update })

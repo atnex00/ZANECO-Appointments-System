@@ -1,10 +1,24 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 const prisma = require('../db/database')
 const config = require('../config')
 const { AppError, asyncHandler } = require('../middleware/errors')
 const Joi = require('joi')
+
+function parseExpiresIn(str) {
+  const match = str.match(/^(\d+)([smhd])$/)
+  if (!match) return 3600
+  const n = parseInt(match[1])
+  switch (match[2]) {
+    case 's': return n
+    case 'm': return n * 60
+    case 'h': return n * 3600
+    case 'd': return n * 86400
+    default: return 3600
+  }
+}
 
 const router = express.Router()
 
@@ -96,7 +110,7 @@ router.post('/login', asyncHandler(async (req, res) => {
   })
 
   const token = jwt.sign({ sub: admin.id, email: admin.email, role: admin.role }, config.jwt.secret, { expiresIn: config.jwt.expiresIn })
-  const refreshToken = (await import('uuid')).v4()
+  const refreshToken = crypto.randomUUID()
   await prisma.administrator.update({ where: { id: admin.id }, data: { refreshToken } })
 
   res.json({
@@ -104,7 +118,7 @@ router.post('/login', asyncHandler(async (req, res) => {
     data: {
       token,
       refresh_token: refreshToken,
-      expires_in: 3600,
+      expires_in: parseExpiresIn(config.jwt.expiresIn),
       user: { id: admin.id, email: admin.email, full_name: admin.fullName, role: admin.role, office_id: admin.officeId },
     },
   })
@@ -118,7 +132,12 @@ router.post('/refresh', asyncHandler(async (req, res) => {
   if (!admin) throw new AppError(401, 'INVALID_TOKEN', 'Invalid refresh token')
 
   const token = jwt.sign({ sub: admin.id, email: admin.email, role: admin.role }, config.jwt.secret, { expiresIn: config.jwt.expiresIn })
-  res.json({ success: true, data: { token, expires_in: 3600 } })
+  const newRefreshToken = crypto.randomUUID()
+  await prisma.administrator.update({
+    where: { id: admin.id },
+    data: { refreshToken: newRefreshToken },
+  })
+  res.json({ success: true, data: { token, refresh_token: newRefreshToken, expires_in: parseExpiresIn(config.jwt.expiresIn) } })
 }))
 
 router.post('/logout', asyncHandler(async (req, res) => {

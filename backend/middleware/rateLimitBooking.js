@@ -1,7 +1,8 @@
 const prisma = require('../db/database')
 const config = require('../config')
+const { asyncHandler } = require('./errors')
 
-module.exports = async function rateLimitBooking(req, res, next) {
+module.exports = asyncHandler(async function rateLimitBooking(req, res, next) {
   if (!config.isProduction) return next()
 
   const ip = req.ip
@@ -21,4 +22,4 @@ module.exports = async function rateLimitBooking(req, res, next) {
   }
 
   next()
-}
+})

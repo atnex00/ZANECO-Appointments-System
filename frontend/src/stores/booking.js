@@ -19,8 +19,6 @@ export const useBookingStore = defineStore('booking', {
   }),
   getters: {
     isComplete: (state) => !!state.referenceNumber,
-    selectedConcern: (state) => state.concernTypeId,
-    selectedOffice: (state) => state.officeId,
   },
   actions: {
     setPersonalInfo(data) {
@@ -55,18 +53,12 @@ export const useBookingStore = defineStore('booking', {
         })
         this.appointmentResult = data.data
         this.referenceNumber = data.data.reference_number
-        this.step = 4
       } catch (err) {
         this.error = err.response?.data?.error?.message || err.message || 'Booking failed. Please try again.'
         throw err
       } finally {
         this.isLoading = false
       }
-    },
-    addMinutes(time, mins) {
-      const [h, m] = time.split(':').map(Number)
-      const d = new Date(2024, 0, 1, h, m + mins)
-      return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':00'
     },
     reset() {
       this.$reset()

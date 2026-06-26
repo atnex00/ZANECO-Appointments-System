@@ -75,7 +75,7 @@
       <div class="status-tabs">
         <button v-for="tab in statusTabs" :key="tab.key" class="status-tab" :class="{ 'status-tab-active': activeTab === tab.key }" @click="setTab(tab.key)">
           {{ tab.label }}
-          <span class="status-tab-count">{{ tab.count }}</span>
+          <span v-if="tab.count" class="status-tab-count">{{ tab.count }}</span>
         </button>
       </div>
 
@@ -125,7 +125,7 @@
         <!-- Pagination -->
         <div class="ap-pagination">
           <div class="ap-pagination-left">
-            <span class="pagination-info">Showing 1 to {{ filteredRows.length }} of {{ totalCount }} results</span>
+            <span class="pagination-info">Showing {{ (currentPage - 1) * perPage + 1 }} to {{ Math.min(currentPage * perPage, totalCount) }} of {{ totalCount }} results</span>
             <select v-model="perPage" class="pagination-select">
               <option value="10">10 per page</option>
               <option value="25">25 per page</option>
@@ -222,16 +222,12 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAppointmentsStore } from '../../stores/appointments'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../../stores/auth'
 import { adminApi } from '../../api/admin'
 import { consumerApi } from '../../api/consumer'
 import { statusLabel } from '../../utils/formatters'
-
-
-const router = useRouter()
 const auth = useAuthStore()
 const isSuperAdmin = computed(() => auth.user?.role === 'super_admin')
 const store = useAppointmentsStore()
@@ -246,20 +242,16 @@ const filterDateFrom = ref('')
 const filterDateTo = ref('')
 
 const statusTabs = computed(() => {
-  const counts = { '': total.value || 0 }
-  for (const a of appointments.value) {
-    counts[a.status] = (counts[a.status] || 0) + 1
-  }
   return [
-    { key: '', label: 'All', count: counts[''] },
-    { key: 'pending', label: 'Pending', count: counts['pending'] || 0 },
-    { key: 'confirmed', label: 'Confirmed', count: counts['confirmed'] || 0 },
-    { key: 'rescheduled', label: 'Rescheduled', count: counts['rescheduled'] || 0 },
-    { key: 'completed', label: 'Completed', count: counts['completed'] || 0 },
-    { key: 'cancelled', label: 'Cancelled', count: counts['cancelled'] || 0 },
-    { key: 'rejected', label: 'Rejected', count: counts['rejected'] || 0 },
-    { key: 'no_show', label: 'No Show', count: counts['no_show'] || 0 },
-    { key: 'archived', label: 'Archived', count: counts['archived'] || 0 },
+    { key: '', label: 'All', count: total.value || 0 },
+    { key: 'pending', label: 'Pending', count: 0 },
+    { key: 'confirmed', label: 'Confirmed', count: 0 },
+    { key: 'rescheduled', label: 'Rescheduled', count: 0 },
+    { key: 'completed', label: 'Completed', count: 0 },
+    { key: 'cancelled', label: 'Cancelled', count: 0 },
+    { key: 'rejected', label: 'Rejected', count: 0 },
+    { key: 'no_show', label: 'No Show', count: 0 },
+    { key: 'archived', label: 'Archived', count: 0 },
   ]
 })
 
@@ -303,6 +295,7 @@ const rejectApt = ref(null)
 const rejectReason = ref('')
 const rejectSaving = ref(false)
 const minDate = new Date().toISOString().split('T')[0]
+const lastFetchedDate = ref('')
 
 async function fetchReschedSlots(date) {
   if (!reschedApt.value) return
@@ -310,8 +303,10 @@ async function fetchReschedSlots(date) {
   try {
     const officeId = reschedApt.value.office_id || 1
     const { data } = await consumerApi.getTimeSlots(officeId, date)
+    if (lastFetchedDate.value !== date) return
     reschedSlots.value = data.data?.slots || []
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch reschedule slots:', err)
     reschedSlots.value = []
   } finally {
     reschedSlotsLoading.value = false
@@ -320,6 +315,7 @@ async function fetchReschedSlots(date) {
 
 watch(reschedDate, (val) => {
   reschedTime.value = ''
+  lastFetchedDate.value = val
   if (val) fetchReschedSlots(val)
 })
 
@@ -342,7 +338,7 @@ async function confirmReschedule() {
       notes: reschedReason.value,
     })
     showRescheduleModal.value = false
-    await store.fetchAppointments(currentPage.value)
+    await store.fetchAppointments(currentPage.value, perPage.value)
   } catch (err) {
     alert('Reschedule failed: ' + (err.response?.data?.error?.message || err.message))
   } finally {
@@ -354,7 +350,7 @@ async function deleteRow(row) {
   if (!confirm(`⚠️ Permanently delete appointment ${row.reference_number}? This is for testing only.`)) return
   try {
     await adminApi.deleteAppointment(row.id)
-    await store.fetchAppointments(currentPage.value)
+    await store.fetchAppointments(currentPage.value, perPage.value)
   } catch (err) {
     alert('Delete failed: ' + (err.response?.data?.error?.message || 'Permission denied'))
   }
@@ -372,7 +368,7 @@ async function confirmReject() {
   try {
     await adminApi.updateAppointmentStatus(rejectApt.value.id, { status: 'rejected', notes: rejectReason.value })
     showRejectModal.value = false
-    await store.fetchAppointments(currentPage.value)
+    await store.fetchAppointments(currentPage.value, perPage.value)
   } catch (err) {
     alert('Reject failed: ' + (err.response?.data?.error?.message || err.message))
   } finally {
@@ -384,20 +380,20 @@ async function quickAction(id, status) {
   if (status === 'cancelled' && !confirm('Cancel this appointment?')) return
   try {
     await adminApi.updateAppointmentStatus(id, { status })
-    await store.fetchAppointments(currentPage.value)
+    await store.fetchAppointments(currentPage.value, perPage.value)
   } catch (err) { console.error('Quick action failed:', err); alert('Action failed. Please try again.') }
 }
 
-function changePage(p) { store.fetchAppointments(p) }
+function changePage(p) { store.fetchAppointments(p, perPage.value) }
 function setTab(key) {
   activeTab.value = key
   store.setFilters({ status: key || '' })
-  store.fetchAppointments(1)
+  store.fetchAppointments(1, perPage.value)
 }
 
 function applyFilters() {
   store.setFilters({ status: filterStatus.value || '', date_from: filterDateFrom.value || '', date_to: filterDateTo.value || '' })
-  store.fetchAppointments(1)
+  store.fetchAppointments(1, perPage.value)
 }
 
 function clearFilters() {
@@ -406,7 +402,7 @@ function clearFilters() {
   filterDateTo.value = ''
   activeTab.value = ''
   store.clearFilters()
-  store.fetchAppointments(1)
+  store.fetchAppointments(1, perPage.value)
 }
 
 function exportCSV() {
@@ -422,7 +418,7 @@ function exportCSV() {
   link.click()
 }
 
-onMounted(() => store.fetchAppointments(1))
+onMounted(() => store.fetchAppointments(1, perPage.value))
 </script>
 
 <style scoped>

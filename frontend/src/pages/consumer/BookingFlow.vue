@@ -34,8 +34,16 @@
           </div>
         </div>
 
+        <!-- Loading indicator -->
+        <div v-if="loading" class="card wizard-card" style="text-align:center;padding:3rem 1.5rem">
+          <p class="text-muted">Loading...</p>
+        </div>
+        <div v-else-if="loadError" class="card wizard-card" style="text-align:center;padding:3rem 1.5rem">
+          <p class="alert alert-error">{{ loadError }}</p>
+        </div>
+
         <!-- Wizard Card -->
-        <div class="wizard-card">
+        <div v-else class="wizard-card">
           <div class="wizard-header">
             <div>
               <h2 class="wizard-title">{{ stepContent[currentStep].title }}</h2>
@@ -143,6 +151,7 @@
               <div v-if="form.appointmentDate" class="timeslot-section">
                 <label class="form-label">Available Time Slots</label>
                 <div v-if="slotsLoading" class="text-sm text-muted">Loading...</div>
+                <div v-else-if="slots.length === 0" class="text-sm text-muted" style="padding:0.5rem 0">No available slots for this date.</div>
                 <div v-else class="timeslot-grid">
                   <button v-for="slot in slots" :key="slot.start_time"
                     type="button"
@@ -219,7 +228,7 @@
           <a href="https://zaneco.ph/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a>
           <a href="https://zaneco.ph" target="_blank" rel="noopener">Office Locations</a>
         </div>
-        <p class="text-xs text-muted">&copy; 2026 ZANECO. All rights reserved.</p>
+        <p class="text-xs text-muted">&copy; {{ new Date().getFullYear() }} ZANECO. All rights reserved.</p>
       </div>
     </footer>
   </div>
@@ -272,27 +281,18 @@ const offices = ref([])
 const slots = ref([])
 const slotsLoading = ref(false)
 const loading = ref(true)
-
-const fallbackConcernTypes = [
-  { id: 1, name: 'Clarification of Electric Bill Charges' },
-  { id: 2, name: 'Report Account Concern' },
-]
-const fallbackOffices = [
-  { id: 1, name: 'Main Office', address: 'Poblacion, Dipolog City' },
-  { id: 2, name: 'Sindangan Area Services', address: 'Sindangan, Zamboanga del Norte' },
-  { id: 3, name: 'Liloy Area Services', address: 'Liloy, Zamboanga del Norte' },
-  { id: 4, name: 'Piñan Area Services', address: 'Piñan, Zamboanga del Norte' },
-  { id: 5, name: 'Dipolog Area Services', address: 'Minaog, Dipolog City, Zamboanga del Norte' },
-]
+const loadError = ref('')
 
 onMounted(async () => {
+  if (store.referenceNumber) store.reset()
+  currentStep.value = 1
   try {
     const [ctRes, offRes] = await Promise.all([consumerApi.getConcernTypes(), consumerApi.getOffices()])
     concernTypes.value = ctRes.data.data || []
     offices.value = offRes.data.data || []
-  } catch {
-    concernTypes.value = fallbackConcernTypes
-    offices.value = fallbackOffices
+  } catch (err) {
+    console.error('Failed to load initial data:', err)
+    loadError.value = 'Failed to load data. Please refresh the page and try again.'
   } finally {
     loading.value = false
   }
@@ -314,6 +314,7 @@ function validateStep(step) {
     if (!form.fullName.trim()) e.fullName = 'Required'
     if (!form.accountName.trim()) e.accountName = 'Required'
     if (!form.accountNumber.trim()) e.accountNumber = 'Required'
+    else if (!/^\d{8}$/.test(form.accountNumber.trim())) e.accountNumber = 'Please enter exactly 8 digits'
   }
   if (step === 2) { if (!form.concernId) e.concernId = 'Please select a concern' }
   if (step === 3) { if (!form.officeId) e.officeId = 'Please select an office' }
@@ -330,6 +331,7 @@ function nextStep() {
 }
 
 function prevStep() {
+  if (currentStep.value <= 1) return
   currentStep.value--
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -345,7 +347,6 @@ const calendarDays = computed(() => {
   const firstDay = new Date(currentYear.value, currentMonth.value, 1).getDay()
   const daysInMonth = new Date(currentYear.value, currentMonth.value + 1, 0).getDate()
   const today = new Date(); today.setHours(0, 0, 0, 0)
-  const maxDate = new Date(); maxDate.setDate(maxDate.getDate() + 30)
   const days = []
   for (let i = 0; i < firstDay; i++) days.push(null)
   for (let d = 1; d <= daysInMonth; d++) {
@@ -383,7 +384,10 @@ async function selectDate(date) {
   try {
     const { data } = await consumerApi.getTimeSlots(form.officeId, date)
     slots.value = data.data.slots
-  } catch { slots.value = generateMockSlots(date) }
+  } catch (err) {
+    console.error('Failed to load slots:', err)
+    slots.value = generateMockSlots(date)
+  }
   finally { slotsLoading.value = false }
 }
 
@@ -391,10 +395,10 @@ async function selectDate(date) {
 async function submitBooking() {
   if (!validateStep(5)) return
   submitting.value = true
-  store.setPersonalInfo({ consumerName: form.fullName, accountName: form.accountName, accountNumber: form.accountNumber, email: form.email })
-  store.setConcernAndOffice(Number(form.concernId), Number(form.officeId))
-  store.setDateTime(form.appointmentDate, form.startTime)
   try {
+    store.setPersonalInfo({ consumerName: form.fullName, accountName: form.accountName, accountNumber: form.accountNumber, email: form.email })
+    store.setConcernAndOffice(Number(form.concernId), Number(form.officeId))
+    store.setDateTime(form.appointmentDate, form.startTime)
     await store.submitBooking()
     router.push('/book/confirm')
   } catch (e) {

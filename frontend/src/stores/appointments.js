@@ -30,24 +30,12 @@ export const useAppointmentsStore = defineStore('appointments', {
         this.currentPage = data.data.pagination.current_page
         this.lastPage = data.data.pagination.last_page
       } catch (err) {
+        console.error('Failed to load appointments:', err)
         this.error = 'Failed to load appointments'
-        // Fallback to localStorage mock appointments when backend is unavailable
-        try {
-          const stored = JSON.parse(localStorage.getItem('zaneco_mock_appts') || '{}')
-          const mockList = Object.values(stored).map(a => ({
-            id: a.reference_number, reference_number: a.reference_number,
-            consumer_name: a.consumer_name, account_number: a.account_number,
-            concern_type: a.concern_type, office: a.office,
-            appointment_date: a.appointment_date, start_time: a.start_time,
-            end_time: a.end_time, status: a.status, created_at: a.created_at,
-          }))
-          if (mockList.length) {
-            this.list = mockList
-            this.total = mockList.length
-            this.lastPage = 1
-            this.currentPage = 1
-          }
-        } catch (err) { console.error('LocalStorage mock lookup failed:', err) }
+        this.list = []
+        this.total = 0
+        this.currentPage = 1
+        this.lastPage = 1
       } finally {
         this.loading = false
       }
@@ -57,24 +45,10 @@ export const useAppointmentsStore = defineStore('appointments', {
       try {
         const { data } = await adminApi.getAppointmentDetail(id)
         this.detail = data.data
-      } catch {
+      } catch (err) {
+        console.error('Failed to load appointment details:', err)
         this.error = 'Failed to load appointment details'
-        // Fallback to localStorage mock
-        try {
-          const stored = JSON.parse(localStorage.getItem('zaneco_mock_appts') || '{}')
-          const mock = Object.values(stored).find(a => a.reference_number === id || a.id === id)
-          if (mock) {
-            this.detail = {
-              id: mock.reference_number, reference_number: mock.reference_number,
-              consumer_name: mock.consumer_name, account_name: mock.account_name || mock.consumer_name,
-              account_number: mock.account_number, 
-              email: mock.email || null, concern_type: mock.concern_type, office: mock.office,
-              appointment_date: mock.appointment_date, start_time: mock.start_time,
-              end_time: mock.end_time, status: mock.status, admin_notes: null,
-              created_at: mock.created_at, notifications: [], audit_trail: [],
-            }
-          }
-        } catch (err) { console.error('LocalStorage detail mock failed:', err) }
+        this.detail = null
       } finally {
         this.loading = false
       }
@@ -83,8 +57,10 @@ export const useAppointmentsStore = defineStore('appointments', {
       try {
         await adminApi.updateAppointmentStatus(id, { status, notes })
         await this.fetchAppointments(this.currentPage)
-      } catch {
+      } catch (err) {
+        console.error('Status update failed:', err)
         this.error = 'Failed to update status'
+        throw err
       }
     },
     setFilters(filters) {

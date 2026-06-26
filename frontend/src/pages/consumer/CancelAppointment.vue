@@ -63,7 +63,8 @@ async function handleVerify() {
     const { data } = await consumerApi.getAppointment(refNumber.value.trim())
     appointment.value = data.data
     step.value = 'confirm'
-  } catch {
+  } catch (err) {
+    console.error('Failed to verify appointment:', err)
     error.value = 'Appointment not found. Please check your details.'
   } finally {
     loading.value = false
@@ -73,7 +74,7 @@ async function handleVerify() {
 async function handleCancel() {
   submitting.value = true; error.value = ''
   try {
-    await consumerApi.cancelAppointment(refNumber.value.trim())
+    await consumerApi.cancelAppointment(refNumber.value.trim(), {})
     step.value = 'done'
   } catch (err) {
     error.value = err.response?.data?.error?.message || 'Cancellation failed.'

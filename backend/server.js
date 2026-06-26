@@ -10,11 +10,10 @@ const config = require('./config')
 const prisma = require('./db/database')
 const { init } = require('./db/database')
 const { logger, requestLogger } = require('./middleware/logger')
-const { errorHandler } = require('./middleware/errors')
+const { errorHandler, asyncHandler } = require('./middleware/errors')
 const worker = require('./worker')
 
 const app = express()
-const server = app.listen.bind(app)
 
 // --- Trust proxy (for req.ip to respect X-Forwarded-For) ---
 app.set('trust proxy', 1)
@@ -74,74 +73,76 @@ app.use('/api/v1/admin/users', require('./routes/adminUsers'))
 app.use('/api/v1/system', require('./routes/systemStatus'))
 
 // Dashboard summary
-app.get('/api/v1/admin/dashboard/summary', require('./middleware/auth').authenticate, async (req, res, next) => {
-  try {
-    const today = new Date().toISOString().split('T')[0]
-    const monthStart = new Date(); monthStart.setDate(1); const ms = monthStart.toISOString().split('T')[0]
-    const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); const ws = weekStart.toISOString().split('T')[0]
-    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); const wa = weekAgo.toISOString().split('T')[0]
+app.get('/api/v1/admin/dashboard/summary', require('./middleware/auth').authenticate, asyncHandler(async (req, res) => {
+  const officeFilter = req.admin.role !== 'super_admin' && req.admin.officeId
+    ? { officeId: req.admin.officeId }
+    : {}
 
-    const [totalToday, pending, completed, cancelled, rejected, no_show, totalMonth, totalWeek] = await Promise.all([
-      prisma.appointment.count({ where: { appointmentDate: { startsWith: today } } }),
-      prisma.appointment.count({ where: { status: 'pending' } }),
-      prisma.appointment.count({ where: { status: 'completed' } }),
-      prisma.appointment.count({ where: { status: 'cancelled' } }),
-      prisma.appointment.count({ where: { status: 'rejected' } }),
-      prisma.appointment.count({ where: { status: 'no_show' } }),
-      prisma.appointment.count({ where: { appointmentDate: { gte: ms } } }),
-      prisma.appointment.count({ where: { appointmentDate: { gte: ws } } }),
-    ])
+  const today = new Date().toISOString().split('T')[0]
+  const monthStart = new Date(); monthStart.setDate(1); const ms = monthStart.toISOString().split('T')[0]
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); const ws = weekStart.toISOString().split('T')[0]
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); const wa = weekAgo.toISOString().split('T')[0]
 
-    const weeklyTrend = await prisma.appointment.groupBy({
-      by: ['appointmentDate'],
-      where: { appointmentDate: { gte: wa, lte: today } },
-      _count: { id: true },
-      orderBy: { appointmentDate: 'asc' },
-    })
+  const [totalToday, pending, completed, cancelled, rejected, no_show, totalMonth, totalWeek] = await Promise.all([
+    prisma.appointment.count({ where: { appointmentDate: { startsWith: today }, ...officeFilter } }),
+    prisma.appointment.count({ where: { status: 'pending', ...officeFilter } }),
+    prisma.appointment.count({ where: { status: 'completed', ...officeFilter } }),
+    prisma.appointment.count({ where: { status: 'cancelled', ...officeFilter } }),
+    prisma.appointment.count({ where: { status: 'rejected', ...officeFilter } }),
+    prisma.appointment.count({ where: { status: 'no_show', ...officeFilter } }),
+    prisma.appointment.count({ where: { appointmentDate: { gte: ms }, ...officeFilter } }),
+    prisma.appointment.count({ where: { appointmentDate: { gte: ws }, ...officeFilter } }),
+  ])
 
-    const busyOffice = await prisma.appointment.groupBy({
-      by: ['officeId'],
-      where: { appointmentDate: { startsWith: today } },
-      _count: { id: true },
-      orderBy: { _count: { id: 'desc' } },
-      take: 1,
-    })
+  const weeklyTrend = await prisma.appointment.groupBy({
+    by: ['appointmentDate'],
+    where: { appointmentDate: { gte: wa, lte: today }, ...officeFilter },
+    _count: { id: true },
+    orderBy: { appointmentDate: 'asc' },
+  })
 
-    let busyOfficeName = 'N/A'
-    if (busyOffice.length) {
-      const off = await prisma.office.findUnique({ where: { id: busyOffice[0].officeId } })
-      busyOfficeName = off?.name || 'N/A'
-    }
+  const busyOffice = await prisma.appointment.groupBy({
+    by: ['officeId'],
+    where: { appointmentDate: { startsWith: today }, ...officeFilter },
+    _count: { id: true },
+    orderBy: { _count: { id: 'desc' } },
+    take: 1,
+  })
 
-    const peakHourRaw = await prisma.$queryRaw`
-      SELECT CAST(SUBSTRING(start_time, 1, 2) AS INTEGER) AS hour, COUNT(*)::int AS c
-      FROM appointments
-      WHERE appointment_date = ${today}
-      GROUP BY hour
-      ORDER BY c DESC
-      LIMIT 1
-    `
+  let busyOfficeName = 'N/A'
+  if (busyOffice.length) {
+    const off = await prisma.office.findUnique({ where: { id: busyOffice[0].officeId } })
+    busyOfficeName = off?.name || 'N/A'
+  }
 
-    const peakHour = peakHourRaw[0]
+  const peakHourRaw = await prisma.$queryRaw`
+    SELECT CAST(SUBSTRING(start_time, 1, 2) AS INTEGER) AS hour, COUNT(*)::int AS c
+    FROM appointments
+    WHERE appointment_date = ${today}
+    GROUP BY hour
+    ORDER BY c DESC
+    LIMIT 1
+  `
 
-    res.json({
-      success: true,
-      data: {
-        total_today: totalToday,
-        total_week: totalWeek,
-        total_month: totalMonth,
-        pending,
-        completed,
-        cancelled,
-        rejected,
-        no_show,
-        busiest_office: busyOfficeName,
-        busiest_hour: peakHour ? `${String(peakHour.hour).padStart(2,'0')}:00-${String(peakHour.hour+1).padStart(2,'0')}:00` : 'N/A',
-        weekly_trend: weeklyTrend.map(w => ({ date: w.appointmentDate, count: w._count.id })),
-      },
-    })
-  } catch (err) { next(err) }
-})
+  const peakHour = peakHourRaw[0]
+
+  res.json({
+    success: true,
+    data: {
+      total_today: totalToday,
+      total_week: totalWeek,
+      total_month: totalMonth,
+      pending,
+      completed,
+      cancelled,
+      rejected,
+      no_show,
+      busiest_office: busyOfficeName,
+      busiest_hour: peakHour ? `${String(peakHour.hour).padStart(2,'0')}:00-${String(peakHour.hour+1).padStart(2,'0')}:00` : 'N/A',
+      weekly_trend: weeklyTrend.map(w => ({ date: w.appointmentDate, count: w._count.id })),
+    },
+  })
+}))
 
 // Health check
 app.get('/api/v1/health', async (req, res) => {

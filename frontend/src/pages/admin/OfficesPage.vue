@@ -44,8 +44,8 @@
 
       <!-- Office Cards Grid -->
       <div v-else class="office-grid">
-        <div v-for="office in filteredOffices" :key="office.id" class="office-card" :class="{ 'office-card-inactive': !office.active }">
-          <div class="status-strip" :class="office.active ? 'strip-active' : 'strip-inactive'"></div>
+        <div v-for="office in filteredOffices" :key="office.id" class="office-card" :class="{ 'office-card-inactive': !office.is_active }">
+          <div class="status-strip" :class="office.is_active ? 'strip-active' : 'strip-inactive'"></div>
           <div class="office-card-body">
             <div class="office-card-top">
               <div class="office-card-info">
@@ -61,7 +61,7 @@
                 </div>
               </div>
               <label class="switch">
-                <input type="checkbox" :checked="office.active" @change="toggleOffice(office.id)" />
+                <input type="checkbox" :checked="office.is_active" @change="toggleOffice(office.id)" />
                 <span class="slider"></span>
               </label>
             </div>
@@ -210,15 +210,7 @@ const searchTerm = ref('')
 const offices = ref([])
 const loading = ref(true)
 
-const fallbackOffices = [
-  { id: 1, name: 'Main Office', code: 'MAIN', address: 'Poblacion, Dipolog City', phone: '(065) 212-3456', opening_time: '08:00:00', closing_time: '17:00:00', slot_capacity: 3, active: true },
-  { id: 2, name: 'Sindangan Area Services', code: 'SAS', address: 'Sindangan, Zamboanga del Norte', phone: '(065) 213-4567', opening_time: '08:00:00', closing_time: '17:00:00', slot_capacity: 2, active: true },
-  { id: 3, name: 'Liloy Area Services', code: 'LAS', address: 'Liloy, Zamboanga del Norte', phone: '(065) 214-5678', opening_time: '08:00:00', closing_time: '17:00:00', slot_capacity: 2, active: true },
-  { id: 4, name: 'Piñan Area Services', code: 'PAS', address: 'Piñan, Zamboanga del Norte', phone: '(065) 215-6789', opening_time: '08:00:00', closing_time: '17:00:00', slot_capacity: 2, active: true },
-  { id: 5, name: 'Dipolog Area Services', code: 'DAS', address: 'Minaog, Dipolog City, Zamboanga del Norte', phone: '(065) 216-7890', opening_time: '08:00:00', closing_time: '17:00:00', slot_capacity: 2, active: true },
-]
-
-const activeCount = computed(() => offices.value.filter(o => o.active !== false).length)
+const activeCount = computed(() => offices.value.filter(o => o.is_active !== false).length)
 const avgCapacity = computed(() => {
   if (!offices.value.length) return 0
   return Math.round(offices.value.reduce((s, o) => s + (o.slot_capacity || 0), 0) / offices.value.length)
@@ -239,11 +231,11 @@ const filteredOffices = computed(() => {
 async function toggleOffice(id) {
   const o = offices.value.find(x => x.id === id)
   if (!o) return
-  const next = !o.active
+  const next = !o.is_active
   if (!next && !confirm(`Deactivate "${o.name}"? This will disable online booking for this office.`)) return
   try {
     await adminApi.updateOffice(id, { is_active: next })
-    o.active = next
+    o.is_active = next
   } catch (err) {
     alert('Failed to update office status: ' + (err.response?.data?.error?.message || err.message))
   }
@@ -370,10 +362,10 @@ async function fetchOffices() {
   loading.value = true
   try {
     const { data } = await adminApi.getOffices()
-    offices.value = (data.data || []).map(o => ({ ...o, active: o.is_active ?? true }))
+    offices.value = data.data || []
   } catch (err) {
     alert('Failed to load offices: ' + (err.response?.data?.error?.message || err.message))
-    offices.value = fallbackOffices
+    offices.value = []
   } finally { loading.value = false }
 }
 

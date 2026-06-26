@@ -10,4 +10,4 @@ backend/.env
 backend/data
 frontend/dist
 dist
-assets
+/assets

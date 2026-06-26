@@ -48,6 +48,8 @@ echo "Applying database schema..."
 pnpm --filter zaneco-appointments-api exec prisma db push --accept-data-loss 2>/dev/null || echo "Warning: DB schema sync skipped (is PostgreSQL running?)"
 pnpm run seed 2>/dev/null || echo "Warning: Seed skipped (is PostgreSQL running?)"
 
+trap 'kill $BACKEND_PID $FRONTEND_PID 2>/dev/null' EXIT SIGINT SIGTERM
+
 echo "Starting servers..."
 
 # Start backend

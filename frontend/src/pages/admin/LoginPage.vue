@@ -75,14 +75,10 @@
               This system is monitored. Unauthorized access attempts are logged.
             </p>
           </div>
-
-          <div class="demo-hint">
-            <p class="demo-text">Demo: admin@zaneco.ph / admin123</p>
-          </div>
         </div>
 
         <footer class="login-footer">
-          <span class="version-text">v1.0.0-PROD</span>
+          <span class="version-text">v1.0.0</span>
           <div class="footer-links">
             <router-link to="/admin/system-status">System Status</router-link>
           </div>
@@ -110,7 +106,7 @@ async function handleLogin() {
   if (!email.value || !password.value) { error.value = 'Please enter email and password'; return }
   loading.value = true; error.value = ''
   const success = await auth.login(email.value.trim(), password.value)
-  if (success) window.location.replace('/admin/dashboard')
+  if (success) router.push('/admin/dashboard')
   else error.value = auth.error || 'Login failed'
   loading.value = false
 }

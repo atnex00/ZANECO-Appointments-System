@@ -15,9 +15,13 @@ api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('admin_token')
-      if (window.location.pathname.startsWith('/admin') && !window.location.pathname.includes('/login')) {
-        window.location.href = '/admin/login'
+      const isAdminRequest = error.config?.url?.startsWith('/admin/') || error.config?.headers?.Authorization
+      if (isAdminRequest) {
+        localStorage.removeItem('admin_token')
+        localStorage.removeItem('admin_user')
+        if (window.location.pathname.startsWith('/admin') && !window.location.pathname.includes('/login')) {
+          window.location.href = '/admin/login'
+        }
       }
     }
     return Promise.reject(error)

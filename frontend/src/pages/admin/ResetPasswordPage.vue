@@ -63,7 +63,7 @@
         </div>
 
         <footer class="reset-footer">
-          <span class="version-text">v1.0.0-PROD</span>
+          <span class="version-text">v1.0.0</span>
           <div class="footer-links">
             <router-link to="/admin/system-status">System Status</router-link>
           </div>

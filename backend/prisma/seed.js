@@ -67,11 +67,12 @@ async function runSeed() {
   }
 
   // Seed admin accounts
+  const mainOffice = await prisma.office.findUnique({ where: { code: 'MAIN' } })
   const passwordHash = bcrypt.hashSync('admin123', 10)
   const adminAccounts = [
     { email: 'admin@zaneco.ph', password_hash: passwordHash, full_name: 'System Administrator', role: 'super_admin', office_id: null },
-    { email: 'manager.main@zaneco.ph', password_hash: passwordHash, full_name: 'Main Office Manager', role: 'office_manager', office_id: 1 },
-    { email: 'staff.main@zaneco.ph', password_hash: passwordHash, full_name: 'Main Office Staff', role: 'staff', office_id: 1 },
+    { email: 'manager.main@zaneco.ph', password_hash: passwordHash, full_name: 'Main Office Manager', role: 'office_manager', office_id: mainOffice.id },
+    { email: 'staff.main@zaneco.ph', password_hash: passwordHash, full_name: 'Main Office Staff', role: 'staff', office_id: mainOffice.id },
   ]
 
   for (const a of adminAccounts) {
@@ -88,14 +89,8 @@ async function runSeed() {
     })
   }
 
-  // Generate time slots for next 30 days (skip 12:00-12:30 lunch break)
+  // Generate time slots for next 30 days (skip lunch break)
   const today = new Date()
-  const slotTimes = []
-  for (let h = 8; h < 17; h++) {
-    if (h === 12) continue
-    slotTimes.push(`${String(h).padStart(2, '0')}:00:00`)
-    if (h < 16) slotTimes.push(`${String(h).padStart(2, '0')}:30:00`)
-  }
 
   for (const office of allOffices) {
     for (let d = 0; d < 30; d++) {
@@ -105,20 +100,27 @@ async function runSeed() {
       if (dayOfWeek === 0 || dayOfWeek === 6) continue
 
       const dateStr = date.toISOString().split('T')[0]
-      for (let t = 0; t < slotTimes.length - 1; t++) {
-        const startTime = slotTimes[t]
-        const endTime = slotTimes[t + 1]
-        await prisma.timeSlot.upsert({
-          where: { officeId_slotDate_startTime: { officeId: office.id, slotDate: dateStr, startTime } },
-          update: {},
-          create: {
-            officeId: office.id,
-            slotDate: dateStr,
-            startTime,
-            endTime,
-            maxCapacity: office.slotCapacity,
-          },
-        })
+      for (let h = 8; h < 17; h++) {
+        if (h === 12) continue
+        for (const m of [0, 30]) {
+          const startTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
+          const endMinutes = h * 60 + m + 30
+          const eh = Math.floor(endMinutes / 60)
+          const em = endMinutes % 60
+          if (eh > 17 || (eh === 17 && em > 0)) continue
+          const endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}:00`
+          await prisma.timeSlot.upsert({
+            where: { officeId_slotDate_startTime: { officeId: office.id, slotDate: dateStr, startTime } },
+            update: {},
+            create: {
+              officeId: office.id,
+              slotDate: dateStr,
+              startTime,
+              endTime,
+              maxCapacity: office.slotCapacity,
+            },
+          })
+        }
       }
     }
   }

@@ -1,3 +1,4 @@
+const fs = require('fs')
 const nodemailer = require('nodemailer')
 const path = require('path')
 const config = require('../config')
@@ -9,6 +10,9 @@ function getTransporter() {
   if (!config.email.smtpHost) {
     console.log('SMTP not configured — email sending disabled')
     return null
+  }
+  if ((config.email.smtpUser && !config.email.smtpPass) || (!config.email.smtpUser && config.email.smtpPass)) {
+    console.warn('SMTP: only one of USER/PASS configured — auth will be disabled')
   }
   transporter = nodemailer.createTransport({
     host: config.email.smtpHost,
@@ -26,16 +30,16 @@ async function sendEmail({ to, subject, html }) {
   const t = getTransporter()
   if (!t) return false
   try {
+    const attachments = []
+    if (fs.existsSync(LOGO_PATH)) {
+      attachments.push({ path: LOGO_PATH, cid: LOGO_CID, contentDisposition: 'inline' })
+    }
     await t.sendMail({
       from: config.email.from,
       to,
       subject,
       html,
-      attachments: [{
-        path: LOGO_PATH,
-        cid: LOGO_CID,
-        contentDisposition: 'inline',
-      }],
+      attachments,
     })
     return true
   } catch (err) {

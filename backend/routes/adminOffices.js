@@ -44,10 +44,9 @@ router.put('/:id', authenticate, asyncHandler(async (req, res) => {
     is_active: 'isActive',
   }
   const data = {}
-  for (const key of ['name', 'code', 'address', 'phone', 'email', 'opening_time', 'closing_time', 'slot_capacity', 'appointment_duration_minutes', 'max_advance_days']) {
+  for (const key of ['name', 'code', 'address', 'phone', 'email', 'opening_time', 'closing_time', 'slot_capacity', 'appointment_duration_minutes', 'max_advance_days', 'is_active']) {
     if (req.body[key] !== undefined) data[FIELD_MAP[key] || key] = req.body[key]
   }
-  if (req.body.is_active !== undefined) data.isActive = req.body.is_active
   if (!Object.keys(data).length) return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'No fields to update' } })
 
   await prisma.office.update({ where: { id: Number(req.params.id) }, data })
@@ -68,6 +67,9 @@ router.put('/:id/schedule', authenticate, asyncHandler(async (req, res) => {
   if (!schedules || !Array.isArray(schedules)) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Schedules array required' } })
 
   for (const s of schedules) {
+    if (!s || typeof s !== 'object' || !s.day_of_week || !s.opening_time || !s.closing_time || s.is_working_day === undefined) {
+      return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Each schedule entry requires day_of_week, opening_time, closing_time, and is_working_day' } })
+    }
     await prisma.officeSchedule.upsert({
       where: { officeId_dayOfWeek: { officeId: Number(req.params.id), dayOfWeek: s.day_of_week } },
       update: { openingTime: s.opening_time, closingTime: s.closing_time, isWorkingDay: s.is_working_day },

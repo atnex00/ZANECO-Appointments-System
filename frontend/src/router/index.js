@@ -28,12 +28,12 @@ const routes = [
       { path: 'appointments', name: 'admin-appointments', meta: { auth: true, title: 'Appointments' }, component: () => import('../pages/admin/AppointmentsPage.vue') },
       { path: 'appointments/:id', name: 'admin-appointment-detail', meta: { auth: true, title: 'Appointment Detail' }, component: () => import('../pages/admin/AppointmentDetail.vue') },
       { path: 'calendar', name: 'admin-calendar', meta: { auth: true, title: 'Calendar' }, component: () => import('../pages/admin/CalendarPage.vue') },
-      { path: 'offices', name: 'admin-offices', meta: { auth: true, title: 'Offices' }, component: () => import('../pages/admin/OfficesPage.vue') },
-      { path: 'concern-types', name: 'admin-concern-types', meta: { auth: true, title: 'Concern Types' }, component: () => import('../pages/admin/ConcernTypesPage.vue') },
+      { path: 'offices', name: 'admin-offices', meta: { auth: true, title: 'Offices', role: 'super_admin' }, component: () => import('../pages/admin/OfficesPage.vue') },
+      { path: 'concern-types', name: 'admin-concern-types', meta: { auth: true, title: 'Concern Types', role: 'super_admin' }, component: () => import('../pages/admin/ConcernTypesPage.vue') },
       { path: 'reports', name: 'admin-reports', meta: { auth: true, title: 'Reports' }, component: () => import('../pages/admin/ReportsPage.vue') },
-      { path: 'users', name: 'admin-users', meta: { auth: true, title: 'Admin Users' }, component: () => import('../pages/admin/AdminUsersPage.vue') },
+      { path: 'users', name: 'admin-users', meta: { auth: true, title: 'Admin Users', role: 'super_admin' }, component: () => import('../pages/admin/AdminUsersPage.vue') },
       { path: 'notifications', name: 'admin-notifications', meta: { auth: true, title: 'Notifications' }, component: () => import('../pages/admin/NotificationsPage.vue') },
-      { path: 'audit-logs', name: 'admin-audit-logs', meta: { auth: true, title: 'Audit Logs' }, component: () => import('../pages/admin/AuditLogsPage.vue') },
+      { path: 'audit-logs', name: 'admin-audit-logs', meta: { auth: true, title: 'Audit Logs', role: 'super_admin' }, component: () => import('../pages/admin/AuditLogsPage.vue') },
       { path: 'guide', name: 'admin-guide', meta: { auth: true, title: 'User Guide' }, component: () => import('../pages/admin/GuidePage.vue') },
       { path: 'staff', name: 'admin-staff', meta: { auth: true, title: 'Staff Dashboard' }, component: () => import('../pages/admin/StaffDashboard.vue') },
     ],
@@ -52,6 +52,17 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('admin_token')
   if (to.meta.auth && !token) return next({ name: 'admin-login' })
   if (to.meta.guest && token) return next({ name: 'admin-dashboard' })
+  if (to.meta.auth && token && to.meta.role) {
+    try {
+      const user = JSON.parse(localStorage.getItem('admin_user') || '{}')
+      const roles = Array.isArray(to.meta.role) ? to.meta.role : [to.meta.role]
+      if (!roles.includes(user.role)) {
+        return next({ name: 'admin-staff' })
+      }
+    } catch (e) {
+      return next({ name: 'admin-login' })
+    }
+  }
   document.title = (to.meta.title || 'ZANECO') + TITLE_SUFFIX
   next()
 })

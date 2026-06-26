@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <Stepper :steps="['Info', 'Concern & Office', 'Schedule', 'Review']" :currentStep="4" />
+    <Stepper :steps="['Info', 'Concern', 'Location', 'Schedule', 'Review']" :currentStep="5" />
     <div class="card confirm-card" v-if="appointment">
       <div class="success-icon">
         <span class="material-symbols-outlined">check_circle</span>

@@ -129,7 +129,7 @@ onMounted(async () => {
 .ap-title { font-size: 1.75rem; font-weight: 700; color: #121c28; }
 .ap-subtitle { font-size: 0.875rem; color: #444653; margin-top: 0.25rem; }
 
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
 .stat-card { background-color: #eef4ff; padding: 1rem; border-radius: var(--radius-xl); border: 1px solid #c4c5d5; display: flex; flex-direction: column; justify-content: space-between; min-height: 100px; }
 .stat-label { font-size: 0.75rem; font-weight: 600; color: #444653; text-transform: uppercase; letter-spacing: 0.05em; }
 .stat-value { font-size: 2rem; font-weight: 700; }
