@@ -63,9 +63,9 @@
           <div class="footer-inner">
             <p class="footer-copy">&copy; {{ new Date().getFullYear() }} ZANECO. System v1.0</p>
             <div class="footer-links">
-              <a href="#">Support Center</a>
-              <a href="#">Terms of Service</a>
-              <a href="#">Security</a>
+              <a href="https://zaneco.ph/contact-us/" target="_blank" rel="noopener">Support Center</a>
+              <router-link to="/terms">Terms of Service</router-link>
+              <router-link to="/security">Security</router-link>
             </div>
           </div>
         </footer>

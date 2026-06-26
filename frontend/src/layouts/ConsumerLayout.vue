@@ -29,9 +29,11 @@
           <span class="text-sm text-muted">Zamboanga del Norte Electric Cooperative</span>
         </div>
         <div class="footer-links">
-          <a href="#">About Us</a>
-          <a href="#">Contact Center</a>
-          <a href="#">Service Updates</a>
+          <a href="https://zaneco.ph/company-profile/" target="_blank" rel="noopener">About Us</a>
+          <a href="https://zaneco.ph/contact-us/" target="_blank" rel="noopener">Contact Center</a>
+          <a href="https://www.facebook.com/p/Zaneco-Inc-61551218819204/" target="_blank" rel="noopener">Service Updates</a>
+          <router-link to="/terms">Terms of Service</router-link>
+          <router-link to="/security">Security</router-link>
         </div>
         <p class="text-xs text-muted">&copy; {{ new Date().getFullYear() }} ZANECO. All rights reserved.</p>
       </div>

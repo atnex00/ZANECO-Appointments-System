@@ -11,6 +11,8 @@ const routes = [
       { path: 'view', name: 'view-appointment', meta: { title: 'View Appointment' }, component: () => import('../pages/consumer/ViewAppointment.vue') },
       { path: 'reschedule', name: 'reschedule', meta: { title: 'Reschedule Appointment' }, component: () => import('../pages/consumer/RescheduleAppointment.vue') },
       { path: 'cancel', name: 'cancel', meta: { title: 'Cancel Appointment' }, component: () => import('../pages/consumer/CancelAppointment.vue') },
+      { path: 'terms', name: 'terms', meta: { title: 'Terms of Service' }, component: () => import('../pages/consumer/TermsPage.vue') },
+      { path: 'security', name: 'security', meta: { title: 'Security' }, component: () => import('../pages/consumer/SecurityPage.vue') },
     ],
   },
   {

@@ -1,3 +1,7 @@
+if (typeof BigInt !== 'undefined' && !BigInt.prototype.toJSON) {
+  BigInt.prototype.toJSON = function () { return Number(this) }
+}
+
 const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')

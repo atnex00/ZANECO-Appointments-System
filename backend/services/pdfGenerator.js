@@ -37,7 +37,7 @@ function labelFor(col) {
 
 function computeSummary(columns, data) {
   const numericCols = columns.filter(col =>
-    data.length > 0 && typeof data[0][col] === 'number' && !['week', 'month', 'appointment_date', 'date'].includes(col)
+    data.length > 0 && (typeof data[0][col] === 'number' || typeof data[0][col] === 'bigint') && !['week', 'month', 'appointment_date', 'date'].includes(col)
   )
   if (!numericCols.length) return null
 
@@ -139,7 +139,7 @@ function generateReportPDF(title, columns, data, dateRange) {
       text: row[col] != null ? String(row[col]) : '',
       fontSize: 8.5,
       fillColor: i % 2 === 0 ? '#F8F9FF' : '#FFFFFF',
-      alignment: typeof row[col] === 'number' ? 'right' : 'left',
+      alignment: typeof row[col] === 'number' || typeof row[col] === 'bigint' ? 'right' : 'left',
     }))
   )
 

@@ -208,16 +208,16 @@
           </div>
         </div>
 
-        <p class="help-text">Need help? <a href="#" style="color:var(--color-primary);font-weight:700">Contact Customer Support</a></p>
+        <p class="help-text">Need help? <a href="https://zaneco.ph/contact-us/" target="_blank" rel="noopener" style="color:var(--color-primary);font-weight:700">Contact Customer Support</a></p>
       </div>
     </main>
 
     <footer class="book-footer">
       <div class="book-footer-inner">
         <div class="footer-links">
-          <a href="#">Support</a>
-          <a href="#">Privacy Policy</a>
-          <a href="#">Office Locations</a>
+          <a href="https://zaneco.ph/contact-us/" target="_blank" rel="noopener">Support</a>
+          <a href="https://zaneco.ph/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a>
+          <a href="https://zaneco.ph" target="_blank" rel="noopener">Office Locations</a>
         </div>
         <p class="text-xs text-muted">&copy; 2026 ZANECO. All rights reserved.</p>
       </div>
