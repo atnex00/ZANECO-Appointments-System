@@ -61,7 +61,8 @@
         <div class="offices-grid">
           <div v-for="(office, i) in offices" :key="office.code" class="office-card-ref animate-child" :style="{ transitionDelay: (160 + i * 80) + 'ms' }">
             <div class="office-img-wrap">
-              <div class="office-img-placeholder" :style="{ background: office.gradient }">
+              <img v-if="office.image" :src="office.image" :alt="office.name" class="office-img" />
+              <div v-else class="office-img-placeholder" :style="{ background: office.gradient }">
                 <span class="material-symbols-outlined" style="font-size:2.5rem;color:rgba(255,255,255,0.4)">bolt</span>
               </div>
               <div v-if="office.badge" class="office-badge-ref">{{ office.badge }}</div>
@@ -94,7 +95,7 @@ const steps = [
 ]
 
 const offices = [
-  { name: 'Main Office', code: 'MAIN', address: 'Poblacion, Dipolog City', badge: 'Main Hub', gradient: 'linear-gradient(135deg, #d97706, #f59e0b)' },
+  { name: 'Main Office', code: 'MAIN', address: 'Poblacion, Dipolog City', badge: 'Main Hub', image: '/offices/ZANECO-main-office.jpg', gradient: 'linear-gradient(135deg, #d97706, #f59e0b)' },
   { name: 'Sindangan Area Services', code: 'SAS', address: 'Sindangan, Zamboanga del Norte', badge: 'Open', gradient: 'linear-gradient(135deg, #b45309, #d97706)' },
   { name: 'Liloy Area Services', code: 'LAS', address: 'Liloy, Zamboanga del Norte', gradient: 'linear-gradient(135deg, #92400e, #b45309)' },
   { name: 'Piñan Area Services', code: 'PAS', address: 'Piñan, Zamboanga del Norte', gradient: 'linear-gradient(135deg, #78350f, #92400e)' },
@@ -273,7 +274,13 @@ const offices = [
   align-items: center;
   justify-content: center;
 }
-.office-card-ref:hover .office-img-placeholder {
+.office-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.office-card-ref:hover .office-img-placeholder,
+.office-card-ref:hover .office-img {
   transform: scale(1.05);
   transition: transform 0.5s;
 }

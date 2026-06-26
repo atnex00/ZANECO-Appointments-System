@@ -25,9 +25,9 @@
               <tr v-for="ct in concernTypes" :key="ct.id" class="ap-row">
                 <td class="td-name">{{ ct.name }}</td>
                 <td class="td-muted" style="font-family:monospace">{{ ct.code }}</td>
-                <td class="td-date">{{ ct.estimated_duration_minutes }} min</td>
-                <td class="td-date">{{ ct.sort_order }}</td>
-                <td><span class="badge" :class="ct.is_active ? 'badge-confirmed' : 'badge-cancelled'">{{ ct.is_active ? 'Active' : 'Inactive' }}</span></td>
+                <td class="td-date">{{ ct.estimatedDurationMinutes }} min</td>
+                <td class="td-date">{{ ct.sortOrder }}</td>
+                <td><span class="badge" :class="ct.isActive ? 'badge-confirmed' : 'badge-cancelled'">{{ ct.isActive ? 'Active' : 'Inactive' }}</span></td>
                 <td class="td-actions">
                   <button class="row-action" @click="editItem(ct)" title="Edit"><span class="material-symbols-outlined">edit</span></button>
                   <button class="row-action" @click="toggleActive(ct)" title="Toggle"><span class="material-symbols-outlined">power_settings_new</span></button>
@@ -89,10 +89,21 @@ async function fetchData() {
   try { const { data } = await adminApi.getConcernTypes(); concernTypes.value = data.data } catch (err) { console.error('Fetch concern types failed:', err) } finally { loading.value = false }
 }
 function openAdd() { editingItem.value = null; form.value = { name: '', code: '', description: '', estimated_duration_minutes: 30, sort_order: 0, is_active: true }; showForm.value = true }
-function editItem(item) { editingItem.value = item; form.value = { ...item }; showForm.value = true }
+function editItem(item) {
+  editingItem.value = item
+  form.value = {
+    name: item.name,
+    code: item.code,
+    description: item.description || '',
+    estimated_duration_minutes: item.estimatedDurationMinutes ?? 30,
+    sort_order: item.sortOrder ?? 0,
+    is_active: item.isActive ?? true,
+  }
+  showForm.value = true
+}
 async function toggleActive(ct) {
   try {
-    await adminApi.updateConcernType(ct.id, { is_active: !ct.is_active })
+    await adminApi.updateConcernType(ct.id, { is_active: !ct.isActive })
     await fetchData()
   } catch (err) {
     console.error('Toggle concern type failed:', err)

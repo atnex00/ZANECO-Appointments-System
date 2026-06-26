@@ -44,8 +44,8 @@
 
       <!-- Office Cards Grid -->
       <div v-else class="office-grid">
-        <div v-for="office in filteredOffices" :key="office.id" class="office-card" :class="{ 'office-card-inactive': !office.is_active }">
-          <div class="status-strip" :class="office.is_active ? 'strip-active' : 'strip-inactive'"></div>
+        <div v-for="office in filteredOffices" :key="office.id" class="office-card" :class="{ 'office-card-inactive': !office.isActive }">
+          <div class="status-strip" :class="office.isActive ? 'strip-active' : 'strip-inactive'"></div>
           <div class="office-card-body">
             <div class="office-card-top">
               <div class="office-card-info">
@@ -61,7 +61,7 @@
                 </div>
               </div>
               <label class="switch">
-                <input type="checkbox" :checked="office.is_active" @change="toggleOffice(office.id)" />
+                <input type="checkbox" :checked="office.isActive" @change="toggleOffice(office.id)" />
                 <span class="slider"></span>
               </label>
             </div>
@@ -73,11 +73,11 @@
               </div>
               <div class="detail-row">
                 <span class="detail-label uppercase">Hours</span>
-                <span class="detail-value">{{ office.opening_time?.slice(0,5) || '08:00' }} - {{ office.closing_time?.slice(0,5) || '17:00' }}</span>
+                <span class="detail-value">{{ office.openingTime?.slice(0,5) || '08:00' }} - {{ office.closingTime?.slice(0,5) || '17:00' }}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label uppercase">Capacity</span>
-                <span class="detail-value" style="color:var(--color-primary);font-weight:700">{{ office.slot_capacity || 2 }} slots/hr</span>
+                <span class="detail-value" style="color:var(--color-primary);font-weight:700">{{ office.slotCapacity || 2 }} slots/hr</span>
               </div>
             </div>
           </div>
@@ -212,10 +212,10 @@ const searchTerm = ref('')
 const offices = ref([])
 const loading = ref(true)
 
-const activeCount = computed(() => offices.value.filter(o => o.is_active !== false).length)
+const activeCount = computed(() => offices.value.filter(o => o.isActive !== false).length)
 const avgCapacity = computed(() => {
   if (!offices.value.length) return 0
-  return Math.round(offices.value.reduce((s, o) => s + (o.slot_capacity || 0), 0) / offices.value.length)
+  return Math.round(offices.value.reduce((s, o) => s + (o.slotCapacity || 0), 0) / offices.value.length)
 })
 
 const filteredOffices = computed(() => {
@@ -233,11 +233,11 @@ const filteredOffices = computed(() => {
 async function toggleOffice(id) {
   const o = offices.value.find(x => x.id === id)
   if (!o) return
-  const next = !o.is_active
+  const next = !o.isActive
   if (!next && !confirm(`Deactivate "${o.name}"? This will disable online booking for this office.`)) return
   try {
     await adminApi.updateOffice(id, { is_active: next })
-    o.is_active = next
+    o.isActive = next
   } catch (err) {
     toast.error('Failed to update office status: ' + (err.response?.data?.error?.message || err.message))
   }
@@ -310,12 +310,12 @@ function editOffice(office) {
     address: office.address || '',
     phone: office.phone || '',
     email: office.email || '',
-    opening_time: (office.opening_time || '08:00:00').slice(0, 5),
-    closing_time: (office.closing_time || '17:00:00').slice(0, 5),
-    slot_capacity: office.slot_capacity ?? 2,
-    appointment_duration_minutes: office.appointment_duration_minutes ?? 30,
-    max_advance_days: office.max_advance_days ?? 30,
-    is_active: office.is_active ?? true,
+    opening_time: (office.openingTime || '08:00:00').slice(0, 5),
+    closing_time: (office.closingTime || '17:00:00').slice(0, 5),
+    slot_capacity: office.slotCapacity ?? 2,
+    appointment_duration_minutes: office.appointmentDurationMinutes ?? 30,
+    max_advance_days: office.maxAdvanceDays ?? 30,
+    is_active: office.isActive ?? true,
   }
   showForm.value = true
 }

@@ -33,20 +33,20 @@
             </thead>
             <tbody>
               <tr v-for="user in users" :key="user.id" class="ap-row">
-                <td class="td-name">{{ user.full_name }}</td>
+                <td class="td-name">{{ user.fullName }}</td>
                 <td class="td-muted">{{ user.email }}</td>
                 <td><span class="role-badge" :class="'role-' + user.role">{{ user.role }}</span></td>
-                <td class="td-muted">{{ officeName(user.office_id) }}</td>
-                <td><span class="badge" :class="user.is_active ? 'badge-confirmed' : 'badge-cancelled'">{{ user.is_active ? 'Active' : 'Inactive' }}</span></td>
+                <td class="td-muted">{{ officeName(user.officeId) }}</td>
+                <td><span class="badge" :class="user.isActive ? 'badge-confirmed' : 'badge-cancelled'">{{ user.isActive ? 'Active' : 'Inactive' }}</span></td>
                 <td>
                   <span v-if="isLocked(user)" class="badge badge-cancelled">Locked</span>
                   <span v-else class="text-muted" style="font-size:0.75rem">—</span>
                 </td>
-                <td class="td-date">{{ user.last_login_at ? user.last_login_at.slice(0, 10) : 'Never' }}</td>
+                <td class="td-date">{{ user.lastLoginAt ? user.lastLoginAt.slice(0, 10) : 'Never' }}</td>
                 <td class="td-actions">
                   <button class="row-action" @click="editUser(user)" title="Edit"><span class="material-symbols-outlined">edit</span></button>
                   <button v-if="isLocked(user)" class="row-action" @click="unlockUser(user)" title="Unlock" style="color:#059669"><span class="material-symbols-outlined">lock_open</span></button>
-                  <button class="row-action" @click="toggleActive(user)" :title="user.is_active ? 'Deactivate' : 'Activate'" :style="{ color: user.is_active ? '#dc2626' : '#059669' }"><span class="material-symbols-outlined">{{ user.is_active ? 'block' : 'check_circle' }}</span></button>
+                  <button class="row-action" @click="toggleActive(user)" :title="user.isActive ? 'Deactivate' : 'Activate'" :style="{ color: user.isActive ? '#dc2626' : '#059669' }"><span class="material-symbols-outlined">{{ user.isActive ? 'block' : 'check_circle' }}</span></button>
                 </td>
               </tr>
               <tr v-if="users.length === 0"><td colspan="7" class="td-empty">No admin users found.</td></tr>
@@ -156,7 +156,7 @@ function openAdd() {
 
 function editUser(user) {
   editingUser.value = user
-  form.value = { full_name: user.full_name, email: user.email, password: '', role: user.role, office_id: user.office_id, is_active: user.is_active }
+  form.value = { full_name: user.fullName, email: user.email, password: '', role: user.role, office_id: user.officeId, is_active: user.isActive }
   showForm.value = true
 }
 
@@ -182,7 +182,7 @@ async function saveUser() {
 }
 
 function isLocked(user) {
-  return user.locked_until && new Date(user.locked_until) > new Date()
+  return user.lockedUntil && new Date(user.lockedUntil) > new Date()
 }
 
 async function unlockUser(user) {
