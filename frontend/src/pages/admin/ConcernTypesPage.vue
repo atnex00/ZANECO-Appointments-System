@@ -27,7 +27,7 @@
                 <td class="td-muted" style="font-family:monospace">{{ ct.code }}</td>
                 <td class="td-date">{{ ct.estimated_duration_minutes }} min</td>
                 <td class="td-date">{{ ct.sort_order }}</td>
-                <td><span class="status-badge" :class="ct.is_active ? 'status-confirmed' : 'status-cancelled'">{{ ct.is_active ? 'Active' : 'Inactive' }}</span></td>
+                <td><span class="badge" :class="ct.is_active ? 'badge-confirmed' : 'badge-cancelled'">{{ ct.is_active ? 'Active' : 'Inactive' }}</span></td>
                 <td class="td-actions">
                   <button class="row-action" @click="editItem(ct)" title="Edit"><span class="material-symbols-outlined">edit</span></button>
                   <button class="row-action" @click="toggleActive(ct)" title="Toggle"><span class="material-symbols-outlined">power_settings_new</span></button>
@@ -73,7 +73,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { adminApi } from '../../api/admin'
+import { useToast } from '../../composables/useToast'
 
+
+const toast = useToast()
 
 const concernTypes = ref([])
 const loading = ref(true)
@@ -96,45 +99,45 @@ async function toggleActive(ct) {
   }
 }
 async function save() {
-  if (!form.value.name || !form.value.code) { alert('Name and code are required'); return }
+  if (!form.value.name || !form.value.code) { toast.warning('Name and code are required'); return }
   saving.value = true
   try {
     if (editingItem.value) await adminApi.updateConcernType(editingItem.value.id, form.value)
     else await adminApi.createConcernType(form.value)
     showForm.value = false; editingItem.value = null; await fetchData()
   } catch (err) {
-    alert('Error: ' + (err.response?.data?.error?.message || err.message))
+    toast.error('Error: ' + (err.response?.data?.error?.message || err.message))
   } finally { saving.value = false }
 }
 onMounted(fetchData)
 </script>
 
 <style scoped>
-.header-title { font-size: 1.25rem; font-weight: 600; color: #121c28; white-space: nowrap; }
-.ap-header { position: sticky; top: 0; z-index: 20; background-color: #f8f9ff; border-bottom: 1px solid rgba(196,197,213,0.3); padding: 0.75rem 1.5rem; display: flex; align-items: center; }
+.header-title { font-size: 1.25rem; font-weight: 600; color: var(--color-gray-900); white-space: nowrap; }
+.ap-header { position: sticky; top: 0; z-index: 20; background-color: var(--color-primary-light); border-bottom: 1px solid rgba(229,231,235,0.3); padding: 0.75rem 1.5rem; display: flex; align-items: center; }
 .ap-header-left { display: flex; align-items: center; gap: 0.75rem; }
-.menu-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: none; background: none; border-radius: 50%; color: #121c28; cursor: pointer; margin-left: -0.5rem; }
-.menu-btn:hover { background-color: #dfe9fa; }
+.menu-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: none; background: none; border-radius: 50%; color: var(--color-gray-900); cursor: pointer; margin-left: -0.5rem; }
+.menu-btn:hover { background-color: var(--color-primary-muted); }
 @media (min-width: 1024px) { .menu-btn { display: none; } }
 .ap-new-btn { display: flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1rem; border-radius: var(--radius-xl); background-color: var(--color-primary); border: none; color: var(--color-white); font-size: 0.875rem; font-weight: 600; cursor: pointer; white-space: nowrap; margin-left: auto; }
 .ap-new-btn:hover { filter: brightness(1.1); }
 
 .ap-content { padding: 1.5rem; }
-.ap-table-wrap { background-color: var(--color-white); border: 1px solid #c4c5d5; border-radius: var(--radius-xl); overflow: hidden; }
+.ap-table-wrap { background-color: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-xl); overflow: hidden; }
 .ap-table-scroll { overflow-x: auto; }
 .ap-table { width: 100%; min-width: 700px; border-collapse: collapse; }
-.ap-table th { padding: 1rem 1.25rem; background-color: #eef4ff; border-bottom: 1px solid #c4c5d5; font-size: 0.75rem; font-weight: 600; color: #444653; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; }
+.ap-table th { padding: 1rem 1.25rem; background-color: var(--color-primary-muted); border-bottom: 1px solid var(--color-border); font-size: 0.75rem; font-weight: 600; color: var(--color-gray-600); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; }
 .th-right { text-align: right; }
-.ap-table td { padding: 0.75rem 1.25rem; font-size: 0.875rem; border-bottom: 1px solid rgba(196,197,213,0.3); }
-.ap-row:hover td { background-color: #eef4ff; }
-.td-name { font-weight: 600; color: #121c28; }
-.td-muted { color: #444653; }
-.td-date { color: #121c28; }
-.td-empty { text-align: center; color: #757684; padding: 2rem; }
+.ap-table td { padding: 0.75rem 1.25rem; font-size: 0.875rem; border-bottom: 1px solid rgba(229,231,235,0.3); }
+.ap-row:hover td { background-color: var(--color-primary-muted); }
+.td-name { font-weight: 600; color: var(--color-gray-900); }
+.td-muted { color: var(--color-gray-600); }
+.td-date { color: var(--color-gray-900); }
+.td-empty { text-align: center; color: var(--color-gray-400); padding: 2rem; }
 .td-actions { text-align: right; white-space: nowrap; }
-.row-action { padding: 0.375rem; border: none; background: none; border-radius: 50%; color: #444653; cursor: pointer; vertical-align: middle; }
-.row-action:hover { background-color: #d9e3f4; }
-.status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
+.row-action { padding: 0.375rem; border: none; background: none; border-radius: 50%; color: var(--color-gray-600); cursor: pointer; vertical-align: middle; }
+.row-action:hover { background-color: #fde68a; }
+
 .status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .status-cancelled { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
 

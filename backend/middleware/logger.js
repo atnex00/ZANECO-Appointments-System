@@ -23,6 +23,11 @@ const logger = {
   },
 }
 
+function sanitize(v) {
+  if (typeof v !== 'string') return v
+  return v.replace(/\0/g, '')
+}
+
 function requestLogger(req, res, next) {
   const start = Date.now()
   const originalEnd = res.end
@@ -32,15 +37,15 @@ function requestLogger(req, res, next) {
 
     prisma.requestLog.create({
       data: {
-        method: req.method,
-        url: req.originalUrl,
+        method: sanitize(req.method),
+        url: sanitize(req.originalUrl),
         status: res.statusCode,
         durationMs: duration,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'] || null,
+        ip: sanitize(req.ip),
+        userAgent: sanitize(req.headers['user-agent']) || null,
         adminId: req.admin?.id || null,
-        bodyPreview: ['POST', 'PUT'].includes(req.method) ? JSON.stringify(req.body).slice(0, 500) : null,
-        errorMessage: res.statusCode >= 400 ? res.statusMessage || null : null,
+        bodyPreview: ['POST', 'PUT'].includes(req.method) ? sanitize(JSON.stringify(req.body)).slice(0, 500) : null,
+        errorMessage: res.statusCode >= 400 ? sanitize(res.statusMessage) || null : null,
       },
     }).catch(err => console.error('Audit log write failed:', err))
 

@@ -143,6 +143,7 @@ const allNavItems = [
   { path: '/admin/reports', label: 'Reports', icon: 'assessment' },
   { path: '/admin/audit-logs', label: 'Audit Logs', icon: 'shield' },
   { path: '/admin/guide', label: 'User Guide', icon: 'book' },
+  { path: '/admin/system-status', label: 'System Status', icon: 'monitor_heart' },
 ]
 
 const staffAllowed = ['/admin/staff', '/admin/reports', '/admin/audit-logs', '/admin/guide']
@@ -186,7 +187,7 @@ const userInitials = computed(() => {
 .admin-shell {
   display: flex;
   min-height: 100vh;
-  background-color: #f8f9ff;
+  background-color: var(--color-primary-light);
 }
 
 /* Mobile overlay */
@@ -208,8 +209,8 @@ const userInitials = computed(() => {
   z-index: 40;
   height: 100vh;
   width: 260px;
-  background-color: #eef4ff;
-  border-right: 1px solid #c4c5d5;
+  background-color: #fef3c7;
+  border-right: 1px solid #fde68a;
   transition: transform 0.3s ease;
   transform: translateX(-100%);
 }
@@ -237,32 +238,37 @@ const userInitials = computed(() => {
   color: var(--color-primary);
   letter-spacing: -0.01em;
   white-space: nowrap;
+  font-family: var(--font-family);
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 0.5rem;
+  padding: 0.25rem 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.125rem;
 }
 .sidebar-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-radius: 9999px;
-  color: #444653;
+  padding: 0.625rem 1rem 0.625rem 1.25rem;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  color: #78350f;
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 600;
   transition: all 0.15s;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  border-left: 4px solid transparent;
 }
-.sidebar-link:hover { background-color: #dfe9fa; }
+.sidebar-link:hover { background-color: #fde68a; }
 .sidebar-link-active {
-  background-color: #6cf8bb !important;
-  color: #005236 !important;
+  background-color: rgba(251,191,36,0.15) !important;
+  border-left-color: var(--color-primary) !important;
+  color: #b45309 !important;
   font-weight: 700;
 }
 .sidebar-link-icon { font-size: 1.25rem; }
@@ -271,22 +277,22 @@ const userInitials = computed(() => {
 
 .sidebar-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #c4c5d5;
+  border-top: 1px solid #fde68a;
 }
 .logout-btn {
   width: 100%;
   margin-top: 0.5rem;
   padding: 0.375rem 0.75rem;
-  border: 1px solid #c4c5d5;
+  border: 1px solid #fde68a;
   border-radius: 9999px;
   background: none;
-  color: #444653;
+  color: #78350f;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
 }
-.logout-btn:hover { background-color: #dfe9fa; color: #dc2626; }
+.logout-btn:hover { background-color: #fde68a; color: #dc2626; }
 .sidebar-user {
   display: flex;
   align-items: center;
@@ -296,16 +302,16 @@ const userInitials = computed(() => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #dde1ff;
-  color: #001453;
+  background-color: var(--color-primary-muted);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 0.875rem;
 }
-.sidebar-user-name { font-size: 0.875rem; font-weight: 600; color: #121c28; }
-.sidebar-user-role { font-size: 0.75rem; color: #444653; }
+.sidebar-user-name { font-size: 0.875rem; font-weight: 600; color: var(--color-gray-900); }
+.sidebar-user-role { font-size: 0.75rem; color: var(--color-gray-600); }
 
 /* Page transitions */
 .admin-page-enter-active {
@@ -338,8 +344,8 @@ const userInitials = computed(() => {
 /* Footer */
 .admin-footer {
   margin-top: auto;
-  background-color: #d9e3f4;
-  border-top: 1px solid rgba(196, 197, 213, 0.3);
+  background-color: #fef3c7;
+  border-top: 1px solid rgba(253, 230, 138, 0.3);
   padding: 1rem 1.5rem;
 }
 .footer-inner {
@@ -352,9 +358,9 @@ const userInitials = computed(() => {
 @media (min-width: 768px) {
   .footer-inner { flex-direction: row; justify-content: space-between; }
 }
-.footer-copy { font-size: 0.75rem; color: #444653; }
+.footer-copy { font-size: 0.75rem; color: var(--color-gray-600); }
 .footer-links { display: flex; gap: 1rem; }
-.footer-links a { font-size: 0.75rem; color: #444653; text-decoration: none; }
+.footer-links a { font-size: 0.75rem; color: var(--color-gray-600); text-decoration: none; }
 .footer-links a:hover { color: var(--color-primary); }
 
 /* FAB */
@@ -381,8 +387,8 @@ const userInitials = computed(() => {
 .fab-tooltip {
   position: absolute;
   right: calc(100% + 1rem);
-  background-color: #27313e;
-  color: #eaf1ff;
+  background-color: var(--color-gray-800);
+  color: var(--color-primary-light);
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -401,8 +407,8 @@ const userInitials = computed(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  background-color: #eef4ff;
-  border-bottom: 1px solid rgba(196,197,213,0.2);
+  background-color: #fef3c7;
+  border-bottom: 1px solid rgba(253,230,138,0.2);
 }
 @media (max-width: 1023px) {
   .mobile-header { display: flex; }
@@ -539,8 +545,8 @@ const userInitials = computed(() => {
   align-items: center;
   gap: 0;
   padding: 0.375rem 0.25rem;
-  background-color: #f8f9ff;
-  border-top: 1px solid rgba(196,197,213,0.1);
+  background-color: var(--color-primary-light);
+  border-top: 1px solid rgba(253,230,138,0.1);
   box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
 }
 @media (min-width: 1024px) { .mobile-bottom-nav { display: none; } }
@@ -563,11 +569,11 @@ const userInitials = computed(() => {
   border: none;
   background: none;
   border-radius: 50%;
-  color: #444653;
+  color: var(--color-gray-600);
   cursor: pointer;
   transition: background 0.15s;
 }
-.mobile-nav-arrow:hover { background-color: #dfe9fa; }
+.mobile-nav-arrow:hover { background-color: #fde68a; }
 .mobile-nav-arrow:disabled { opacity: 0.2; cursor: default; }
 .mobile-nav-arrow:disabled:hover { background: none; }
 .mobile-nav-arrow .material-symbols-outlined { font-size: 1.25rem; }
@@ -578,14 +584,14 @@ const userInitials = computed(() => {
   align-items: center;
   justify-content: center;
   flex: 1;
-  color: #444653;
+  color: var(--color-gray-600);
   text-decoration: none;
   padding: 0.25rem 0.25rem;
   border-radius: 9999px;
   transition: background 0.15s;
   max-width: 4.5rem;
 }
-.mobile-nav-item:active { background-color: #dfe9fa; }
+.mobile-nav-item:active { background-color: #fde68a; }
 .mobile-nav-active { color: var(--color-primary); }
 .mobile-nav-item .material-symbols-outlined { font-size: 1.375rem; }
 .mobile-icon-fill { font-variation-settings: 'FILL' 1; }

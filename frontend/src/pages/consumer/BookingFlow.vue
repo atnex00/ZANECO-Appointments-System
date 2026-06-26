@@ -26,7 +26,7 @@
             <div class="stepper-fill-line" :style="{ width: progressLineWidth + '%' }"></div>
             <div v-for="(s, i) in stepLabels" :key="i" class="stepper-dot-wrap" :class="{ active: currentStep === i + 1, completed: currentStep > i + 1 }">
               <div class="stepper-dot">
-                <span v-if="currentStep > i + 1" class="material-symbols-outlined" style="font-size:1.125rem">check</span>
+                <span v-if="currentStep > i + 1" class="material-symbols-outlined" style="font-size:1.25rem">check</span>
                 <span v-else>{{ i + 1 }}</span>
               </div>
               <span class="stepper-dot-label hide-mobile">{{ s }}</span>
@@ -75,7 +75,6 @@
                   <input v-model="form.accountNumber" class="form-input" placeholder="1000293481" maxlength="8" inputmode="numeric" aria-required="true" />
                   <span v-if="errors.accountNumber" class="form-error" role="alert">{{ errors.accountNumber }}</span>
                 </div>
-
                 <div class="form-group">
                   <label class="form-label">Email Address</label>
                   <input v-model="form.email" class="form-input" placeholder="juan@example.com" type="email" autocomplete="email" />
@@ -259,7 +258,7 @@ const stepContent = {
 const progressLineWidth = computed(() => ((currentStep.value - 1) / (stepLabels.length - 1)) * 100)
 const progressPercent = computed(() => Math.round((currentStep.value / stepLabels.length) * 100))
 
-// --- Form state (matching reference layout) ---
+// --- Form state ---
 const form = reactive({
   fullName: store.consumerName || '',
   accountName: store.accountName || '',
@@ -431,19 +430,19 @@ async function submitBooking() {
 .book-header-right { display: flex; align-items: center; gap: 0.75rem; }
 .book-my-btn { display: flex; align-items: center; gap: 0.375rem; padding: 0.5rem 0.75rem; border-radius: var(--radius-lg); color: var(--color-gray-600); text-decoration: none; font-size: var(--font-size-sm); font-weight: 500; }
 .book-my-btn:hover { background-color: var(--color-gray-100); }
-.header-divider { width: 1px; height: 24px; background-color: var(--color-gray-300); }
+.header-divider { width: 1px; height: 24px; background-color: var(--color-gray-200); }
 
 .book-main { flex: 1; padding: 2.5rem 1rem; }
 .book-container { max-width: 640px; margin: 0 auto; }
 
 /* Stepper */
-.stepper-wrapper { margin-bottom: 2rem; }
+.stepper-wrapper { margin-bottom: 2.5rem; }
 .stepper-track { position: relative; display: flex; justify-content: space-between; }
 .stepper-bg-line { position: absolute; top: 50%; left: 0; right: 0; height: 3px; background: var(--color-gray-200); transform: translateY(-50%); border-radius: 2px; }
 .stepper-fill-line { position: absolute; top: 50%; left: 0; height: 3px; background: var(--color-primary); transform: translateY(-50%); transition: width 0.4s ease; border-radius: 2px; }
-.stepper-dot-wrap { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 0.375rem; background-color: var(--color-bg); padding: 0 0.5rem; }
+.stepper-dot-wrap { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; background-color: var(--color-bg); padding: 0 0.5rem; }
 .stepper-dot {
-  width: 36px; height: 36px; border-radius: 50%;
+  width: 40px; height: 40px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: var(--font-size-sm); font-weight: 700;
   border: 2px solid var(--color-gray-300);
@@ -459,16 +458,14 @@ async function submitBooking() {
 
 /* Wizard Card */
 .wizard-card { background-color: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-md); }
-.wizard-header { padding: 1.5rem; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: flex-start; }
-.wizard-title { font-size: 1.5rem; font-weight: 700; color: var(--color-gray-900); }
-.wizard-desc { font-size: var(--font-size-sm); color: var(--color-gray-500); margin-top: 0.25rem; }
+.wizard-header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: flex-start; background-color: var(--color-bg); }
+.wizard-title { font-size: 1.375rem; font-weight: 700; color: var(--color-gray-900); }
+.wizard-desc { font-size: var(--font-size-sm); color: var(--color-text-muted); margin-top: 0.25rem; }
 .wizard-progress { text-align: right; }
-.progress-label { font-size: var(--font-size-xs); color: var(--color-gray-500); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.progress-label { font-size: var(--font-size-xs); color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
 .progress-pct { font-size: 1.5rem; font-weight: 700; color: var(--color-primary); }
 
-.wizard-body { padding: 1.5rem; min-height: 280px; }
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.wizard-body { padding: 2rem; min-height: 300px; }
 
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
@@ -486,7 +483,7 @@ async function submitBooking() {
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 .office-radio-inner {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 1rem; border: 1px solid var(--color-gray-200); border-radius: var(--radius-xl);
+  padding: 1rem 1.25rem; border: 1px solid var(--color-border); border-radius: var(--radius-xl);
   transition: all 0.15s;
 }
 .office-radio:hover .office-radio-inner { background-color: var(--color-gray-50); }
@@ -500,19 +497,19 @@ async function submitBooking() {
 .office-radio-checked .office-radio-icon { background-color: var(--color-primary-muted); }
 .office-radio-icon .material-symbols-outlined { font-size: 1.25rem; color: var(--color-primary); }
 .office-radio-name { font-weight: 700; font-size: var(--font-size-sm); }
-.office-radio-addr { font-size: var(--font-size-sm); color: var(--color-gray-500); }
+.office-radio-addr { font-size: var(--font-size-sm); color: var(--color-text-muted); }
 .slot-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 0.25rem 0.625rem; border-radius: 9999px; background-color: var(--color-success-light); color: var(--color-success); }
 
 /* Calendar */
-.calendar-card { border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; }
+.calendar-card { border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: 1.25rem; margin-bottom: 1rem; }
 .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
 .cal-nav-btn { background: none; border: none; padding: 0.25rem; border-radius: var(--radius-sm); color: var(--color-gray-600); cursor: pointer; }
 .cal-nav-btn:hover { background-color: var(--color-gray-100); }
 .cal-nav-btn .material-symbols-outlined { font-size: 1.25rem; }
 .cal-month-label { font-weight: 700; font-size: var(--font-size-sm); }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.cal-day-header { text-align: center; font-size: 10px; font-weight: 700; color: var(--color-gray-500); padding: 0.375rem 0; }
-.cal-cell { text-align: center; padding: 0.5rem; border-radius: var(--radius-md); font-size: var(--font-size-sm); cursor: pointer; }
+.cal-day-header { text-align: center; font-size: 10px; font-weight: 700; color: var(--color-text-muted); padding: 0.375rem 0; }
+.cal-cell { text-align: center; padding: 0.5rem; border-radius: var(--radius-md); font-size: var(--font-size-sm); cursor: pointer; transition: background-color 0.1s; }
 .cal-cell:hover:not(.cal-cell-empty):not(.cal-cell-disabled) { background-color: var(--color-primary-light); }
 .cal-cell-empty { cursor: default; }
 .cal-cell-disabled { color: var(--color-gray-300); cursor: not-allowed; }
@@ -530,17 +527,17 @@ async function submitBooking() {
 .review-card-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; gap: 0.5rem; font-size: var(--font-size-sm); }
 .review-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; font-size: var(--font-size-sm); border-bottom: 1px solid var(--color-border); }
 .review-row:last-child { border-bottom: none; }
-.review-label { color: var(--color-gray-500); font-weight: 600; }
+.review-label { color: var(--color-text-muted); font-weight: 600; }
 
 .consent-box { display: flex; align-items: flex-start; gap: 0.75rem; margin-top: 1rem; padding: 1rem; background-color: var(--color-gray-50); border-radius: var(--radius-xl); }
 .consent-checkbox { margin-top: 0.125rem; width: 20px; height: 20px; accent-color: var(--color-primary); cursor: pointer; }
 .consent-label { font-size: var(--font-size-sm); color: var(--color-gray-600); cursor: pointer; }
 
 /* Submit error */
-.submit-error { display: flex; align-items: center; gap: 0.5rem; margin: 0 1.5rem 0.75rem; padding: 0.75rem 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md); color: #dc2626; font-size: var(--font-size-sm); font-weight: 600; }
+.submit-error { display: flex; align-items: center; gap: 0.5rem; margin: 0 2rem; padding: 0.75rem 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md); color: #dc2626; font-size: var(--font-size-sm); font-weight: 600; }
 
 /* Footer */
-.wizard-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; }
+.wizard-footer { padding: 1rem 2rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .wizard-back-btn { display: flex; align-items: center; gap: 0.375rem; background: none; border: none; color: var(--color-gray-500); font-weight: 700; font-size: var(--font-size-sm); cursor: pointer; }
 .wizard-back-btn:hover { color: var(--color-primary); }
 .wizard-next-btn, .wizard-submit-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 2rem; border-radius: var(--radius-xl); font-weight: 700; font-size: var(--font-size-sm); cursor: pointer; border: none; transition: all 0.15s; }
@@ -551,7 +548,7 @@ async function submitBooking() {
 .wizard-submit-btn:hover { background-color: #047857; }
 .wizard-submit-btn:active { transform: scale(0.98); }
 
-.help-text { text-align: center; margin-top: 1.5rem; font-size: var(--font-size-sm); color: var(--color-gray-500); }
+.help-text { text-align: center; margin-top: 1.5rem; font-size: var(--font-size-sm); color: var(--color-text-muted); }
 
 /* Step transitions */
 .step-fade-enter-active,
@@ -570,13 +567,18 @@ async function submitBooking() {
 .book-footer { background-color: var(--color-gray-50); border-top: 1px solid var(--color-border); padding: 1.5rem; }
 .book-footer-inner { max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
 .footer-links { display: flex; gap: 1.5rem; }
-.footer-links a { font-size: var(--font-size-sm); color: var(--color-gray-500); text-decoration: none; }
+.footer-links a { font-size: var(--font-size-sm); color: var(--color-text-muted); text-decoration: none; }
 .footer-links a:hover { color: var(--color-primary); }
 
 @media (max-width: 768px) {
   .hide-mobile { display: none; }
   .form-grid-2 { grid-template-columns: 1fr; }
   .timeslot-grid { grid-template-columns: repeat(2, 1fr); }
+  .stepper-dot { width: 34px; height: 34px; }
   .book-footer-inner { flex-direction: column; text-align: center; }
+  .wizard-body { padding: 1.25rem; }
+  .wizard-header { padding: 1.25rem; }
+  .wizard-footer { padding: 1rem 1.25rem; }
+  .submit-error { margin: 0 1.25rem; }
 }
 </style>

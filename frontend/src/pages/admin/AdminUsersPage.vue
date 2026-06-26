@@ -37,9 +37,9 @@
                 <td class="td-muted">{{ user.email }}</td>
                 <td><span class="role-badge" :class="'role-' + user.role">{{ user.role }}</span></td>
                 <td class="td-muted">{{ officeName(user.office_id) }}</td>
-                <td><span class="status-badge" :class="user.is_active ? 'status-confirmed' : 'status-cancelled'">{{ user.is_active ? 'Active' : 'Inactive' }}</span></td>
+                <td><span class="badge" :class="user.is_active ? 'badge-confirmed' : 'badge-cancelled'">{{ user.is_active ? 'Active' : 'Inactive' }}</span></td>
                 <td>
-                  <span v-if="isLocked(user)" class="status-badge status-locked">Locked</span>
+                  <span v-if="isLocked(user)" class="badge badge-cancelled">Locked</span>
                   <span v-else class="text-muted" style="font-size:0.75rem">—</span>
                 </td>
                 <td class="td-date">{{ user.last_login_at ? user.last_login_at.slice(0, 10) : 'Never' }}</td>
@@ -122,8 +122,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { adminApi } from '../../api/admin'
+import { useToast } from '../../composables/useToast'
 
 const auth = useAuthStore()
+const toast = useToast()
 const isSuperAdmin = computed(() => auth.user?.role === 'super_admin')
 
 const users = ref([])
@@ -159,9 +161,9 @@ function editUser(user) {
 }
 
 async function saveUser() {
-  if (!form.value.full_name || !form.value.email) { alert('Name and email are required'); return }
-  if (!editingUser.value && !form.value.password) { alert('Password is required for new users'); return }
-  if (!editingUser.value && form.value.password.length < 8) { alert('Password must be at least 8 characters'); return }
+  if (!form.value.full_name || !form.value.email) { toast.warning('Name and email are required'); return }
+  if (!editingUser.value && !form.value.password) { toast.warning('Password is required for new users'); return }
+  if (!editingUser.value && form.value.password.length < 8) { toast.warning('Password must be at least 8 characters'); return }
   saving.value = true
   try {
     if (editingUser.value) {
@@ -175,7 +177,7 @@ async function saveUser() {
     editingUser.value = null
     await fetchUsers()
   } catch (err) {
-    alert('Error: ' + (err.response?.data?.error?.message || err.message))
+    toast.error('Error: ' + (err.response?.data?.error?.message || err.message))
   } finally { saving.value = false }
 }
 
@@ -189,7 +191,7 @@ async function unlockUser(user) {
     await adminApi.unlockUser(user.id)
     await fetchUsers()
   } catch (err) {
-    alert('Error: ' + (err.response?.data?.error?.message || err.message))
+    toast.error('Error: ' + (err.response?.data?.error?.message || err.message))
   }
 }
 
@@ -199,7 +201,7 @@ async function toggleActive(user) {
     user.isActive = !user.isActive
     await fetchUsers()
   } catch (err) {
-    alert('Error: ' + (err.response?.data?.error?.message || err.message))
+    toast.error('Error: ' + (err.response?.data?.error?.message || err.message))
   }
 }
 
@@ -207,41 +209,41 @@ onMounted(() => { fetchUsers(); fetchOffices() })
 </script>
 
 <style scoped>
-.header-title { font-size: 1.25rem; font-weight: 600; color: #121c28; }
-.ap-header { position: sticky; top: 0; z-index: 20; background-color: #f8f9ff; border-bottom: 1px solid rgba(196,197,213,0.3); padding: 0.75rem 1.5rem; display: flex; align-items: center; }
+.header-title { font-size: 1.25rem; font-weight: 600; color: var(--color-gray-900); }
+.ap-header { position: sticky; top: 0; z-index: 20; background-color: var(--color-primary-light); border-bottom: 1px solid rgba(196,197,213,0.3); padding: 0.75rem 1.5rem; display: flex; align-items: center; }
 .ap-header-left { display: flex; align-items: center; gap: 0.75rem; }
-.menu-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: none; background: none; border-radius: 50%; color: #121c28; cursor: pointer; margin-left: -0.5rem; }
-.menu-btn:hover { background-color: #dfe9fa; }
+.menu-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: none; background: none; border-radius: 50%; color: var(--color-gray-900); cursor: pointer; margin-left: -0.5rem; }
+.menu-btn:hover { background-color: var(--color-primary-muted); }
 @media (min-width: 1024px) { .menu-btn { display: none; } }
 .ap-new-btn { display: flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1rem; border-radius: var(--radius-xl); background-color: var(--color-primary); border: none; color: var(--color-white); font-size: 0.875rem; font-weight: 600; cursor: pointer; white-space: nowrap; margin-left: auto; }
 .ap-new-btn:hover { filter: brightness(1.1); }
 
 .ap-content { padding: 1.5rem; }
 .access-denied { text-align: center; padding: 4rem 2rem; }
-.access-denied h2 { font-size: 1.5rem; margin: 1rem 0 0.5rem; color: #121c28; }
-.access-denied p { color: #444653; }
+.access-denied h2 { font-size: 1.5rem; margin: 1rem 0 0.5rem; color: var(--color-gray-900); }
+.access-denied p { color: var(--color-gray-600); }
 
-.ap-table-wrap { background-color: var(--color-white); border: 1px solid #c4c5d5; border-radius: var(--radius-xl); overflow: hidden; }
+.ap-table-wrap { background-color: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-xl); overflow: hidden; }
 .ap-table-scroll { overflow-x: auto; }
 .ap-table { width: 100%; min-width: 800px; border-collapse: collapse; }
-.ap-table th { padding: 0.75rem 1.25rem; background-color: #eef4ff; border-bottom: 1px solid #c4c5d5; font-size: 0.75rem; font-weight: 600; color: #444653; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; }
+.ap-table th { padding: 0.75rem 1.25rem; background-color: var(--color-primary-muted); border-bottom: 1px solid var(--color-border); font-size: 0.75rem; font-weight: 600; color: var(--color-gray-600); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; }
 .th-right { text-align: right; }
 .ap-table td { padding: 0.625rem 1.25rem; font-size: 0.875rem; border-bottom: 1px solid rgba(196,197,213,0.3); }
-.ap-row:hover td { background-color: #eef4ff; }
-.td-name { font-weight: 600; color: #121c28; }
-.td-muted { color: #444653; }
-.td-date { color: #121c28; }
-.td-empty { text-align: center; color: #757684; padding: 2rem; }
+.ap-row:hover td { background-color: var(--color-primary-muted); }
+.td-name { font-weight: 600; color: var(--color-gray-900); }
+.td-muted { color: var(--color-gray-600); }
+.td-date { color: var(--color-gray-900); }
+.td-empty { text-align: center; color: var(--color-gray-400); padding: 2rem; }
 .td-actions { text-align: right; white-space: nowrap; }
-.row-action { padding: 0.375rem; border: none; background: none; border-radius: 50%; color: #444653; cursor: pointer; vertical-align: middle; }
-.row-action:hover { background-color: #d9e3f4; }
+.row-action { padding: 0.375rem; border: none; background: none; border-radius: 50%; color: var(--color-gray-600); cursor: pointer; vertical-align: middle; }
+.row-action:hover { background-color: #fde68a; }
 
 .role-badge { display: inline-block; padding: 0.2rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
 .role-super_admin { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-.role-office_manager { background-color: #eef4ff; color: #1e40af; border: 1px solid #b8c4ff; }
+.role-office_manager { background-color: var(--color-primary-muted); color: #1e40af; border: 1px solid #b8c4ff; }
 .role-staff { background-color: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
 
-.status-badge { display: inline-block; padding: 0.2rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
+
 .status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .status-cancelled { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
 .status-locked { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }

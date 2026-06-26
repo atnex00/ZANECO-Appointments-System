@@ -52,7 +52,7 @@
             <p class="card-name">{{ apt.consumer_name }}</p>
             <p class="card-concern">{{ apt.concern_type }}</p>
           </div>
-          <span class="status-badge" :class="'status-' + apt.status">{{ apt.status }}</span>
+          <span class="badge" :class="'badge-' + apt.status">{{ apt.status }}</span>
         </div>
 
         <div v-if="expandedId === apt.id" class="card-detail">
@@ -235,8 +235,10 @@ import { useAuthStore } from '../../stores/auth'
 import { adminApi } from '../../api/admin'
 import { consumerApi } from '../../api/consumer'
 import { storeToRefs } from 'pinia'
+import { useToast } from '../../composables/useToast'
 
 const auth = useAuthStore()
+const toast = useToast()
 
 const appointments = ref([])
 const offices = ref([])
@@ -378,7 +380,7 @@ async function confirmArrival(apt) {
   try {
     await adminApi.updateAppointmentStatus(apt.id, { status: 'confirmed' })
     apt.status = 'confirmed'
-  } catch (err) { console.error('Confirm arrival failed:', err); alert('Failed to confirm arrival. Please try again.') }
+  } catch (err) { console.error('Confirm arrival failed:', err); toast.error('Failed to confirm arrival. Please try again.') }
 }
 
 function openComplete(apt) {
@@ -396,7 +398,7 @@ async function completeService() {
     actionApt.value.admin_notes = serviceNotes.value
     showCompleteModal.value = false
     actionApt.value = null
-  } catch (err) { console.error('Complete service failed:', err); alert('Failed to complete service. Please try again.') } finally {
+  } catch (err) { console.error('Complete service failed:', err); toast.error('Failed to complete service. Please try again.') } finally {
     saving.value = false
   }
 }
@@ -416,7 +418,7 @@ async function cancelAppointment() {
     actionApt.value.admin_notes = cancelReason.value
     showCancelModal.value = false
     actionApt.value = null
-  } catch (err) { console.error('Cancel failed:', err); alert('Failed to cancel appointment. Please try again.') } finally {
+  } catch (err) { console.error('Cancel failed:', err); toast.error('Failed to cancel appointment. Please try again.') } finally {
     saving.value = false
   }
 }
@@ -436,7 +438,7 @@ async function rejectAppointment() {
     actionApt.value.admin_notes = rejectReason.value
     showRejectModal.value = false
     actionApt.value = null
-  } catch (err) { console.error('Reject failed:', err); alert('Failed to reject appointment. Please try again.') } finally {
+  } catch (err) { console.error('Reject failed:', err); toast.error('Failed to reject appointment. Please try again.') } finally {
     saving.value = false
   }
 }
@@ -485,7 +487,7 @@ async function rescheduleAppointment() {
     actionApt.value.admin_notes = rescheduleReason.value
     showRescheduleModal.value = false
     actionApt.value = null
-  } catch (err) { console.error('Reschedule failed:', err); alert('Failed to reschedule appointment. Please try again.') } finally {
+  } catch (err) { console.error('Reschedule failed:', err); toast.error('Failed to reschedule appointment. Please try again.') } finally {
     saving.value = false
   }
 }
@@ -494,7 +496,7 @@ async function markNoShow(apt) {
   try {
     await adminApi.updateAppointmentStatus(apt.id, { status: 'no_show' })
     apt.status = 'no_show'
-  } catch (err) { console.error('Mark no-show failed:', err); alert('Failed to mark as no-show. Please try again.') }
+  } catch (err) { console.error('Mark no-show failed:', err); toast.error('Failed to mark as no-show. Please try again.') }
 }
 
 async function reopen(apt) {
@@ -503,7 +505,7 @@ async function reopen(apt) {
     apt.status = 'pending'
   } catch (err) {
     console.error('Reopen failed:', err)
-    alert('Failed to reopen appointment. Please try again.')
+    toast.error('Failed to reopen appointment. Please try again.')
   }
 }
 
@@ -513,7 +515,7 @@ async function archiveApt(apt) {
     apt.status = 'archived'
   } catch (err) {
     console.error('Archive failed:', err)
-    alert('Failed to archive appointment. Please try again.')
+    toast.error('Failed to archive appointment. Please try again.')
   }
 }
 
@@ -806,7 +808,7 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
 .action-reject:hover { background-color: #f48fb1; }
 .action-noshow { background-color: #f3f4f6; color: #4b5563; }
 .action-noshow:hover { background-color: #e5e7eb; }
-.action-outline { background-color: #eef4ff; color: #1e40af; }
+.action-outline { background-color: var(--color-primary-muted); color: #1e40af; }
 .action-outline:hover { background-color: #dbeafe; }
 .action-reopen { background-color: #fef3c7; color: #92400e; }
 .action-reopen:hover { background-color: #fde68a; }
@@ -941,26 +943,7 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
 }
 .refresh-btn:hover { background-color: var(--color-primary-light); }
 
-/* Status badges */
-.status-badge {
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  white-space: nowrap;
-}
-
-.status-pending { background-color: #fef3c7; color: #92400e; }
-.status-confirmed { background-color: #dbeafe; color: #1e40af; }
-.status-rescheduled { background-color: #f3e8ff; color: #6b21a8; }
-.status-completed { background-color: #d1fae5; color: #065f46; }
-.status-cancelled { background-color: #fee2e2; color: #991b1b; }
-.status-rejected { background-color: #fce4ec; color: #991b1b; }
-.status-noshow { background-color: #f3f4f6; color: #4b5563; }
-.status-archived { background-color: #f3f4f6; color: #6b7280; }
+/* Status badges removed — uses global .badge */
 
 /* Reschedule slot grid */
 .reschedule-slot-grid {

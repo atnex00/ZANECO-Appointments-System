@@ -49,7 +49,7 @@
                 <td class="td-name">{{ apt.consumer_name }}</td>
                 <td class="td-date">{{ apt.appointment_date }}</td>
                 <td class="td-date">{{ apt.start_time?.slice(0,5) }}</td>
-                <td><span class="status-badge" :class="'status-' + apt.status">{{ statusLabel(apt.status) }}</span></td>
+                <td><span class="badge" :class="'badge-' + apt.status">{{ statusLabel(apt.status) }}</span></td>
                 <td class="td-actions">
                   <router-link :to="`/admin/appointments/${apt.id}`" class="row-action" title="View"><span class="material-symbols-outlined">visibility</span></router-link>
                   <button v-if="apt.status === 'pending'" class="row-action" @click="quickAction(apt.id, 'confirmed', $event)" title="Confirm"><span class="material-symbols-outlined">check_circle</span></button>
@@ -126,24 +126,24 @@ onMounted(async () => {
 <style scoped>
 .ap-content { padding: 1.5rem; }
 .ap-title-row { margin-bottom: 1.5rem; }
-.ap-title { font-size: 1.75rem; font-weight: 700; color: #121c28; }
-.ap-subtitle { font-size: 0.875rem; color: #444653; margin-top: 0.25rem; }
+.ap-title { font-size: 1.75rem; font-weight: 700; color: var(--color-gray-900); }
+.ap-subtitle { font-size: 0.875rem; color: var(--color-gray-600); margin-top: 0.25rem; }
 
 .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-.stat-card { background-color: #eef4ff; padding: 1rem; border-radius: var(--radius-xl); border: 1px solid #c4c5d5; display: flex; flex-direction: column; justify-content: space-between; min-height: 100px; }
-.stat-label { font-size: 0.75rem; font-weight: 600; color: #444653; text-transform: uppercase; letter-spacing: 0.05em; }
-.stat-value { font-size: 2rem; font-weight: 700; }
-.muted { color: #9ca3af; }
+.stat-card { background-color: var(--color-white); padding: 1.25rem; border-radius: var(--radius-xl); border: 1px solid var(--color-border); display: flex; flex-direction: column; justify-content: space-between; min-height: 100px; box-shadow: var(--shadow-sm); transition: box-shadow 0.15s ease; }
+.stat-card:hover { box-shadow: var(--color-shadow-amber); }
+.stat-label { font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-value { font-size: 2.25rem; font-weight: 700; }
 
 .chart-row { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-.chart-card { background-color: var(--color-white); border: 1px solid #c4c5d5; border-radius: var(--radius-xl); padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.chart-title { font-size: 1rem; font-weight: 600; color: #121c28; margin-bottom: 1rem; }
+.chart-card { background-color: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.chart-title { font-size: 1rem; font-weight: 600; color: var(--color-gray-900); margin-bottom: 1rem; }
 .chart-card :deep(canvas) { max-height: 220px; }
 .quick-actions { display: flex; flex-direction: column; gap: 0.75rem; }
 .dash-btn { display: block; text-align: center; padding: 0.625rem 1rem; border-radius: var(--radius-lg); font-size: 0.875rem; font-weight: 600; text-decoration: none; transition: all 0.15s; }
 .dash-btn-primary { background-color: var(--color-primary); color: var(--color-white); }
 .dash-btn-primary:hover { background-color: var(--color-primary-hover); }
-.dash-btn-outline { background: var(--color-white); color: #444653; border: 1px solid #c4c5d5; }
+.dash-btn-outline { background: var(--color-white); color: var(--color-gray-600); border: 1px solid var(--color-border); }
 .dash-btn-outline:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 /* Recent Appointments */
@@ -152,28 +152,22 @@ onMounted(async () => {
 .view-all-link { font-size: 0.875rem; font-weight: 600; color: var(--color-primary); text-decoration: none; }
 .view-all-link:hover { text-decoration: underline; }
 
-.ap-table-wrap { background-color: var(--color-white); border: 1px solid #c4c5d5; border-radius: var(--radius-xl); overflow: hidden; }
+.ap-table-wrap { background-color: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-xl); overflow: hidden; }
 .ap-table-scroll { overflow-x: auto; }
 .ap-table { width: 100%; min-width: 650px; border-collapse: collapse; }
-.ap-table th { padding: 0.75rem 1.25rem; background-color: #eef4ff; border-bottom: 1px solid #c4c5d5; font-size: 0.75rem; font-weight: 600; color: #444653; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; }
+.ap-table th { padding: 0.875rem 1.25rem; background-color: var(--color-bg); border-bottom: 2px solid var(--color-primary); font-size: 0.75rem; font-weight: 600; color: var(--color-gray-700); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; }
 .th-right { text-align: right; }
-.ap-table td { padding: 0.625rem 1.25rem; font-size: 0.875rem; border-bottom: 1px solid rgba(196,197,213,0.3); }
-.ap-row:hover td { background-color: #eef4ff; }
-.td-ref { font-weight: 700; color: var(--color-primary); font-size: 0.8125rem; font-family: monospace; }
-.td-name { font-weight: 600; color: #121c28; }
-.td-date { color: #121c28; }
+.ap-table td { padding: 0.75rem 1.25rem; font-size: 0.875rem; border-bottom: 1px solid var(--color-gray-100); color: var(--color-text); }
+.ap-row:hover td { background-color: var(--color-primary-light); }
+.ap-row:nth-child(even) td { background-color: var(--color-gray-50); }
+.ap-row:nth-child(even):hover td { background-color: var(--color-primary-light); }
+.td-ref { font-weight: 700; color: var(--color-primary); font-size: 0.8125rem; }
+.td-name { font-weight: 600; color: var(--color-text); }
+.td-date { color: var(--color-text); }
 .td-actions { text-align: right; white-space: nowrap; }
-.row-action { display: inline-flex; padding: 0.375rem; border: none; background: none; border-radius: 50%; color: #444653; cursor: pointer; vertical-align: middle; text-decoration: none; }
-.row-action:hover { background-color: #d9e3f4; }
-
-.status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
-.status-pending { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-.status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
-.status-rescheduled { background-color: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
-.status-cancelled { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-.status-rejected { background-color: #fce4ec; color: #991b1b; border: 1px solid #f48fb1; }
-.status-completed { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
-.status-no_show { background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.row-action { display: inline-flex; padding: 0.375rem; border: none; background: none; border-radius: 50%; color: var(--color-gray-600); cursor: pointer; vertical-align: middle; text-decoration: none; }
+.row-action:hover { background-color: #fde68a; }
+.row-action .material-symbols-outlined { font-size: 1.25rem; }
 
 @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } .chart-row { grid-template-columns: 1fr; } }
 </style>

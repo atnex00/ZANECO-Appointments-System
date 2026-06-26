@@ -113,7 +113,7 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.login-page { width: 100%; min-height: 100vh; background-color: #f8f9ff; color: #121c28; font-family: 'Inter', sans-serif; }
+.login-page { width: 100%; min-height: 100vh; background-color: var(--color-gray-50); color: var(--color-gray-900); font-family: var(--font-family); }
 .login-shell { display: flex; min-height: 100vh; width: 100%; flex-direction: column; }
 @media (min-width: 768px) { .login-shell { flex-direction: row; } }
 
@@ -126,16 +126,14 @@ async function handleLogin() {
 .hero-grid { position: absolute; inset: 0; z-index: 2; opacity: 0.06; pointer-events: none; background-image: radial-gradient(#d97706 0.5px, transparent 0.5px); background-size: 24px 24px; }
 .hero-content { position: relative; z-index: 3; display: flex; flex-direction: column; justify-content: flex-end; padding: 2.5rem; height: 100%; width: 100%; padding-bottom: 6rem; }
 .hero-brand { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
-.hero-bolt { font-size: 2.25rem; color: var(--color-primary); font-variation-settings: 'FILL' 1; }
 .hero-logo { height: 48px; width: auto; object-fit: contain; }
-.hero-title { font-family: 'Hanken Grotesk', sans-serif; font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; text-transform: uppercase; color: #121c28; }
-.hero-headline { font-family: 'Hanken Grotesk', sans-serif; font-size: 2.5rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; color: #121c28; margin-bottom: 0.5rem; max-width: 540px; }
+.hero-headline { font-family: var(--font-family-heading); font-size: 2.5rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; color: var(--color-gray-900); margin-bottom: 0.5rem; max-width: 540px; }
 @media (min-width: 1024px) { .hero-headline { font-size: 3rem; } }
 .hero-highlight { color: var(--color-primary); }
-.hero-desc { font-size: 1rem; line-height: 1.5; color: #444653; max-width: 420px; }
+.hero-desc { font-size: 1rem; line-height: 1.5; color: var(--color-gray-600); max-width: 420px; }
 
 /* Form (Right) */
-.login-form-section { display: flex; flex-direction: column; width: 100%; background-color: #f8f9ff; border-left: 1px solid #e5e7eb; align-items: center; justify-content: center; padding: 2rem 1rem 1rem; }
+.login-form-section { display: flex; flex-direction: column; width: 100%; background-color: var(--color-gray-50); border-left: 1px solid var(--color-border); align-items: center; justify-content: center; padding: 2rem 1rem 1rem; }
 @media (min-width: 768px) { .login-form-section { width: 40%; padding: 2.5rem; } }
 @media (min-width: 1024px) { .login-form-section { width: 33.333%; } }
 .form-container { width: 100%; max-width: 384px; display: flex; flex-direction: column; gap: 1.5rem; animation: formIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both; }
@@ -143,27 +141,26 @@ async function handleLogin() {
 .mobile-brand { display: flex; align-items: center; gap: 0.5rem; }
 @media (min-width: 768px) { .mobile-brand { display: none; } }
 .mobile-logo { height: 40px; width: auto; object-fit: contain; }
-.mobile-brand-text { font-family: 'Hanken Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700; color: #121c28; }
-.form-heading { font-family: 'Hanken Grotesk', sans-serif; font-size: 2rem; font-weight: 600; color: #121c28; letter-spacing: -0.02em; line-height: 1.1; }
-.form-subtext { font-size: 1rem; color: #444653; margin-top: 0.25rem; }
+.form-heading { font-family: var(--font-family-heading); font-size: 2rem; font-weight: 600; color: var(--color-gray-900); letter-spacing: -0.02em; line-height: 1.1; }
+.form-subtext { font-size: 1rem; color: var(--color-gray-600); margin-top: 0.25rem; }
 .login-form { display: flex; flex-direction: column; gap: 1.25rem; }
 .field-group { display: flex; flex-direction: column; gap: 0.5rem; }
-.field-label { font-family: 'Geist', sans-serif; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: #757684; }
+.field-label { font-family: var(--font-family); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-gray-400); }
 .password-header { display: flex; justify-content: space-between; align-items: flex-end; }
-.forgot-link { font-family: 'Geist', sans-serif; font-size: 0.75rem; font-weight: 500; color: var(--color-primary); text-decoration: none; }
+.forgot-link { font-family: var(--font-family); font-size: 0.75rem; font-weight: 500; color: var(--color-primary); text-decoration: none; }
 .forgot-link:hover { text-decoration: underline; }
 .input-wrap { position: relative; display: flex; align-items: center; }
-.input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #757684; font-size: 1.25rem; pointer-events: none; transition: color 0.15s; }
+.input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--color-gray-400); font-size: 1.25rem; pointer-events: none; transition: color 0.15s; }
 .input-wrap:focus-within .input-icon { color: var(--color-primary); }
-.form-input-light { width: 100%; height: 48px; padding: 0 1rem 0 3rem; background-color: #ffffff; border: 1px solid #d1d5db; color: #121c28; font-size: 1rem; outline: none; transition: all 0.15s; border-radius: var(--radius-md); }
-.form-input-light:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(217,119,6,0.15); }
-.form-input-light::placeholder { color: #9ca3af; }
-.toggle-pass { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); color: #757684; background: none; border: none; cursor: pointer; font-size: 1.25rem; padding: 0; }
-.toggle-pass:hover { color: #121c28; }
+.form-input-light { width: 100%; height: 48px; padding: 0 1rem 0 3rem; background-color: var(--color-bg-card); border: 1px solid var(--color-gray-300); color: var(--color-gray-900); font-size: 1rem; outline: none; transition: all 0.15s; border-radius: var(--radius-md); }
+.form-input-light:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-shadow-amber); }
+.form-input-light::placeholder { color: var(--color-gray-400); }
+.toggle-pass { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--color-gray-400); background: none; border: none; cursor: pointer; font-size: 1.25rem; padding: 0; }
+.toggle-pass:hover { color: var(--color-gray-900); }
 .remember-row { display: flex; align-items: center; gap: 0.5rem; }
 .custom-checkbox { width: 16px; height: 16px; accent-color: var(--color-primary); cursor: pointer; }
-.remember-label { font-size: 1rem; color: #444653; cursor: pointer; user-select: none; }
-.alert-error { background-color: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 0.75rem 1rem; font-size: 0.875rem; border-radius: var(--radius-md); }
+.remember-label { font-size: 1rem; color: var(--color-gray-600); cursor: pointer; user-select: none; }
+.alert-error { background-color: var(--color-danger-light); border: 1px solid #fecaca; color: var(--color-danger); padding: 0.75rem 1rem; font-size: 0.875rem; border-radius: var(--radius-md); }
 .submit-wrap { padding-top: 0.25rem; }
 .signin-btn { width: 100%; height: 48px; background-color: var(--color-primary); color: var(--color-white); font-weight: 700; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.15s; border-radius: var(--radius-md); }
 .signin-btn:hover { background-color: var(--color-primary-hover); box-shadow: var(--shadow-md); }
@@ -172,15 +169,13 @@ async function handleLogin() {
 .signin-btn .material-symbols-outlined { font-size: 1.25rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 1s linear infinite; }
-.security-notice { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.75rem; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: var(--radius-md); }
+.security-notice { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.75rem; background-color: var(--color-gray-50); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
 .shield-icon { color: var(--color-primary); font-size: 1.25rem; margin-top: 0.125rem; }
-.notice-text { font-family: 'Geist', sans-serif; font-size: 0.75rem; font-weight: 500; color: #444653; line-height: 1.25; }
+.notice-text { font-family: var(--font-family); font-size: 0.75rem; font-weight: 500; color: var(--color-gray-600); line-height: 1.25; }
 .notice-bold { color: var(--color-primary); font-weight: 700; }
-.demo-hint { text-align: center; }
-.demo-text { font-size: 0.75rem; color: #757684; opacity: 0.8; }
 .login-footer { margin-top: auto; width: 100%; max-width: 384px; display: flex; justify-content: space-between; align-items: center; opacity: 0.6; padding-top: 1.5rem; }
-.version-text { font-family: 'Geist', sans-serif; font-size: 0.75rem; color: #757684; }
+.version-text { font-family: var(--font-family); font-size: 0.75rem; color: var(--color-gray-400); }
 .footer-links { display: flex; gap: 0.75rem; }
-.footer-links a { font-family: 'Geist', sans-serif; font-size: 0.75rem; color: #757684; text-decoration: none; }
+.footer-links a { font-family: var(--font-family); font-size: 0.75rem; color: var(--color-gray-400); text-decoration: none; }
 .footer-links a:hover { color: var(--color-primary); }
 </style>

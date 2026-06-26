@@ -23,18 +23,35 @@
     </main>
     <footer class="consumer-footer">
       <div class="footer-inner">
-        <div class="footer-brand">
-          <img src="/ZANECO_Logo.png" alt="ZANECO" class="footer-logo" />
-          <img src="https://i.imgur.com/SacrqEj.png" alt="DPC" class="footer-logo" />
-          <span class="text-sm text-muted">Zamboanga del Norte Electric Cooperative</span>
+        <div class="footer-top">
+          <div class="footer-brand">
+            <img src="/ZANECO_Logo.png" alt="ZANECO" class="footer-logo" />
+            <img src="https://i.imgur.com/SacrqEj.png" alt="DPC" class="footer-logo" />
+            <span class="text-sm text-muted">Zamboanga del Norte Electric Cooperative</span>
+          </div>
+          <div class="footer-contact">
+            <div class="contact-item">
+              <span class="material-symbols-outlined contact-icon">call</span>
+              <span>(065) 908-1234</span>
+            </div>
+            <div class="contact-item">
+              <span class="material-symbols-outlined contact-icon">mail</span>
+              <span>support@zaneco.ph</span>
+            </div>
+            <div class="contact-item">
+              <span class="material-symbols-outlined contact-icon">location_on</span>
+              <span>Minaog, Dipolog City</span>
+            </div>
+          </div>
+          <div class="footer-links">
+            <a href="https://zaneco.ph/company-profile/" target="_blank" rel="noopener">About Us</a>
+            <a href="https://zaneco.ph/contact-us/" target="_blank" rel="noopener">Contact Center</a>
+            <a href="https://www.facebook.com/p/Zaneco-Inc-61551218819204/" target="_blank" rel="noopener">Service Updates</a>
+            <router-link to="/terms">Terms of Service</router-link>
+            <router-link to="/security">Security</router-link>
+          </div>
         </div>
-        <div class="footer-links">
-          <a href="https://zaneco.ph/company-profile/" target="_blank" rel="noopener">About Us</a>
-          <a href="https://zaneco.ph/contact-us/" target="_blank" rel="noopener">Contact Center</a>
-          <a href="https://www.facebook.com/p/Zaneco-Inc-61551218819204/" target="_blank" rel="noopener">Service Updates</a>
-          <router-link to="/terms">Terms of Service</router-link>
-          <router-link to="/security">Security</router-link>
-        </div>
+        <div class="footer-divider"></div>
         <p class="text-xs text-muted">&copy; {{ new Date().getFullYear() }} ZANECO. All rights reserved.</p>
       </div>
     </footer>
@@ -67,12 +84,13 @@ onUnmounted(() => window.removeEventListener('scroll', handler))
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid transparent;
+  border-bottom: 2px solid var(--color-primary);
 }
 .consumer-header.scrolled {
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: var(--shadow-md);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 2px 12px rgba(180, 83, 9, 0.1);
   padding: 0.625rem 1.5rem;
+  border-bottom-color: var(--color-primary-hover);
 }
 .header-inner {
   max-width: var(--max-width);
@@ -110,9 +128,10 @@ onUnmounted(() => window.removeEventListener('scroll', handler))
   bottom: 2px;
   left: 50%;
   width: 0;
-  height: 2px;
+  height: 3px;
   background: var(--color-primary);
-  border-radius: 1px;
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--color-glow);
   transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .nav-link:hover::after,
@@ -133,9 +152,9 @@ onUnmounted(() => window.removeEventListener('scroll', handler))
   padding-top: 5rem;
 }
 .consumer-footer {
-  background-color: var(--color-gray-50);
-  border-top: 1px solid var(--color-border);
-  padding: 2.5rem 1.5rem;
+  background-color: var(--color-gray-100);
+  border-top: 2px solid var(--color-primary-muted);
+  padding: 3rem 1.5rem 2rem;
 }
 .footer-inner {
   max-width: var(--max-width);
@@ -143,22 +162,53 @@ onUnmounted(() => window.removeEventListener('scroll', handler))
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
   text-align: center;
+}
+.footer-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+@media (min-width: 768px) {
+  .footer-top {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    text-align: left;
+  }
 }
 .footer-brand {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0 0.75rem;
 }
 .footer-logo {
   height: 2rem;
   width: auto;
 }
+.footer-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}
+.contact-icon {
+  font-size: 1.125rem;
+  color: var(--color-primary);
+}
 .footer-links {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 .footer-links a {
   font-size: var(--font-size-sm);
@@ -166,6 +216,11 @@ onUnmounted(() => window.removeEventListener('scroll', handler))
 }
 .footer-links a:hover {
   color: var(--color-primary);
+}
+.footer-divider {
+  width: 100%;
+  height: 1px;
+  background-color: var(--color-border);
 }
 .page-enter-active,
 .page-leave-active {
@@ -188,5 +243,4 @@ onUnmounted(() => window.removeEventListener('scroll', handler))
   .nav-link { padding: 0.375rem 0.5rem; font-size: var(--font-size-xs); }
   .logo-img { height: 1.75rem; }
 }
-
 </style>

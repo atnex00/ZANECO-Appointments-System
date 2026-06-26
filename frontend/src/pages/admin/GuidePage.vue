@@ -48,14 +48,14 @@
           <table class="guide-table">
             <thead><tr><th>Status</th><th>Description</th><th>Actions Available</th></tr></thead>
             <tbody>
-              <tr><td><span class="status-badge status-pending">Pending</span></td><td>Newly created, awaiting confirmation</td><td>Confirm, Cancel, Reschedule</td></tr>
-              <tr><td><span class="status-badge status-confirmed">Confirmed</span></td><td>Approved by admin</td><td>Complete, Cancel, No Show, Reschedule</td></tr>
-              <tr><td><span class="status-badge status-rescheduled">Rescheduled</span></td><td>Appointment date/time changed</td><td>Confirm, Cancel, Reschedule, No Show</td></tr>
-              <tr><td><span class="status-badge status-completed">Completed</span></td><td>Consumer visited and was served</td><td>Archive, Reopen</td></tr>
-              <tr><td><span class="status-badge status-cancelled">Cancelled</span></td><td>Appointment was cancelled</td><td>Archive, Reopen</td></tr>
-              <tr><td><span class="status-badge status-rejected">Rejected</span></td><td>Appointment was rejected by admin</td><td>Archive, Reopen</td></tr>
-              <tr><td><span class="status-badge status-noshow">No Show</span></td><td>Consumer did not arrive</td><td>Archive, Reopen</td></tr>
-              <tr><td><span class="status-badge status-archived">Archived</span></td><td>Moved to archive</td><td>Reopen</td></tr>
+              <tr><td><span class="badge badge-pending">Pending</span></td><td>Newly created, awaiting confirmation</td><td>Confirm, Cancel, Reschedule</td></tr>
+              <tr><td><span class="badge badge-confirmed">Confirmed</span></td><td>Approved by admin</td><td>Complete, Cancel, No Show, Reschedule</td></tr>
+              <tr><td><span class="badge badge-rescheduled">Rescheduled</span></td><td>Appointment date/time changed</td><td>Confirm, Cancel, Reschedule, No Show</td></tr>
+              <tr><td><span class="badge badge-completed">Completed</span></td><td>Consumer visited and was served</td><td>Archive, Reopen</td></tr>
+              <tr><td><span class="badge badge-cancelled">Cancelled</span></td><td>Appointment was cancelled</td><td>Archive, Reopen</td></tr>
+              <tr><td><span class="badge badge-rejected">Rejected</span></td><td>Appointment was rejected by admin</td><td>Archive, Reopen</td></tr>
+              <tr><td><span class="badge badge-no-show">No Show</span></td><td>Consumer did not arrive</td><td>Archive, Reopen</td></tr>
+              <tr><td><span class="badge badge-archived">Archived</span></td><td>Moved to archive</td><td>Reopen</td></tr>
             </tbody>
           </table>
         </div>
@@ -455,22 +455,7 @@ function scrollTo(id) {
   color: #991b1b;
 }
 
-.status-badge {
-  display: inline-block;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-}
 
-.status-pending { background-color: #fef3c7; color: #92400e; }
-.status-confirmed { background-color: #dbeafe; color: #1e40af; }
-.status-rescheduled { background-color: #f3e8ff; color: #6b21a8; }
-.status-completed { background-color: #d1fae5; color: #065f46; }
-.status-cancelled { background-color: #fee2e2; color: #991b1b; }
-.status-rejected { background-color: #fce4ec; color: #991b1b; }
-.status-noshow { background-color: #f3f4f6; color: #4b5563; }
-.status-archived { background-color: #f3f4f6; color: #6b7280; }
 
 @media (max-width: 768px) {
   .guide-toc { display: none; }

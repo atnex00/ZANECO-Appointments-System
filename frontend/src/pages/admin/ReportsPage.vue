@@ -189,36 +189,36 @@ async function exportReport(format) {
 </script>
 
 <style scoped>
-.header-title { font-size: 1.25rem; font-weight: 600; color: #121c28; white-space: nowrap; }
+.header-title { font-size: 1.25rem; font-weight: 600; color: var(--color-gray-900); white-space: nowrap; }
 
-.ap-header { position: sticky; top: 0; z-index: 20; background-color: #f8f9ff; border-bottom: 1px solid rgba(196,197,213,0.3); padding: 0.75rem 1.5rem; display: flex; align-items: center; }
+.ap-header { position: sticky; top: 0; z-index: 20; background-color: var(--color-primary-light); border-bottom: 1px solid rgba(196,197,213,0.3); padding: 0.75rem 1.5rem; display: flex; align-items: center; }
 .ap-header-left { display: flex; align-items: center; gap: 0.75rem; }
 
 .ap-content { padding: 1.5rem; }
 
 .ap-title-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; }
-.ap-title { font-size: 1.75rem; font-weight: 700; color: #121c28; }
+.ap-title { font-size: 1.75rem; font-weight: 700; color: var(--color-gray-900); }
 
-.ap-table-wrap { background-color: var(--color-white); border: 1px solid #c4c5d5; border-radius: var(--radius-xl); overflow: hidden; }
+.ap-table-wrap { background-color: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-xl); overflow: hidden; }
 .ap-table-scroll { overflow-x: auto; }
 .ap-table { width: 100%; min-width: 700px; border-collapse: collapse; }
-.ap-table th { padding: 1rem 1.25rem; background-color: #eef4ff; border-bottom: 1px solid #c4c5d5; font-size: 0.75rem; font-weight: 600; color: #444653; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; }
+.ap-table th { padding: 1rem 1.25rem; background-color: var(--color-primary-muted); border-bottom: 1px solid var(--color-border); font-size: 0.75rem; font-weight: 600; color: var(--color-gray-600); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; }
 .ap-table td { padding: 0.75rem 1.25rem; font-size: 0.875rem; border-bottom: 1px solid rgba(196,197,213,0.3); }
-.ap-row:hover td { background-color: #eef4ff; }
-.td-date { color: #121c28; }
-.td-empty { text-align: center; color: #757684; padding: 2rem; }
+.ap-row:hover td { background-color: var(--color-primary-muted); }
+.td-date { color: var(--color-gray-900); }
+.td-empty { text-align: center; color: var(--color-gray-400); padding: 2rem; }
 
 .ap-new-btn { display: flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1rem; border-radius: var(--radius-xl); background-color: var(--color-primary); border: none; color: var(--color-white); font-size: 0.875rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .ap-new-btn:hover { filter: brightness(1.1); }
 .ap-new-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.ap-export-btn { padding: 0.5rem; border: 1px solid #c4c5d5; background: none; border-radius: var(--radius-xl); color: #444653; cursor: pointer; }
-.ap-export-btn:hover { background-color: #dfe9fa; }
+.ap-export-btn { padding: 0.5rem; border: 1px solid var(--color-border); background: none; border-radius: var(--radius-xl); color: var(--color-gray-600); cursor: pointer; }
+.ap-export-btn:hover { background-color: var(--color-primary-muted); }
 .ap-export-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .report-filter-card {
   background: var(--color-white);
-  border: 1px solid #c4c5d5;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -235,7 +235,7 @@ async function exportReport(format) {
   display: block;
   font-size: var(--font-size-xs);
   font-weight: 600;
-  color: #444653;
+  color: var(--color-gray-600);
   margin-bottom: 0.375rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -245,10 +245,10 @@ async function exportReport(format) {
   width: 100%;
   padding: 0.625rem 0.75rem;
   font-size: var(--font-size-sm);
-  border: 1px solid #c4c5d5;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-white);
-  color: #121c28;
+  color: var(--color-gray-900);
   outline: none;
   transition: border-color 0.15s;
   font-family: inherit;

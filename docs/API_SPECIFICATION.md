@@ -35,7 +35,6 @@ POST /appointments
 | `consumer_name` | string | Yes | Full name of requestor |
 | `account_name` | string | Yes | Name on electric account |
 | `account_number` | string | Yes | ZANECO account number |
-| `mobile_number` | string | Yes | Philippine mobile number (e.g., 09171234567) |
 | `email` | string | No | Email for optional notifications |
 | `concern_type_id` | integer | Yes | ID of concern type |
 | `office_id` | integer | Yes | ID of preferred office |
@@ -51,7 +50,6 @@ POST /appointments
         "consumer_name": "Juan Dela Cruz",
         "account_name": "Juan Dela Cruz",
         "account_number": "12345678",
-        "mobile_number": "09171234567",
         "email": "juan@example.com",
         "concern_type": "Clarification of Electric Bill Charges",
         "office": "Main Office",
@@ -83,7 +81,6 @@ POST /appointments
         "code": "VALIDATION_ERROR",
         "message": "The given data was invalid.",
         "details": {
-            "mobile_number": ["The mobile number format is invalid."],
             "account_number": ["The account number field is required."]
         }
     }
@@ -215,7 +212,6 @@ GET /appointments/{reference_number}
         "consumer_name": "Juan Dela Cruz",
         "account_name": "Juan Dela Cruz",
         "account_number": "12345678",
-        "mobile_number": "09171234567",
         "email": "juan@example.com",
         "concern_type": "Clarification of Electric Bill Charges",
         "office": "Main Office",
@@ -242,7 +238,7 @@ GET /appointments/{reference_number}
 
 ### 1.6 Reschedule Appointment
 
-Allows a consumer to reschedule their appointment. Identity verified via mobile number.
+Allows a consumer to reschedule their appointment.
 
 ```
 PUT /appointments/{reference_number}/reschedule
@@ -252,7 +248,6 @@ PUT /appointments/{reference_number}/reschedule
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `mobile_number` | string | Yes | Registered mobile number (for verification) |
 | `new_date` | string | Yes | New date in YYYY-MM-DD |
 | `new_start_time` | string | Yes | New time in HH:MM:SS |
 
@@ -274,7 +269,7 @@ PUT /appointments/{reference_number}/reschedule
 
 ### 1.7 Cancel Appointment
 
-Allows a consumer to cancel their appointment. Identity verified via mobile number.
+Allows a consumer to cancel their appointment.
 
 ```
 PUT /appointments/{reference_number}/cancel
@@ -284,7 +279,7 @@ PUT /appointments/{reference_number}/cancel
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `mobile_number` | string | Yes | Registered mobile number (for verification) |
+| `cancellation_reason` | string | No | Reason for cancellation |
 
 **Response `200 OK`:**
 ```json

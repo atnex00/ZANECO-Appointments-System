@@ -26,7 +26,7 @@
   justify-content: center;
   min-height: 100%;
   padding: 2rem 1rem;
-  background-color: #f8f9ff;
+  background-color: var(--color-bg);
 }
 
 .page-card {
@@ -47,10 +47,10 @@
 }
 
 h1 {
-  font-family: 'Hanken Grotesk', sans-serif;
+  font-family: var(--font-family-heading);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #121c28;
+  color: var(--color-text);
   margin: 0 0 0.5rem;
 }
 

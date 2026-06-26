@@ -29,7 +29,7 @@ const { time, date } = useClock()
 
 .clock-date {
   font-size: 0.688rem;
-  color: #444653;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 </style>

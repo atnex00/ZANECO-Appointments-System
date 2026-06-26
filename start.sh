@@ -44,9 +44,11 @@ pnpm --filter zaneco-appointments-api exec prisma generate 2>/dev/null || true
 scripts/setup-db.sh 2>/dev/null || echo "Warning: DB setup skipped (is PostgreSQL installed?)"
 
 # Apply schema migrations & seed
+echo "Fixing existing string timestamps before schema update..."
+pnpm --filter zaneco-appointments-api exec node scripts/fix-timestamps.js 2>/dev/null || true
 echo "Applying database schema..."
-pnpm --filter zaneco-appointments-api exec prisma db push --accept-data-loss 2>/dev/null || echo "Warning: DB schema sync skipped (is PostgreSQL running?)"
-pnpm run seed 2>/dev/null || echo "Warning: Seed skipped (is PostgreSQL running?)"
+pnpm --filter zaneco-appointments-api exec prisma db push --accept-data-loss || echo "Warning: DB schema sync skipped"
+pnpm run seed || echo "Warning: Seed skipped"
 
 trap 'kill $BACKEND_PID $FRONTEND_PID 2>/dev/null' EXIT SIGINT SIGTERM
 

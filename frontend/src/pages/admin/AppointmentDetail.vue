@@ -30,7 +30,7 @@
               <div class="d-row"><span class="d-label">Concern</span><span class="d-value">{{ detail.concern_type }}</span></div>
               <div class="d-row"><span class="d-label">Date</span><span class="d-value">{{ detail.appointment_date }}</span></div>
               <div class="d-row"><span class="d-label">Time</span><span class="d-value">{{ detail.start_time?.slice(0,5) }} - {{ detail.end_time?.slice(0,5) }}</span></div>
-              <div class="d-row"><span class="d-label">Status</span><span><span class="status-badge" :class="'status-' + detail.status">{{ statusLabel(detail.status) }}</span></span></div>
+              <div class="d-row"><span class="d-label">Status</span><span><span class="badge" :class="'badge-' + detail.status">{{ statusLabel(detail.status) }}</span></span></div>
             </div>
           </div>
           <div class="detail-card">
@@ -64,7 +64,7 @@
               <div v-for="n in notifications" :key="n.id" class="notif-row">
                 <span class="notif-channel">{{ n.channel }}</span>
                 <span class="notif-type">{{ n.type }}</span>
-                <span class="status-badge" :class="n.status === 'sent' ? 'status-confirmed' : n.status === 'failed' ? 'status-cancelled' : 'status-pending'" style="font-size:10px">{{ n.status }}</span>
+                <span class="badge" :class="n.status === 'sent' ? 'badge-confirmed' : n.status === 'failed' ? 'badge-cancelled' : 'badge-pending'" style="font-size:10px">{{ n.status }}</span>
               </div>
             </div>
           </div>
@@ -95,12 +95,14 @@ import { adminApi } from '../../api/admin'
 import { statusLabel } from '../../utils/formatters'
 import StatusBadge from '../../components/common/StatusBadge.vue'
 import LoadingSpinner from '../../components/common/LoadingSpinner.vue'
+import { useToast } from '../../composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
-const auth = useAuthStore()
-const isSuperAdmin = computed(() => auth.user?.role === 'super_admin')
 const store = useAppointmentsStore()
+const auth = useAuthStore()
+const toast = useToast()
+const isSuperAdmin = computed(() => auth.user?.role === 'super_admin')
 const detail = ref(null)
 const notes = ref('')
 const notifications = ref([])
@@ -118,16 +120,16 @@ async function updateStatus(status) {
       await fetchDetail()
     }
   } catch (err) {
-    alert('Status update failed: ' + (err.response?.data?.error?.message || err.message))
+    toast.error('Status update failed: ' + (err.response?.data?.error?.message || err.message))
   }
 }
 
 async function saveNotes() {
   try {
     await adminApi.saveAppointmentNotes(route.params.id, { notes: notes.value })
-    alert('Notes saved successfully')
+    toast.success('Notes saved successfully')
   } catch (err) {
-    alert('Failed to save notes: ' + (err.response?.data?.error?.message || err.message))
+    toast.error('Failed to save notes: ' + (err.response?.data?.error?.message || err.message))
   }
 }
 
@@ -135,10 +137,10 @@ async function handleDelete() {
   if (!confirm('⚠️ Permanently delete this appointment? This cannot be undone.')) return
   try {
     await adminApi.deleteAppointment(route.params.id)
-    alert('Appointment deleted')
+    toast.success('Appointment deleted')
     router.push('/admin/appointments')
   } catch (err) {
-    alert('Delete failed: ' + (err.response?.data?.error?.message || 'Permission denied'))
+    toast.error('Delete failed: ' + (err.response?.data?.error?.message || 'Permission denied'))
   }
 }
 
@@ -161,32 +163,32 @@ onMounted(fetchDetail)
 </script>
 
 <style scoped>
-.header-title { font-size: 1.125rem; font-weight: 700; color: #121c28; font-family: monospace; }
-.ap-header { position: sticky; top: 0; z-index: 20; background-color: #f8f9ff; border-bottom: 1px solid rgba(196,197,213,0.3); padding: 0.75rem 1.5rem; display: flex; align-items: center; }
+.header-title { font-size: 1.125rem; font-weight: 700; color: var(--color-gray-900); font-family: monospace; }
+.ap-header { position: sticky; top: 0; z-index: 20; background-color: var(--color-primary-light); border-bottom: 1px solid rgba(229,231,235,0.3); padding: 0.75rem 1.5rem; display: flex; align-items: center; }
 .ap-header-left { display: flex; align-items: center; gap: 0.75rem; }
-.menu-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: none; background: none; border-radius: 50%; color: #121c28; cursor: pointer; margin-left: -0.5rem; }
-.menu-btn:hover { background-color: #dfe9fa; }
+.menu-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: none; background: none; border-radius: 50%; color: var(--color-gray-900); cursor: pointer; margin-left: -0.5rem; }
+.menu-btn:hover { background-color: var(--color-primary-muted); }
 @media (min-width: 1024px) { .menu-btn { display: none; } }
-.back-link { display: flex; align-items: center; gap: 0.25rem; font-size: 0.875rem; color: #444653; text-decoration: none; padding: 0.375rem 0.625rem; border-radius: var(--radius-md); }
-.back-link:hover { background-color: #dfe9fa; color: var(--color-primary); }
+.back-link { display: flex; align-items: center; gap: 0.25rem; font-size: 0.875rem; color: var(--color-gray-600); text-decoration: none; padding: 0.375rem 0.625rem; border-radius: var(--radius-md); }
+.back-link:hover { background-color: var(--color-primary-muted); color: var(--color-primary); }
 
 .ap-content { padding: 1.5rem; }
 
 /* Detail Cards */
 .detail-cards-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.detail-card { background-color: var(--color-white); border: 1px solid #c4c5d5; border-radius: var(--radius-xl); overflow: hidden; }
-.detail-card-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background-color: #eef4ff; border-bottom: 1px solid #c4c5d5; font-size: 0.8125rem; font-weight: 700; color: #121c28; }
+.detail-card { background-color: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-xl); overflow: hidden; }
+.detail-card-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background-color: var(--color-primary-muted); border-bottom: 1px solid var(--color-border); font-size: 0.8125rem; font-weight: 700; color: var(--color-gray-900); }
 .detail-card-header .material-symbols-outlined { font-size: 1.125rem; color: var(--color-primary); }
 .detail-card-body { padding: 0.75rem 1rem; }
 .d-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; font-size: 0.8125rem; border-bottom: 1px solid rgba(196,197,213,0.15); }
 .d-row:last-child { border-bottom: none; }
-.d-label { color: #757684; font-weight: 500; }
-.d-value { font-weight: 600; color: #121c28; text-align: right; max-width: 60%; }
-.empty-text { font-size: 0.8125rem; color: #757684; text-align: center; padding: 0.5rem; }
+.d-label { color: var(--color-gray-400); font-weight: 500; }
+.d-value { font-weight: 600; color: var(--color-gray-900); text-align: right; max-width: 60%; }
+.empty-text { font-size: 0.8125rem; color: var(--color-gray-400); text-align: center; padding: 0.5rem; }
 .error-state { text-align: center; padding: 3rem; color: #dc2626; font-size: 1rem; }
 
 /* Status badges */
-.status-badge { display: inline-block; padding: 0.2rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; white-space: nowrap; }
+
 .status-pending { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
 .status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .status-rescheduled { background-color: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
@@ -206,13 +208,13 @@ onMounted(fetchDetail)
 .action-cancel { background-color: #fef2f2; color: #dc2626; border-color: #fecaca; }
 .action-reject { background-color: #fce4ec; color: #991b1b; border-color: #f48fb1; }
 .action-noshow { background-color: #fff7ed; color: #c2410c; border-color: #fed7aa; }
-.action-reopen { background-color: #eef4ff; color: #1e40af; border-color: #b8c4ff; }
+.action-reopen { background-color: var(--color-primary-muted); color: #1e40af; border-color: #b8c4ff; }
 .action-archive { background-color: #f3f4f6; color: #6b7280; border-color: #d1d5db; }
 .action-delete { background-color: #fef2f2; color: #dc2626; border-color: #fecaca; }
 
 /* Notes */
 .notes-section { border-top: 1px solid #e5e7eb; padding-top: 0.75rem; }
-.notes-label { display: block; font-size: 0.75rem; font-weight: 600; color: #757684; margin-bottom: 0.375rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.notes-label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--color-gray-400); margin-bottom: 0.375rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .notes-input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: var(--radius-md); font-size: 0.8125rem; outline: none; resize: vertical; font-family: inherit; }
 .notes-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(217,119,6,0.15); }
 .notes-save { margin-top: 0.5rem; padding: 0.375rem 1rem; background-color: var(--color-primary); color: var(--color-white); border: none; border-radius: var(--radius-md); font-size: 0.75rem; font-weight: 600; cursor: pointer; }
@@ -221,16 +223,16 @@ onMounted(fetchDetail)
 /* Notifications */
 .notif-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; font-size: 0.8125rem; border-bottom: 1px solid rgba(196,197,213,0.15); }
 .notif-row:last-child { border-bottom: none; }
-.notif-channel { font-weight: 600; color: #121c28; min-width: 40px; text-transform: uppercase; font-size: 0.6875rem; }
-.notif-type { color: #444653; flex: 1; }
+.notif-channel { font-weight: 600; color: var(--color-gray-900); min-width: 40px; text-transform: uppercase; font-size: 0.6875rem; }
+.notif-type { color: var(--color-gray-600); flex: 1; }
 .notif-status { margin-left: auto; }
 
 /* Audit Trail */
 .audit-row { display: flex; gap: 1rem; padding: 0.35rem 0; font-size: 0.8125rem; border-bottom: 1px solid rgba(196,197,213,0.15); align-items: center; }
 .audit-row:last-child { border-bottom: none; }
-.audit-time { color: #757684; min-width: 170px; font-size: 0.75rem; }
-.audit-action-label { font-weight: 600; color: #121c28; }
-.audit-admin { color: #757684; font-size: 0.75rem; margin-left: auto; }
+.audit-time { color: var(--color-gray-400); min-width: 170px; font-size: 0.75rem; }
+.audit-action-label { font-weight: 600; color: var(--color-gray-900); }
+.audit-admin { color: var(--color-gray-400); font-size: 0.75rem; margin-left: auto; }
 
 @media (max-width: 768px) { .detail-cards-row { grid-template-columns: 1fr; } }
 </style>
