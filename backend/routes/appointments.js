@@ -58,6 +58,11 @@ router.post('/', rateLimitBooking, asyncHandler(async (req, res) => {
   if (!office || !office.isActive) throw new AppError(404, 'NOT_FOUND', 'Office not found')
   if (!concern || !concern.isActive) throw new AppError(404, 'NOT_FOUND', 'Concern type not found')
 
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const apptDate = new Date(appointment_date + 'T00:00:00')
+  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + (office.maxAdvanceDays || 30))
+  if (apptDate > maxDate) throw new AppError(400, 'BAD_REQUEST', `Appointment date exceeds the maximum advance booking window of ${office.maxAdvanceDays || 30} days`)
+
   const [h, m] = start_time.split(':').map(Number)
   const endDate = new Date(Date.UTC(2000, 0, 1, h, m + office.appointmentDurationMinutes))
   const end_time = String(endDate.getHours()).padStart(2, '0') + ':' + String(endDate.getMinutes()).padStart(2, '0') + ':00'
@@ -66,10 +71,10 @@ router.post('/', rateLimitBooking, asyncHandler(async (req, res) => {
   if (existingSlots === 0) {
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
     const dayName = dayNames[new Date(appointment_date + 'T00:00:00').getDay()]
-    if (dayName === 'sunday' || dayName === 'saturday') throw new AppError(400, 'BAD_REQUEST', 'Selected date is a weekend. Please choose a weekday.')
     const schedule = await prisma.officeSchedule.findUnique({
       where: { officeId_dayOfWeek: { officeId: office_id, dayOfWeek: dayName } },
     })
+    if (!schedule || !schedule.isWorkingDay) throw new AppError(400, 'BAD_REQUEST', 'Selected date is not a working day for this office')
     const openH = parseInt((schedule?.openingTime || office.openingTime || '08:00').slice(0, 2))
     const closeH = parseInt((schedule?.closingTime || office.closingTime || '17:00').slice(0, 2))
     const duration = office.appointmentDurationMinutes
@@ -80,7 +85,7 @@ router.post('/', rateLimitBooking, asyncHandler(async (req, res) => {
         const eh = m + duration >= 60 ? h + 1 : h
         const em = m + duration >= 60 ? m + duration - 60 : m + duration
         const et = String(eh).padStart(2,'0') + ':' + String(em).padStart(2,'0') + ':00'
-        if (eh < closeH && h !== 12) {
+        if (eh < closeH) {
           slots.push({ officeId: office_id, slotDate: appointment_date, startTime: st, endTime: et, maxCapacity: office.slotCapacity })
         }
       }
@@ -94,6 +99,15 @@ router.post('/', rateLimitBooking, asyncHandler(async (req, res) => {
     })
     if (!slot) throw new AppError(404, 'NOT_FOUND', 'Time slot not found for the selected time. Available times are 08:00-16:30 on weekdays.')
     if (slot.bookedCount >= slot.maxCapacity) throw new AppError(409, 'SLOT_FULL', 'This time slot is no longer available')
+
+    const existing = await tx.appointment.findFirst({
+      where: {
+        accountNumber: account_number,
+        appointmentDate: appointment_date,
+        status: { notIn: ['cancelled', 'completed', 'rejected', 'no_show', 'archived'] },
+      },
+    })
+    if (existing) throw new AppError(409, 'DUPLICATE', 'An active appointment already exists for this account on this date')
 
     let ref, appointment
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -243,7 +257,11 @@ router.put('/:reference_number/cancel', asyncHandler(async (req, res) => {
   const a = await prisma.appointment.findUnique({ where: { referenceNumber: req.params.reference_number } })
   if (!a) throw new AppError(404, 'NOT_FOUND', 'Appointment not found')
 
-  await prisma.$transaction([
+  const appointmentDateTime = new Date(a.appointmentDate + 'T' + a.startTime)
+  const oneHourBefore = new Date(appointmentDateTime.getTime() - 60 * 60000)
+  if (new Date() > oneHourBefore) {
+    throw new AppError(400, 'TOO_LATE', 'Cancellation is only allowed up to 1 hour before the appointment time')
+  }  await prisma.$transaction([
     prisma.timeSlot.updateMany({
       where: { officeId: a.officeId, slotDate: a.appointmentDate, startTime: a.startTime },
       data: { bookedCount: { decrement: 1 } },

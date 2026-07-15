@@ -5,7 +5,7 @@
       <div class="ap-header-left">
         <div class="ap-search-box">
           <span class="material-symbols-outlined ap-search-icon">search</span>
-          <input v-model="searchTerm" class="ap-search-input" placeholder="Search by Reference, Name, or Account #..." />
+          <input v-model="searchTerm" class="ap-search-input" placeholder="Search by Reference, Name, or Account #..." @input="onSearchInput" />
         </div>
         <button class="ap-filter-btn" @click="showFilters = !showFilters">
           <span class="material-symbols-outlined">filter_list</span> Filters
@@ -85,18 +85,18 @@
           <table class="ap-table">
             <thead>
               <tr>
-                <th><div class="th-sort">Ref Number <span class="material-symbols-outlined th-icon">arrow_drop_down</span></div></th>
-                <th><div class="th-sort">Consumer Name <span class="material-symbols-outlined th-icon">unfold_more</span></div></th>
+                <th><div class="th-sort" @click="toggleSort('reference_number')">Ref Number <span class="material-symbols-outlined th-icon">{{ sortBy === 'reference_number' ? (sortOrder === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down') : 'arrow_drop_down' }}</span></div></th>
+                <th><div class="th-sort" @click="toggleSort('consumer_name')">Consumer Name <span class="material-symbols-outlined th-icon">{{ sortBy === 'consumer_name' ? (sortOrder === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down') : 'unfold_more' }}</span></div></th>
                 <th>Account Number</th>
                 <th>Concern Type</th>
-                <th><div class="th-sort">Date <span class="material-symbols-outlined th-icon">unfold_more</span></div></th>
+                <th><div class="th-sort" @click="toggleSort('appointment_date')">Date <span class="material-symbols-outlined th-icon">{{ sortBy === 'appointment_date' ? (sortOrder === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down') : 'unfold_more' }}</span></div></th>
                 <th>Time</th>
-                <th>Status</th>
+                <th><div class="th-sort" @click="toggleSort('status')">Status <span class="material-symbols-outlined th-icon">{{ sortBy === 'status' ? (sortOrder === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down') : 'unfold_more' }}</span></div></th>
                 <th class="th-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in filteredRows" :key="row.id" class="ap-row">
+              <tr v-for="row in appointments" :key="row.id" class="ap-row">
                 <td class="td-ref">{{ row.reference_number }}</td>
                 <td class="td-name">{{ row.consumer_name }}</td>
                 <td class="td-muted">{{ row.account_number }}</td>
@@ -115,7 +115,7 @@
                   <button v-if="isSuperAdmin" class="row-action" @click="deleteRow(row)" title="Delete" style="color:#dc2626"><span class="material-symbols-outlined">delete</span></button>
                 </td>
               </tr>
-              <tr v-if="filteredRows.length === 0">
+              <tr v-if="appointments.length === 0">
                 <td colspan="8" class="td-empty">No appointments found.</td>
               </tr>
             </tbody>
@@ -242,6 +242,8 @@ const viewMode = ref('table')
 const filterStatus = ref('')
 const filterDateFrom = ref('')
 const filterDateTo = ref('')
+const sortBy = ref('')
+const sortOrder = ref('desc')
 
 const statusTabs = computed(() => {
   return [
@@ -259,21 +261,14 @@ const statusTabs = computed(() => {
 
 const totalCount = computed(() => total.value || 0)
 
-const filteredRows = computed(() => {
-  let rows = appointments.value
-  if (activeTab.value) {
-    rows = rows.filter(a => a.status === activeTab.value)
-  }
-  if (searchTerm.value.trim()) {
-    const q = searchTerm.value.toLowerCase()
-    rows = rows.filter(a =>
-      (a.reference_number && a.reference_number.toLowerCase().includes(q)) ||
-      (a.consumer_name && a.consumer_name.toLowerCase().includes(q)) ||
-      (a.account_number && a.account_number.toLowerCase().includes(q))
-    )
-  }
-  return rows
-})
+let searchTimer = null
+function onSearchInput() {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    store.setFilters({ search: searchTerm.value || '' })
+    store.fetchAppointments(1, perPage.value)
+  }, 300)
+}
 
 const pageRange = computed(() => {
   const l = lastPage.value || 1
@@ -386,15 +381,25 @@ async function quickAction(id, status) {
   } catch (err) { console.error('Quick action failed:', err); toast.error('Action failed. Please try again.') }
 }
 
-function changePage(p) { store.fetchAppointments(p, perPage.value) }
+function changePage(p) {
+  store.fetchAppointments(p, perPage.value)
+}
 function setTab(key) {
   activeTab.value = key
-  store.setFilters({ status: key || '' })
+  filterStatus.value = key || ''
+  store.setFilters({ status: key || '', search: searchTerm.value || '' })
   store.fetchAppointments(1, perPage.value)
 }
 
 function applyFilters() {
-  store.setFilters({ status: filterStatus.value || '', date_from: filterDateFrom.value || '', date_to: filterDateTo.value || '' })
+  store.setFilters({
+    status: filterStatus.value || '',
+    date_from: filterDateFrom.value || '',
+    date_to: filterDateTo.value || '',
+    search: searchTerm.value || '',
+    sort_by: sortBy.value || '',
+    sort_order: sortOrder.value || '',
+  })
   store.fetchAppointments(1, perPage.value)
 }
 
@@ -403,21 +408,47 @@ function clearFilters() {
   filterDateFrom.value = ''
   filterDateTo.value = ''
   activeTab.value = ''
+  searchTerm.value = ''
+  sortBy.value = ''
+  sortOrder.value = 'desc'
   store.clearFilters()
   store.fetchAppointments(1, perPage.value)
 }
 
-function exportCSV() {
-  const headers = ['Reference Number', 'Consumer Name', 'Account Number', 'Concern Type', 'Office', 'Date', 'Time', 'Status']
-  const rows = filteredRows.value.map(a => [
-    a.reference_number, a.consumer_name, a.account_number, a.concern_type, a.office, a.appointment_date, a.start_time?.slice(0,5), a.status
-  ])
-  const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = `zaneco-appointments-${new Date().toISOString().slice(0,10)}.csv`
-  link.click()
+function toggleSort(column) {
+  if (sortBy.value === column) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortBy.value = column
+    sortOrder.value = 'asc'
+  }
+  store.setFilters({
+    status: filterStatus.value || '',
+    date_from: filterDateFrom.value || '',
+    date_to: filterDateTo.value || '',
+    search: searchTerm.value || '',
+    sort_by: sortBy.value,
+    sort_order: sortOrder.value,
+  })
+  store.fetchAppointments(1, perPage.value)
+}
+
+async function exportCSV() {
+  try {
+    const params = {}
+    if (filterStatus.value) params.date_from = filterDateFrom.value || ''
+    if (filterDateTo.value) params.date_to = filterDateTo.value || ''
+    const response = await adminApi.exportReport('appointments-by-office', 'csv', params)
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8;' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `zaneco-appointments-${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    window.URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('Export failed:', err)
+    toast.error('Export failed. Please try again.')
+  }
 }
 
 onMounted(() => store.fetchAppointments(1, perPage.value))

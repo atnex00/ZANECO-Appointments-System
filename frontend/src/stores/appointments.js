@@ -19,10 +19,10 @@ export const useAppointmentsStore = defineStore('appointments', {
     error: null,
   }),
   actions: {
-    async fetchAppointments(page = 1) {
+    async fetchAppointments(page = 1, perPage = 20) {
       this.loading = true
       try {
-        const params = { page, ...this.filters }
+        const params = { page, per_page: perPage, ...this.filters }
         Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
         const { data } = await adminApi.getAppointments(params)
         this.list = data.data.appointments

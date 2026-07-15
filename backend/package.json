@@ -20,8 +20,8 @@
     "nodemailer": "^9.0.1",
     "pdfmake": "^0.3.11",
     "pg": "^8.14.0",
-    "uuid": "^14.0.1",
-    "winston": "^3.19.0"
+    "twilio": "^6.0.2",
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "prisma": "^6.7.0"

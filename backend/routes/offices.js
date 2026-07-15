@@ -25,8 +25,14 @@ router.get('/:id/slots', asyncHandler(async (req, res) => {
   const { date } = req.query
   if (!date) return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Date parameter required' } })
 
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
   const dayOfWeek = new Date(date + 'T00:00:00').getDay()
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
+  const dayName = dayNames[dayOfWeek]
+
+  const schedule = await prisma.officeSchedule.findUnique({
+    where: { officeId_dayOfWeek: { officeId: Number(req.params.id), dayOfWeek: dayName } },
+  })
+  if (!schedule || !schedule.isWorkingDay) {
     return res.json({ success: true, data: { date, office_id: Number(req.params.id), is_working_day: false, slots: [] } })
   }
 

@@ -1,5 +1,6 @@
 const prisma = require('./db/database')
 const emailService = require('./services/emailService')
+const smsService = require('./services/smsService')
 
 let interval = null
 let tickCount = 0
@@ -30,13 +31,16 @@ async function sendNotification(notif) {
       html: notif.message.replace(/\n/g, '<br>'),
     })
   }
-  return simulateSend(notif)
+  if (notif.channel === 'sms') {
+    return smsService.sendSMS({ to: notif.recipient, message: notif.message })
+  }
+  return false
 }
 
 async function processQueue() {
   try {
     const pending = await prisma.notification.findMany({
-      where: { status: 'pending', retryCount: { lt: 3 } },
+      where: { status: { in: ['pending', 'retrying'] }, retryCount: { lt: 3 } },
       orderBy: { createdAt: 'asc' },
       take: 10,
     })
@@ -113,10 +117,6 @@ async function cleanupOldBookingRequests() {
   } catch (err) {
     console.error('Booking cleanup error:', err)
   }
-}
-
-function simulateSend(notif) {
-  return Math.random() > 0.1
 }
 
 module.exports = { start, stop }

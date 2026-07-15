@@ -46,12 +46,13 @@ async function runSeed() {
     })
   }
 
-  // Seed office schedules (Mon-Fri)
+  // Seed office schedules (Mon-Fri working, Sat-Sun off)
   const allOffices = await prisma.office.findMany()
-  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+  const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+  const weekends = ['saturday', 'sunday']
 
   for (const office of allOffices) {
-    for (const day of days) {
+    for (const day of weekdays) {
       await prisma.officeSchedule.upsert({
         where: { officeId_dayOfWeek: { officeId: office.id, dayOfWeek: day } },
         update: {},
@@ -61,6 +62,19 @@ async function runSeed() {
           openingTime: '08:00:00',
           closingTime: '17:00:00',
           isWorkingDay: true,
+        },
+      })
+    }
+    for (const day of weekends) {
+      await prisma.officeSchedule.upsert({
+        where: { officeId_dayOfWeek: { officeId: office.id, dayOfWeek: day } },
+        update: {},
+        create: {
+          officeId: office.id,
+          dayOfWeek: day,
+          openingTime: '08:00:00',
+          closingTime: '17:00:00',
+          isWorkingDay: false,
         },
       })
     }
@@ -89,25 +103,38 @@ async function runSeed() {
     })
   }
 
-  // Generate time slots for next 30 days (skip lunch break)
+  // Generate time slots for next 30 days using office schedules
   const today = new Date()
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
 
   for (const office of allOffices) {
+    const schedules = await prisma.officeSchedule.findMany({ where: { officeId: office.id } })
+    const scheduleMap = {}
+    for (const s of schedules) {
+      scheduleMap[s.dayOfWeek] = s
+    }
+
     for (let d = 0; d < 30; d++) {
       const date = new Date(today)
       date.setDate(date.getDate() + d)
-      const dayOfWeek = date.getDay()
-      if (dayOfWeek === 0 || dayOfWeek === 6) continue
+      const dayName = dayNames[date.getDay()]
+      const schedule = scheduleMap[dayName]
+      if (!schedule || !schedule.isWorkingDay) continue
 
       const dateStr = date.toISOString().split('T')[0]
-      for (let h = 8; h < 17; h++) {
-        if (h === 12) continue
-        for (const m of [0, 30]) {
+      const openH = parseInt(schedule.openingTime.slice(0, 2))
+      const openM = parseInt(schedule.openingTime.slice(3, 5))
+      const closeH = parseInt(schedule.closingTime.slice(0, 2))
+      const closeM = parseInt(schedule.closingTime.slice(3, 5))
+      const duration = office.appointmentDurationMinutes
+
+      for (let h = openH; h < closeH; h++) {
+        for (let m = (h === openH ? openM : 0); m < 60; m += duration) {
           const startTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
-          const endMinutes = h * 60 + m + 30
+          const endMinutes = h * 60 + m + duration
           const eh = Math.floor(endMinutes / 60)
           const em = endMinutes % 60
-          if (eh > 17 || (eh === 17 && em > 0)) continue
+          if (eh > closeH || (eh === closeH && em > closeM)) continue
           const endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}:00`
           await prisma.timeSlot.upsert({
             where: { officeId_slotDate_startTime: { officeId: office.id, slotDate: dateStr, startTime } },

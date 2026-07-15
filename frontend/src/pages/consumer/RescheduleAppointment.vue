@@ -84,32 +84,11 @@ async function handleVerify() {
     const { data } = await consumerApi.getAppointment(refNumber.value.trim())
     appointment.value = data.data
     step.value = 'reschedule'
-  } catch {
-    // Fallback: check localStorage for mock appointments
-    try {
-      const stored = JSON.parse(localStorage.getItem('zaneco_mock_appts') || '{}')
-      const mock = stored[refNumber.value.trim()]
-      if (mock) {
-        appointment.value = mock
-        step.value = 'reschedule'
-      } else {
-        error.value = 'Verification failed. Please check your details.'
-      }
-    } catch (err) {
-      console.error('Mock appointment lookup failed:', err)
-      error.value = 'Verification failed. Please check your details.'
-    }
+  } catch (err) {
+    error.value = err.response?.data?.error?.message || 'Verification failed. Please check your details.'
   } finally {
     loading.value = false
   }
-}
-
-function generateMockSlots(date) {
-  const day = new Date(date + 'T00:00:00').getDay()
-  if (day === 0 || day === 6) return []
-  return ['08:00:00','08:30:00','09:00:00','09:30:00','10:00:00','10:30:00','11:00:00','11:30:00','13:00:00','13:30:00','14:00:00','14:30:00','15:00:00','15:30:00','16:00:00','16:30:00'].map((t, i) => ({
-    start_time: t, end_time: '17:00:00', available: i % 3 !== 2,
-  }))
 }
 
 async function loadSlots() {
@@ -139,21 +118,7 @@ async function handleReschedule() {
     })
     step.value = 'done'
   } catch (err) {
-    // Fallback: update mock appointment in localStorage
-    try {
-      const stored = JSON.parse(localStorage.getItem('zaneco_mock_appts') || '{}')
-      if (stored[refNumber.value.trim()]) {
-        stored[refNumber.value.trim()].appointment_date = newDate.value
-        stored[refNumber.value.trim()].start_time = newTime.value
-        stored[refNumber.value.trim()].status = 'rescheduled'
-        localStorage.setItem('zaneco_mock_appts', JSON.stringify(stored))
-        step.value = 'done'
-      } else {
-        error.value = err.response?.data?.error?.message || 'Reschedule failed.'
-      }
-    } catch {
-      error.value = err.response?.data?.error?.message || 'Reschedule failed.'
-    }
+    error.value = err.response?.data?.error?.message || 'Reschedule failed.'
   } finally {
     submitting.value = false
   }

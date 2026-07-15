@@ -20,6 +20,20 @@
           </router-link>
         </nav>
         <div class="sidebar-footer">
+          <div class="theme-toggle-row">
+            <span class="theme-toggle-label">{{ theme.isDark.value ? 'Dark' : 'Light' }} Mode</span>
+            <button class="theme-switch" :class="{ 'theme-switch-dark': theme.isDark.value }" @click="theme.toggle" :title="theme.isDark.value ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+              <span class="theme-switch-track">
+                <span class="theme-switch-icon theme-switch-icon-sun">
+                  <span class="material-symbols-outlined">light_mode</span>
+                </span>
+                <span class="theme-switch-icon theme-switch-icon-moon">
+                  <span class="material-symbols-outlined">dark_mode</span>
+                </span>
+                <span class="theme-switch-thumb"></span>
+              </span>
+            </button>
+          </div>
           <div class="sidebar-user">
             <div class="sidebar-avatar">{{ userInitials }}</div>
             <div>
@@ -37,6 +51,11 @@
           </div>
           <span class="mobile-header-title">Appointments System Admin Portal (Mobile Version)</span>
           <div class="mobile-header-right">
+            <button class="theme-switch theme-switch-sm" :class="{ 'theme-switch-dark': theme.isDark.value }" @click="theme.toggle" :title="theme.isDark.value ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+              <span class="theme-switch-track">
+                <span class="theme-switch-thumb"></span>
+              </span>
+            </button>
             <button class="mobile-header-user-btn" @click.stop="showAccountMenu = !showAccountMenu">
               <div class="mobile-header-user">{{ userInitials }}</div>
             </button>
@@ -47,6 +66,15 @@
                   <p class="mobile-account-name">{{ auth.user?.full_name || 'Admin' }}</p>
                   <p class="mobile-account-role">{{ auth.user?.role || 'Administrator' }}</p>
                 </div>
+              </div>
+              <div class="mobile-account-divider"></div>
+              <div class="mobile-theme-row">
+                <span class="mobile-theme-label">{{ theme.isDark.value ? 'Dark' : 'Light' }} Mode</span>
+                <button class="theme-switch theme-switch-sm" :class="{ 'theme-switch-dark': theme.isDark.value }" @click="theme.toggle" :title="theme.isDark.value ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                  <span class="theme-switch-track">
+                    <span class="theme-switch-thumb"></span>
+                  </span>
+                </button>
               </div>
               <div class="mobile-account-divider"></div>
               <button class="mobile-account-logout" @click="handleLogout">Logout</button>
@@ -93,11 +121,13 @@
 import { ref, computed, provide, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useTheme } from '../composables/useTheme'
 import DigitalClock from '../components/common/DigitalClock.vue'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const theme = useTheme()
 const drawerOpen = ref(false)
 const showFab = ref(false)
 const fabLabel = ref('')
@@ -209,9 +239,9 @@ const userInitials = computed(() => {
   z-index: 40;
   height: 100vh;
   width: 260px;
-  background-color: #fef3c7;
-  border-right: 1px solid #fde68a;
-  transition: transform 0.3s ease;
+  background-color: var(--color-sidebar-bg);
+  border-right: 1px solid var(--color-sidebar-border);
+  transition: background-color 0.35s ease, border-color 0.35s ease, transform 0.3s ease;
   transform: translateX(-100%);
 }
 @media (min-width: 1024px) {
@@ -255,7 +285,7 @@ const userInitials = computed(() => {
   gap: 0.75rem;
   padding: 0.625rem 1rem 0.625rem 1.25rem;
   border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-  color: #78350f;
+  color: var(--color-sidebar-text);
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 600;
@@ -264,11 +294,11 @@ const userInitials = computed(() => {
   margin-right: 0.5rem;
   border-left: 4px solid transparent;
 }
-.sidebar-link:hover { background-color: #fde68a; }
+.sidebar-link:hover { background-color: var(--color-sidebar-hover); }
 .sidebar-link-active {
-  background-color: rgba(251,191,36,0.15) !important;
+  background-color: var(--color-sidebar-active-bg) !important;
   border-left-color: var(--color-primary) !important;
-  color: #b45309 !important;
+  color: var(--color-sidebar-text-active) !important;
   font-weight: 700;
 }
 .sidebar-link-icon { font-size: 1.25rem; }
@@ -277,22 +307,122 @@ const userInitials = computed(() => {
 
 .sidebar-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #fde68a;
+  border-top: 1px solid var(--color-sidebar-footer-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
+
+/* Theme Toggle Switch */
+.theme-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.theme-toggle-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-sidebar-text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.theme-switch {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.theme-switch-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 64px;
+  height: 32px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  padding: 0 4px;
+  transition: background 0.4s ease;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+}
+.theme-switch-dark .theme-switch-track {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+.theme-switch-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  z-index: 1;
+  transition: opacity 0.3s ease;
+}
+.theme-switch-icon .material-symbols-outlined {
+  font-size: 1rem;
+  color: #fff;
+  font-variation-settings: 'FILL' 1;
+}
+.theme-switch-icon-sun { opacity: 1; }
+.theme-switch-icon-moon { opacity: 0.3; }
+.theme-switch-dark .theme-switch-icon-sun { opacity: 0.3; }
+.theme-switch-dark .theme-switch-icon-moon { opacity: 1; }
+.theme-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.theme-switch-dark .theme-switch-thumb {
+  transform: translateX(32px);
+}
+
+/* Small variant for mobile */
+.theme-switch-sm .theme-switch-track {
+  width: 48px;
+  height: 26px;
+}
+.theme-switch-sm .theme-switch-thumb {
+  width: 20px;
+  height: 20px;
+  top: 3px;
+  left: 3px;
+}
+.theme-switch-dark.theme-switch-sm .theme-switch-thumb {
+  transform: translateX(22px);
+}
+
+.mobile-theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+.mobile-theme-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-700);
+}
+
 .logout-btn {
   width: 100%;
-  margin-top: 0.5rem;
+  margin-top: 0;
   padding: 0.375rem 0.75rem;
-  border: 1px solid #fde68a;
+  border: 1px solid var(--color-sidebar-border);
   border-radius: 9999px;
   background: none;
-  color: #78350f;
+  color: var(--color-sidebar-text);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
 }
-.logout-btn:hover { background-color: #fde68a; color: #dc2626; }
+.logout-btn:hover { background-color: var(--color-sidebar-hover); color: #dc2626; }
 .sidebar-user {
   display: flex;
   align-items: center;
@@ -344,8 +474,8 @@ const userInitials = computed(() => {
 /* Footer */
 .admin-footer {
   margin-top: auto;
-  background-color: #fef3c7;
-  border-top: 1px solid rgba(253, 230, 138, 0.3);
+  background-color: var(--color-footer-bg);
+  border-top: 1px solid var(--color-footer-border);
   padding: 1rem 1.5rem;
 }
 .footer-inner {
@@ -407,8 +537,8 @@ const userInitials = computed(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  background-color: #fef3c7;
-  border-bottom: 1px solid rgba(253,230,138,0.2);
+  background-color: var(--color-mobile-header-bg);
+  border-bottom: 1px solid var(--color-mobile-header-border);
 }
 @media (max-width: 1023px) {
   .mobile-header { display: flex; }
@@ -546,7 +676,7 @@ const userInitials = computed(() => {
   gap: 0;
   padding: 0.375rem 0.25rem;
   background-color: var(--color-primary-light);
-  border-top: 1px solid rgba(253,230,138,0.1);
+  border-top: 1px solid var(--color-mobile-nav-border);
   box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
 }
 @media (min-width: 1024px) { .mobile-bottom-nav { display: none; } }
@@ -573,7 +703,7 @@ const userInitials = computed(() => {
   cursor: pointer;
   transition: background 0.15s;
 }
-.mobile-nav-arrow:hover { background-color: #fde68a; }
+.mobile-nav-arrow:hover { background-color: var(--color-nav-hover); }
 .mobile-nav-arrow:disabled { opacity: 0.2; cursor: default; }
 .mobile-nav-arrow:disabled:hover { background: none; }
 .mobile-nav-arrow .material-symbols-outlined { font-size: 1.25rem; }
@@ -591,7 +721,7 @@ const userInitials = computed(() => {
   transition: background 0.15s;
   max-width: 4.5rem;
 }
-.mobile-nav-item:active { background-color: #fde68a; }
+.mobile-nav-item:active { background-color: var(--color-nav-hover); }
 .mobile-nav-active { color: var(--color-primary); }
 .mobile-nav-item .material-symbols-outlined { font-size: 1.375rem; }
 .mobile-icon-fill { font-variation-settings: 'FILL' 1; }

@@ -85,4 +85,64 @@ router.put('/:id/schedule', authenticate, asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Schedule updated' })
 }))
 
+router.post('/:id/generate-slots', authenticate, asyncHandler(async (req, res) => {
+  if (req.admin.role !== 'super_admin' && req.admin.role !== 'office_manager') {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
+  }
+
+  const officeId = Number(req.params.id)
+  const { date_from, date_to } = req.body
+
+  if (!date_from || !date_to) {
+    return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'date_from and date_to are required' } })
+  }
+
+  const office = await prisma.office.findUnique({ where: { id: officeId } })
+  if (!office) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Office not found' } })
+
+  const schedules = await prisma.officeSchedule.findMany({ where: { officeId } })
+  const scheduleMap = {}
+  for (const s of schedules) {
+    scheduleMap[s.dayOfWeek] = s
+  }
+
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+  const start = new Date(date_from + 'T00:00:00')
+  const end = new Date(date_to + 'T00:00:00')
+  const duration = office.appointmentDurationMinutes
+  let created = 0
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dateStr = d.toISOString().slice(0, 10)
+    const dayName = dayNames[d.getDay()]
+    const schedule = scheduleMap[dayName]
+    if (!schedule || !schedule.isWorkingDay) continue
+
+    const openH = parseInt(schedule.openingTime.slice(0, 2))
+    const openM = parseInt(schedule.openingTime.slice(3, 5))
+    const closeH = parseInt(schedule.closingTime.slice(0, 2))
+    const closeM = parseInt(schedule.closingTime.slice(3, 5))
+
+    const slots = []
+    for (let h = openH; h < closeH; h++) {
+      for (let m = (h === openH ? openM : 0); m < 60; m += duration) {
+        const startTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
+        const endMinutes = h * 60 + m + duration
+        const eh = Math.floor(endMinutes / 60)
+        const em = endMinutes % 60
+        if (eh > closeH || (eh === closeH && em > closeM)) continue
+        const endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}:00`
+        slots.push({ officeId, slotDate: dateStr, startTime, endTime, maxCapacity: office.slotCapacity })
+      }
+    }
+
+    if (slots.length > 0) {
+      await prisma.timeSlot.createMany({ data: slots, skipDuplicates: true })
+      created += slots.length
+    }
+  }
+
+  res.json({ success: true, data: { slots_created: created, office_id: officeId, date_from, date_to } })
+}))
+
 module.exports = router

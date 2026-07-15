@@ -83,7 +83,9 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue'
 import { useInView } from '../../composables/useInView.js'
+import { consumerApi } from '../../api/consumer'
 
 const { el: stepsEl, inView: stepsInView } = useInView({ delay: 100 })
 const { el: officesEl, inView: officesInView } = useInView({ delay: 100 })
@@ -94,13 +96,48 @@ const steps = [
   { icon: 'task_alt', title: 'Confirm & Visit', desc: 'Receive instant confirmation and visit us for personalized support at your scheduled time.', color: '#92400e' },
 ]
 
-const offices = [
-  { name: 'Main Office', code: 'MAIN', address: 'Poblacion, Dipolog City', badge: 'Main Hub', image: '/offices/ZANECO-main-office.jpg', gradient: 'linear-gradient(135deg, #d97706, #f59e0b)' },
-  { name: 'Sindangan Area Services', code: 'SAS', address: 'Sindangan, Zamboanga del Norte', badge: 'Open', gradient: 'linear-gradient(135deg, #b45309, #d97706)' },
-  { name: 'Liloy Area Services', code: 'LAS', address: 'Liloy, Zamboanga del Norte', gradient: 'linear-gradient(135deg, #92400e, #b45309)' },
-  { name: 'Piñan Area Services', code: 'PAS', address: 'Piñan, Zamboanga del Norte', gradient: 'linear-gradient(135deg, #78350f, #92400e)' },
-  { name: 'Dipolog Area Services', code: 'DAS', address: 'Minaog, Dipolog City', gradient: 'linear-gradient(135deg, #451a03, #78350f)' },
+const officeGradients = [
+  'linear-gradient(135deg, #d97706, #f59e0b)',
+  'linear-gradient(135deg, #b45309, #d97706)',
+  'linear-gradient(135deg, #92400e, #b45309)',
+  'linear-gradient(135deg, #78350f, #92400e)',
+  'linear-gradient(135deg, #451a03, #78350f)',
+  'linear-gradient(135deg, #d97706, #92400e)',
+  'linear-gradient(135deg, #b45309, #78350f)',
 ]
+
+const apiOffices = ref([])
+
+onMounted(async () => {
+  try {
+    const { data } = await consumerApi.getOffices()
+    if (data.data && data.data.length > 0) {
+      apiOffices.value = data.data
+    }
+  } catch (err) {
+    console.error('Failed to load offices:', err)
+  }
+})
+
+const offices = computed(() => {
+  if (apiOffices.value.length > 0) {
+    return apiOffices.value.map((o, i) => ({
+      name: o.name,
+      code: o.code,
+      address: o.address,
+      badge: i === 0 ? 'Main Hub' : undefined,
+      image: i === 0 ? '/offices/ZANECO-main-office.jpg' : undefined,
+      gradient: officeGradients[i % officeGradients.length],
+    }))
+  }
+  return [
+    { name: 'Main Office', code: 'MAIN', address: 'Poblacion, Dipolog City', badge: 'Main Hub', image: '/offices/ZANECO-main-office.jpg', gradient: 'linear-gradient(135deg, #d97706, #f59e0b)' },
+    { name: 'Sindangan Area Services', code: 'SAS', address: 'Sindangan, Zamboanga del Norte', badge: 'Open', gradient: 'linear-gradient(135deg, #b45309, #d97706)' },
+    { name: 'Liloy Area Services', code: 'LAS', address: 'Liloy, Zamboanga del Norte', gradient: 'linear-gradient(135deg, #92400e, #b45309)' },
+    { name: 'Piñan Area Services', code: 'PAS', address: 'Piñan, Zamboanga del Norte', gradient: 'linear-gradient(135deg, #78350f, #92400e)' },
+    { name: 'Dipolog Area Services', code: 'DAS', address: 'Minaog, Dipolog City', gradient: 'linear-gradient(135deg, #451a03, #78350f)' },
+  ]
+})
 </script>
 
 <style scoped>

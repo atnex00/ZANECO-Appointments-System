@@ -130,10 +130,10 @@ onMounted(fetchAppointments)
 .cal-today-btn { padding: 0.375rem 0.875rem; border: 1px solid var(--color-border); background: none; border-radius: 9999px; font-size: 0.8125rem; font-weight: 600; color: var(--color-gray-600); cursor: pointer; }
 .cal-today-btn:hover { background-color: var(--color-primary-muted); }
 
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #e5e7eb; border: 1px solid #e5e7eb; border-radius: var(--radius-lg); overflow: hidden; }
-.cal-grid-header { background-color: #f9fafb; text-align: center; padding: 0.5rem; font-size: 0.75rem; font-weight: 600; color: #6b7280; }
-.cal-cell { background-color: var(--color-white); min-height: 80px; padding: 0.375rem; cursor: pointer; position: relative; }
-.cal-cell:hover { background-color: #f9fafb; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: var(--color-border); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden; }
+.cal-grid-header { background-color: var(--color-gray-100); text-align: center; padding: 0.5rem; font-size: 0.75rem; font-weight: 600; color: var(--color-gray-500); }
+.cal-cell { background-color: var(--color-white); min-height: 80px; padding: 0.375rem; cursor: pointer; position: relative; transition: background-color 0.15s; }
+.cal-cell:hover { background-color: var(--color-gray-100); }
 .cal-cell-other { opacity: 0.35; }
 .cal-cell-today .cal-day-num { background-color: var(--color-primary); color: var(--color-white); border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 .cal-cell-selected { outline: 2px solid var(--color-primary); outline-offset: -2px; border-radius: 4px; }
@@ -145,7 +145,7 @@ onMounted(fetchAppointments)
 .ap-table-scroll { overflow-x: auto; }
 .ap-table { width: 100%; min-width: 500px; border-collapse: collapse; }
 .ap-table th { padding: 0.75rem 1.25rem; background-color: var(--color-primary-muted); border-bottom: 1px solid var(--color-border); font-size: 0.75rem; font-weight: 600; color: var(--color-gray-600); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; }
-.ap-table td { padding: 0.625rem 1.25rem; font-size: 0.875rem; border-bottom: 1px solid rgba(229,231,235,0.3); }
+.ap-table td { padding: 0.625rem 1.25rem; font-size: 0.875rem; border-bottom: 1px solid var(--color-border); }
 .ap-row:hover td { background-color: var(--color-primary-muted); }
 .td-name { font-weight: 600; color: var(--color-gray-900); }
 .td-muted { color: var(--color-gray-600); }
@@ -153,12 +153,4 @@ onMounted(fetchAppointments)
 .td-empty { text-align: center; color: var(--color-gray-400); padding: 1.5rem; }
 
 /* Status badges */
-
-.status-pending { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-.status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
-.status-rescheduled { background-color: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
-.status-cancelled { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-.status-rejected { background-color: #fce4ec; color: #991b1b; border: 1px solid #f48fb1; }
-.status-completed { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
-.status-no_show { background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
 </style>

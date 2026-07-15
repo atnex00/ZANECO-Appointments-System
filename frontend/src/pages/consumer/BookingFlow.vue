@@ -150,6 +150,7 @@
               <div v-if="form.appointmentDate" class="timeslot-section">
                 <label class="form-label">Available Time Slots</label>
                 <div v-if="slotsLoading" class="text-sm text-muted">Loading...</div>
+                <div v-else-if="errors._slots" class="alert alert-error" style="margin-top:0.5rem">{{ errors._slots }}</div>
                 <div v-else-if="slots.length === 0" class="text-sm text-muted" style="padding:0.5rem 0">No available slots for this date.</div>
                 <div v-else class="timeslot-grid">
                   <button v-for="slot in slots" :key="slot.start_time"
@@ -234,7 +235,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBookingStore } from '../../stores/booking'
 import { consumerApi } from '../../api/consumer'
@@ -279,6 +280,7 @@ const concernTypes = ref([])
 const offices = ref([])
 const slots = ref([])
 const slotsLoading = ref(false)
+const scheduleMap = ref({})
 const loading = ref(true)
 const loadError = ref('')
 
@@ -307,6 +309,22 @@ const selectedOfficeName = computed(() => {
 })
 
 // --- Validation ---
+watch(currentStep, async (step) => {
+  if (step === 4 && form.officeId && Object.keys(scheduleMap.value).length === 0) {
+    try {
+      const { data } = await consumerApi.getOfficeSchedule(form.officeId)
+      const map = {}
+      if (data.data) {
+        for (const s of data.data) {
+          map[s.dayOfWeek] = s
+        }
+      }
+      scheduleMap.value = map
+    } catch {
+      // Default to blocking weekends if schedule fails
+    }
+  }
+})
 function validateStep(step) {
   const e = {}
   if (step === 1) {
@@ -346,15 +364,19 @@ const calendarDays = computed(() => {
   const firstDay = new Date(currentYear.value, currentMonth.value, 1).getDay()
   const daysInMonth = new Date(currentYear.value, currentMonth.value + 1, 0).getDate()
   const today = new Date(); today.setHours(0, 0, 0, 0)
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
   const days = []
   for (let i = 0; i < firstDay; i++) days.push(null)
   for (let d = 1; d <= daysInMonth; d++) {
     const dateObj = new Date(currentYear.value, currentMonth.value, d)
+    const dayName = dayNames[dateObj.getDay()]
+    const scheduleDay = scheduleMap.value[dayName]
+    const isNonWorking = scheduleDay ? !scheduleDay.isWorkingDay : dateObj.getDay() === 0 || dateObj.getDay() === 6
     days.push({
       day: d,
       date: format(dateObj, 'yyyy-MM-dd'),
       isPast: dateObj < today,
-      isWeekend: dateObj.getDay() === 0 || dateObj.getDay() === 6,
+      isWeekend: isNonWorking,
       isToday: dateObj.getTime() === today.getTime(),
     })
   }
@@ -368,14 +390,6 @@ function changeMonth(delta) {
 }
 
 // --- Time slots ---
-function generateMockSlots(date) {
-  const day = new Date(date + 'T00:00:00').getDay()
-  if (day === 0 || day === 6) return []
-  return ['08:00:00','08:30:00','09:00:00','09:30:00','10:00:00','10:30:00','11:00:00','11:30:00','13:00:00','13:30:00','14:00:00','14:30:00','15:00:00','15:30:00','16:00:00','16:30:00'].map((t, i) => ({
-    start_time: t, end_time: '17:00:00', available: i % 3 !== 2,
-  }))
-}
-
 async function selectDate(date) {
   form.appointmentDate = date
   form.startTime = ''
@@ -385,7 +399,8 @@ async function selectDate(date) {
     slots.value = data.data.slots
   } catch (err) {
     console.error('Failed to load slots:', err)
-    slots.value = generateMockSlots(date)
+    slots.value = []
+    errors.value = { ...errors.value, _slots: 'Failed to load available slots. Please try again or check your connection.' }
   }
   finally { slotsLoading.value = false }
 }
@@ -501,12 +516,12 @@ async function submitBooking() {
 .slot-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 0.25rem 0.625rem; border-radius: 9999px; background-color: var(--color-success-light); color: var(--color-success); }
 
 /* Calendar */
-.calendar-card { border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: 1.25rem; margin-bottom: 1rem; }
+.calendar-card { background-color: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: 1.25rem; margin-bottom: 1rem; }
 .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
 .cal-nav-btn { background: none; border: none; padding: 0.25rem; border-radius: var(--radius-sm); color: var(--color-gray-600); cursor: pointer; }
 .cal-nav-btn:hover { background-color: var(--color-gray-100); }
 .cal-nav-btn .material-symbols-outlined { font-size: 1.25rem; }
-.cal-month-label { font-weight: 700; font-size: var(--font-size-sm); }
+.cal-month-label { font-weight: 700; font-size: var(--font-size-sm); color: var(--color-text); }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .cal-day-header { text-align: center; font-size: 10px; font-weight: 700; color: var(--color-text-muted); padding: 0.375rem 0; }
 .cal-cell { text-align: center; padding: 0.5rem; border-radius: var(--radius-md); font-size: var(--font-size-sm); cursor: pointer; transition: background-color 0.1s; }

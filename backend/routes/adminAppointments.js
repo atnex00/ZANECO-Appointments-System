@@ -2,7 +2,7 @@ const express = require('express')
 const prisma = require('../db/database')
 const { authenticate } = require('../middleware/auth')
 const emailService = require('../services/emailService')
-const { asyncHandler } = require('../middleware/errors')
+const { asyncHandler, AppError } = require('../middleware/errors')
 
 const router = express.Router()
 
@@ -274,17 +274,19 @@ router.put('/:id/reschedule', authenticate, asyncHandler(async (req, res) => {
   const end_time = String(endDate.getHours()).padStart(2, '0') + ':' + String(endDate.getMinutes()).padStart(2, '0') + ':00'
   const cleanDate = new_appointment_date.slice(0, 10)
 
-  const slot = await prisma.timeSlot.findUnique({
-    where: { officeId_slotDate_startTime: { officeId: appt.officeId, slotDate: cleanDate, startTime: new_start_time } },
-  })
+  await prisma.$transaction(async (tx) => {
+    const slot = await tx.timeSlot.findUnique({
+      where: { officeId_slotDate_startTime: { officeId: appt.officeId, slotDate: cleanDate, startTime: new_start_time } },
+    })
+    if (!slot) throw new AppError(404, 'NOT_FOUND', 'Target time slot not found')
+    if (slot.bookedCount >= slot.maxCapacity) throw new AppError(409, 'SLOT_FULL', 'Target time slot is full')
 
-  await prisma.$transaction([
-    prisma.timeSlot.updateMany({
+    await tx.timeSlot.updateMany({
       where: { officeId: appt.officeId, slotDate: appt.appointmentDate, startTime: appt.startTime },
       data: { bookedCount: { decrement: 1 } },
-    }),
-    ...(slot ? [prisma.timeSlot.update({ where: { id: slot.id }, data: { bookedCount: { increment: 1 } } })] : []),
-    prisma.appointment.update({
+    })
+    await tx.timeSlot.update({ where: { id: slot.id }, data: { bookedCount: { increment: 1 } } })
+    await tx.appointment.update({
       where: { id: appt.id },
       data: {
         appointmentDate: cleanDate,
@@ -294,10 +296,9 @@ router.put('/:id/reschedule', authenticate, asyncHandler(async (req, res) => {
         rescheduleCount: { increment: 1 },
         rescheduledAt: new Date().toISOString(),
         adminNotes: notes || undefined,
-        updatedAt: new Date().toISOString(),
       },
-    }),
-    prisma.auditLog.create({
+    })
+    await tx.auditLog.create({
       data: {
         appointmentId: appt.id,
         adminId: req.admin.id,
@@ -306,8 +307,8 @@ router.put('/:id/reschedule', authenticate, asyncHandler(async (req, res) => {
         entityId: appt.id,
         newValues: JSON.stringify({ date: new_appointment_date, time: new_start_time, reason: notes }),
       },
-    }),
-  ])
+    })
+  })
 
   res.json({ success: true, data: { reference_number: appt.referenceNumber, status: 'rescheduled' } })
 }))
