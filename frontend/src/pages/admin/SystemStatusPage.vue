@@ -94,7 +94,8 @@
           <span class="material-symbols-outlined" :class="{ spin: loading }">refresh</span>
           Refresh
         </button>
-        <router-link class="back-link" to="/admin/login">Back to Login</router-link>
+        <router-link v-if="isLoggedIn" class="back-link" to="/admin/dashboard">Back to Dashboard</router-link>
+        <router-link v-else class="back-link" to="/admin/login">Back to Login</router-link>
       </footer>
     </div>
   </div>
@@ -103,6 +104,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { adminApi } from '../../api/admin'
+
+const isLoggedIn = computed(() => !!localStorage.getItem('admin_token'))
 
 const data = ref(null)
 const loading = ref(true)
