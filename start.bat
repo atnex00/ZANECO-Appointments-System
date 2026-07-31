@@ -2,6 +2,9 @@
 title ZANECO Appointments System
 cd /d "%~dp0"
 
+set "PG_BIN=C:\Program Files\PostgreSQL\17\bin"
+if exist "%PG_BIN%" set "PATH=%PG_BIN%;%PATH%"
+
 :: Check Node.js
 node --version >nul 2>&1
 if %errorlevel% neq 0 (
@@ -30,6 +33,17 @@ if not exist node_modules\.pnpm (
     echo Installing dependencies...
     call pnpm install
 )
+
+:: Create backend .env from example if missing
+if not exist backend\.env if exist backend\.env.example (
+    echo Creating backend\.env from .env.example...
+    copy backend\.env.example backend\.env >nul
+)
+
+:: Set up PostgreSQL role and database
+echo Setting up PostgreSQL...
+call scripts\setup-db.bat
+if %errorlevel% neq 0 echo Warning: DB setup skipped (is PostgreSQL running?)
 
 :: Generate Prisma client
 echo Generating Prisma client...
@@ -65,6 +79,8 @@ echo.
 echo Backend: http://localhost:8000
 echo Frontend: http://localhost:3500
 echo Admin:   http://localhost:3500/admin/login
+echo.
+echo Other devices on this network can use: http://%COMPUTERNAME%:3500
 echo.
 echo PostgreSQL must be running at DATABASE_URL (default: postgresql://zaneco:secret@localhost:5432/zaneco_appointments)
 echo.

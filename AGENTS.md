@@ -3,7 +3,7 @@
 ## Repo structure
 
 pnpm monorepo with two packages:
-- `frontend/` — Vue 3 + Vite SPA (port 3500, proxies `/api` → `localhost:8000`)
+- `frontend/` — Vue 3 + Vite SPA (port 3500, proxies `/api` → `localhost:8000`, listens on all interfaces for local network access)
 - `backend/` — Express 4 + PostgreSQL (Prisma ORM) (port 8000)
 
 ## Prerequisites
@@ -22,6 +22,7 @@ pnpm monorepo with two packages:
 | Start backend only (with --watch) | `pnpm run dev:backend` |
 | Start frontend only | `pnpm run dev:frontend` |
 | Build frontend | `pnpm run build` |
+| Create DB role & database (Windows) | `scripts\setup-db.bat` |
 | One-click start (Windows) | Double-click `start.bat` |
 | One-click start (macOS/Linux) | `./start.sh` |
 | Docker (both services) | `docker compose up` |
@@ -33,13 +34,14 @@ pnpm monorepo with two packages:
 - Script checks for Node.js, enables corepack (built-in), runs `pnpm install` if needed, seeds the DB if empty, starts both servers, and opens the browser.
 - Two separate terminal windows on Windows (one per server), background processes on macOS/Linux.
 - Close the windows / Ctrl+C to stop.
+- **Windows note**: `start.bat` automatically invokes `scripts\setup-db.bat` to create the PostgreSQL role and database if they don't exist. PostgreSQL 17 must be installed and the service running at `localhost:5432`. If `psql` is not in your PATH, `setup-db.bat` will try `C:\Program Files\PostgreSQL\17\bin`.
 
 ## Docker
 
 - `docker compose up` for dev (three containers: postgres:5432, frontend:3500, backend:8000).
 - PostgreSQL container has a health check — backend waits for it before serving.
 - `DATABASE_URL` env var configures the Prisma connection. Inside Docker it points to `postgresql://zaneco:secret@postgres:5432/zaneco_appointments`.
-- `VITE_API_PROXY` env var configures the Vite proxy target (`frontend/vite.config.js`). Inside Docker it points to `http://backend:8000`; defaults to `http://localhost:8000` for local dev.
+- `VITE_API_PROXY` env var configures the Vite proxy target (`frontend/vite.config.js`). Inside Docker it points to `http://backend:8000`; defaults to `http://localhost:8000` for local dev. The Vite dev server binds to all interfaces (`host: true`) so other devices on the local network can access the frontend.
 - Anonymous volumes (`/app/*/node_modules`) prevent bind-mounts from overwriting installed deps.
 - Named volume `zaneco-pg-data` persists PostgreSQL data across container restarts.
 - File watching uses `CHOKIDAR_USEPOLLING=1` for all containers (needed for bind mounts on macOS/Windows).
