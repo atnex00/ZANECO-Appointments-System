@@ -455,6 +455,9 @@ function scrollTo(id) {
   color: #991b1b;
 }
 
+[data-theme="dark"] .guide-tip { background-color: #0a3322; border-color: #166534; color: #22c55e; }
+[data-theme="dark"] .guide-warning { background-color: #331111; border-color: #7f1d1d; color: #ef4444; }
+
 
 
 @media (max-width: 768px) {
