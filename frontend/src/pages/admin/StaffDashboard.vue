@@ -817,6 +817,21 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
 .action-archive { background-color: #f3f4f6; color: #6b7280; }
 .action-archive:hover { background-color: #e5e7eb; }
 
+[data-theme="dark"] .action-confirm { background-color: #0a3322; color: #22c55e; }
+[data-theme="dark"] .action-confirm:hover { background-color: #166534; }
+[data-theme="dark"] .action-cancel,
+[data-theme="dark"] .action-reject { background-color: #331111; color: #ef4444; }
+[data-theme="dark"] .action-cancel:hover,
+[data-theme="dark"] .action-reject:hover { background-color: #7f1d1d; }
+[data-theme="dark"] .action-noshow,
+[data-theme="dark"] .action-archive { background-color: #352e2a; color: #a8a29e; }
+[data-theme="dark"] .action-noshow:hover,
+[data-theme="dark"] .action-archive:hover { background-color: #4a4038; }
+[data-theme="dark"] .action-outline { background-color: #0a1a33; color: #3b82f6; }
+[data-theme="dark"] .action-outline:hover { background-color: #1d3d6b; }
+[data-theme="dark"] .action-reopen { background-color: #3d352e; color: #fbbf24; }
+[data-theme="dark"] .action-reopen:hover { background-color: #4a4038; }
+
 .detail-notes {
   margin-top: 0.75rem;
   padding: 0.75rem;
