@@ -566,7 +566,8 @@ onMounted(() => store.fetchAppointments(1, perPage.value))
 @media (min-width: 640px) { .ap-pagination { flex-direction: row; justify-content: space-between; } }
 .ap-pagination-left { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .pagination-info { font-size: 0.75rem; color: var(--color-gray-600); }
-.pagination-select { background: var(--color-primary-muted); border: 1px solid var(--color-border); border-radius: var(--radius-lg); font-size: 0.75rem; padding: 0.25rem 0.5rem; outline: none; }
+.pagination-select { background: var(--color-primary-muted); border: 1px solid var(--color-border); border-radius: var(--radius-lg); font-size: 0.75rem; padding: 0.25rem 0.5rem; outline: none; color: var(--color-gray-900); }
+[data-theme="dark"] .pagination-select { color-scheme: dark; }
 .ap-pagination-right { display: flex; align-items: center; gap: 0.25rem; }
 .page-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--color-border); background: none; border-radius: var(--radius-lg); color: var(--color-gray-600); cursor: pointer; }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
