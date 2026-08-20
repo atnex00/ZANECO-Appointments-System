@@ -9,8 +9,10 @@ DB_NAME="${DB_NAME:-zaneco_appointments}"
 DB_USER="${DB_USER:-zaneco}"
 DB_PASS="${DB_PASS:-secret}"
 
-if [[ ! "$DB_USER" =~ ^[a-zA-Z0-9_]+$ ]]; then echo "Invalid DB_USER"; exit 1; fi
-if [[ ! "$DB_PASS" =~ ^[a-zA-Z0-9_!@#\$%^&*()]+$ ]]; then echo "Invalid DB_PASS contains unsafe chars"; exit 1; fi
+USER_REGEX='^[a-zA-Z0-9_]+$'
+PASS_REGEX='^[a-zA-Z0-9_!@#$%^&*()]+$'
+if [[ ! "$DB_USER" =~ $USER_REGEX ]]; then echo "Invalid DB_USER"; exit 1; fi
+if [[ ! "$DB_PASS" =~ $PASS_REGEX ]]; then echo "Invalid DB_PASS contains unsafe chars"; exit 1; fi
 
 echo "Setting up PostgreSQL role and database..."
 
