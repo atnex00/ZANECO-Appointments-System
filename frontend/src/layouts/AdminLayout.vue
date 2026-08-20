@@ -8,7 +8,7 @@
       <aside class="admin-sidebar" :class="{ 'sidebar-open': drawerOpen }">
         <div class="sidebar-header">
           <div class="sidebar-logos">
-            <img src="/logo-combined.png" alt="ZANECO" class="sidebar-logo-img" />
+            <img :src="theme.isDark.value ? '/logo-combined-white.png' : '/logo-combined.png'" alt="ZANECO" class="sidebar-logo-img" />
           </div>
           <h1 class="sidebar-title">Appointments System Admin Portal</h1>
           <DigitalClock />
@@ -47,7 +47,7 @@
       <main class="admin-main">
         <header class="mobile-header">
           <div class="mobile-header-logos">
-            <img src="/logo-combined.png" alt="ZANECO" class="mobile-header-logo-img" />
+            <img :src="theme.isDark.value ? '/logo-combined-white.png' : '/logo-combined.png'" alt="ZANECO" class="mobile-header-logo-img" />
           </div>
           <span class="mobile-header-title">Appointments System Admin Portal (Mobile Version)</span>
           <div class="mobile-header-right">
