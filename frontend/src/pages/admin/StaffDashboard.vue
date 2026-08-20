@@ -612,9 +612,11 @@ onMounted(() => { fetchAppointments(); fetchOffices() })
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-gray-900);
+  background-color: var(--color-white);
   outline: none;
   font-family: inherit;
 }
+[data-theme="dark"] .staff-date-input { color-scheme: dark; }
 .staff-date-input:focus { border-color: var(--color-primary); }
 .date-today-btn {
   padding: 0.375rem 0.75rem;
