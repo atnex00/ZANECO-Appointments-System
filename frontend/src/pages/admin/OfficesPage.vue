@@ -503,7 +503,7 @@ async function fetchOffices() {
 .switch input:checked + .slider:before { transform: translateX(20px); }
 
 /* Details */
-.office-details { padding: 0.75rem 0; border-top: 1px solid rgba(196,197,213,0.3); border-bottom: 1px solid rgba(196,197,213,0.3); }
+.office-details { padding: 0.75rem 0; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
 .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 0.375rem 0; }
 .detail-label { font-size: 0.75rem; font-weight: 600; color: var(--color-gray-400); letter-spacing: 0.025em; }
 .detail-value { font-size: 0.875rem; font-weight: 500; color: var(--color-gray-900); }
@@ -513,7 +513,7 @@ async function fetchOffices() {
 /* Actions */
 .office-card-actions {
   padding: 0.75rem 1rem;
-  background-color: rgba(248,249,255,0.5);
+  background-color: var(--color-gray-100);
   display: flex; gap: 0.5rem; flex-wrap: wrap;
 }
 .action-btn {
