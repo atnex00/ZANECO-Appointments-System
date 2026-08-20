@@ -243,6 +243,10 @@ onMounted(() => { fetchUsers(); fetchOffices() })
 .role-office_manager { background-color: var(--color-primary-muted); color: #1e40af; border: 1px solid #b8c4ff; }
 .role-staff { background-color: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
 
+[data-theme="dark"] .role-super_admin { background-color: #331111; color: #ef4444; border-color: #7f1d1d; }
+[data-theme="dark"] .role-office_manager { background-color: #0a1a33; color: #3b82f6; border-color: #1d3d6b; }
+[data-theme="dark"] .role-staff { background-color: #352e2a; color: #a8a29e; border-color: #4a4038; }
+
 
 .status-confirmed { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .status-cancelled { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }

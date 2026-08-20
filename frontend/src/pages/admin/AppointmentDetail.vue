@@ -212,6 +212,15 @@ onMounted(fetchDetail)
 .action-archive { background-color: #f3f4f6; color: #6b7280; border-color: #d1d5db; }
 .action-delete { background-color: #fef2f2; color: #dc2626; border-color: #fecaca; }
 
+[data-theme="dark"] .action-confirm,
+[data-theme="dark"] .action-complete { background-color: #0a3322; color: #22c55e; border-color: #166534; }
+[data-theme="dark"] .action-cancel,
+[data-theme="dark"] .action-delete { background-color: #331111; color: #ef4444; border-color: #7f1d1d; }
+[data-theme="dark"] .action-reject { background-color: #331111; color: #ef4444; border-color: #7f1d1d; }
+[data-theme="dark"] .action-noshow { background-color: #332d24; color: #f59e0b; border-color: #7c4a1e; }
+[data-theme="dark"] .action-reopen { background-color: #0a1a33; color: #3b82f6; border-color: #1d3d6b; }
+[data-theme="dark"] .action-archive { background-color: #352e2a; color: #a8a29e; border-color: #4a4038; }
+
 /* Notes */
 .notes-section { border-top: 1px solid #e5e7eb; padding-top: 0.75rem; }
 .notes-label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--color-gray-400); margin-bottom: 0.375rem; text-transform: uppercase; letter-spacing: 0.05em; }
